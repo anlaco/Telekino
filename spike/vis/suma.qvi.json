@@ -1,0 +1,25 @@
+{
+  "qvi": 1,
+  "meta": {
+    "name": "suma-basica",
+    "description": "Equivalente de examples/suma-basica.qvi en el formato JSON"
+  },
+  "front-panel": [
+    { "id": "a", "kind": "control",   "label": "A", "default": 5.0, "view": { "x": 40, "y": 20 } },
+    { "id": "b", "kind": "control",   "label": "B", "default": 3.0, "view": { "x": 40, "y": 60 } },
+    { "id": "r", "kind": "indicator", "label": "Resultado",         "view": { "x": 40, "y": 100 } }
+  ],
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "type": "control",   "ref": "a", "view": { "x": 40,  "y": 80 } },
+      { "id": "n2", "type": "control",   "ref": "b", "view": { "x": 40,  "y": 160 } },
+      { "id": "n3", "type": "add",                   "view": { "x": 200, "y": 120 } },
+      { "id": "n4", "type": "indicator", "ref": "r", "view": { "x": 360, "y": 120 } }
+    ],
+    "wires": [
+      { "from": ["n1", "out"], "to": ["n3", "a"] },
+      { "from": ["n2", "out"], "to": ["n3", "b"] },
+      { "from": ["n3", "out"], "to": ["n4", "in"] }
+    ]
+  }
+}

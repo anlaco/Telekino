@@ -2,6 +2,23 @@
 
 > Última actualización: 2026-05-11
 
+## ⚠️ Aviso: esta rama explora la salida de Red-Lang
+
+**Rama `spike/wasm-migration`.** Se está evaluando abandonar Red-Lang: el `.qvi` pasaría a
+JSON declarativo y Telekino lo compilaría a WASM. Ver `docs/estudio-post-red.md` (análisis y
+plan) y `spike/` (hito 1, ya funcionando).
+
+Mientras dure la evaluación, **las reglas de abajo siguen siendo válidas para todo lo que hay
+en `src/`**, que es la versión Red y es la única que funciona hoy. Pero **no aplican dentro de
+`spike/`**: en concreto, la regla absoluta #3 (todo en Red-Lang), DT-001, DT-002, DT-005,
+DT-008, DT-009, DT-027 y DT-028 quedarían derogadas si la migración sigue adelante. El §2 del
+estudio tiene la lista completa.
+
+**Nada de esto está decidido.** Si trabajas en `src/`, ignora este aviso y sigue las reglas.
+Si trabajas en `spike/`, la referencia es el estudio.
+
+---
+
 ## Reglas absolutas — NUNCA violar
 
 Estas reglas son inviolables. No importa qué Issue estés implementando ni qué parezca razonable.

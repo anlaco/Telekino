@@ -41,3 +41,6 @@ libRedRT-include.red
 findings.md
 progress.md
 task_plan.md
+
+# Spike de migración a WASM (rama spike/wasm-migration)
+spike/telekino-spike/target/

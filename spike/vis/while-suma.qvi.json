@@ -1,0 +1,53 @@
+{
+  "qvi": 1,
+  "meta": {
+    "name": "while-suma",
+    "description": "Acumula 0+1+...+limite con un shift register. Con limite=9 el resultado es 45."
+  },
+  "front-panel": [
+    { "id": "limite", "kind": "control",   "label": "Límite (i <)", "default": 9.0 },
+    { "id": "total",  "kind": "indicator", "label": "Total" },
+    { "id": "iters",  "kind": "indicator", "label": "Iteraciones" }
+  ],
+  "diagram": {
+    "nodes": [
+      { "id": "lim",  "type": "control", "ref": "limite" },
+      { "id": "cero", "type": "const",   "value": 0.0 },
+
+      {
+        "id": "w1",
+        "type": "while",
+        "shift-registers": [
+          { "id": "acc", "init": ["cero", "out"] }
+        ],
+        "condition": ["cmp", "out"],
+        "body": {
+          "nodes": [
+            { "id": "lee",  "type": "sr-read", "sr": "acc" },
+            { "id": "i",    "type": "iter" },
+            { "id": "tlim", "type": "tunnel",  "src": ["lim", "out"] },
+            { "id": "suma", "type": "add" },
+            { "id": "esc",  "type": "sr-write", "sr": "acc" },
+            { "id": "cmp",  "type": "lt" }
+          ],
+          "wires": [
+            { "from": ["lee",  "out"], "to": ["suma", "a"] },
+            { "from": ["i",    "out"], "to": ["suma", "b"] },
+            { "from": ["suma", "out"], "to": ["esc",  "in"] },
+            { "from": ["i",    "out"], "to": ["cmp",  "a"] },
+            { "from": ["tlim", "out"], "to": ["cmp",  "b"] }
+          ]
+        }
+      },
+
+      { "id": "fin",   "type": "sr-read",   "sr": "acc" },
+      { "id": "out1",  "type": "indicator", "ref": "total" },
+      { "id": "cuenta","type": "tunnel",    "src": ["w1", "$iter"] },
+      { "id": "out2",  "type": "indicator", "ref": "iters" }
+    ],
+    "wires": [
+      { "from": ["fin",    "out"], "to": ["out1", "in"] },
+      { "from": ["cuenta", "out"], "to": ["out2", "in"] }
+    ]
+  }
+}
