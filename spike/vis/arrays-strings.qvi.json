@@ -1,0 +1,56 @@
+{
+  "qvi": 1,
+  "meta": {
+    "name": "arrays-strings",
+    "description": "Datos de tamaño variable: viajan por el wire como puntero a la memoria lineal"
+  },
+  "front-panel": [
+    { "id": "muestras", "kind": "indicator", "label": "Muestras" },
+    { "id": "cuantas",  "kind": "indicator", "label": "Tamaño" },
+    { "id": "tercera",  "kind": "indicator", "label": "Elemento [2]" },
+    { "id": "texto",    "kind": "indicator", "label": "Texto" },
+    { "id": "largo",    "kind": "indicator", "label": "Longitud del texto" }
+  ],
+  "diagram": {
+    "nodes": [
+      { "id": "v0",  "type": "const", "value": 10.0 },
+      { "id": "v1",  "type": "const", "value": 20.0 },
+      { "id": "v2",  "type": "const", "value": 30.0 },
+      { "id": "arr", "type": "build-array", "inputs": 3 },
+
+      { "id": "sz",  "type": "array-size" },
+      { "id": "dos", "type": "const", "value": 2.0 },
+      { "id": "el",  "type": "index-array" },
+
+      { "id": "s1",  "type": "str-const", "text": "Telekino " },
+      { "id": "s2",  "type": "str-const", "text": "en WASM" },
+      { "id": "cat", "type": "str-concat" },
+      { "id": "len", "type": "str-len" },
+
+      { "id": "o1", "type": "indicator", "ref": "muestras" },
+      { "id": "o2", "type": "indicator", "ref": "cuantas" },
+      { "id": "o3", "type": "indicator", "ref": "tercera" },
+      { "id": "o4", "type": "indicator", "ref": "texto" },
+      { "id": "o5", "type": "indicator", "ref": "largo" }
+    ],
+    "wires": [
+      { "from": ["v0", "out"], "to": ["arr", "e0"] },
+      { "from": ["v1", "out"], "to": ["arr", "e1"] },
+      { "from": ["v2", "out"], "to": ["arr", "e2"] },
+
+      { "from": ["arr", "out"], "to": ["sz", "arr"] },
+      { "from": ["arr", "out"], "to": ["el", "arr"] },
+      { "from": ["dos", "out"], "to": ["el", "i"] },
+
+      { "from": ["s1",  "out"], "to": ["cat", "a"] },
+      { "from": ["s2",  "out"], "to": ["cat", "b"] },
+      { "from": ["cat", "out"], "to": ["len", "s"] },
+
+      { "from": ["arr", "out"], "to": ["o1", "in"] },
+      { "from": ["sz",  "out"], "to": ["o2", "in"] },
+      { "from": ["el",  "out"], "to": ["o3", "in"] },
+      { "from": ["cat", "out"], "to": ["o4", "in"] },
+      { "from": ["len", "out"], "to": ["o5", "in"] }
+    ]
+  }
+}

@@ -4,77 +4,121 @@ Hito 1 de `docs/estudio-post-red.md`. Valida la cadena completa **sin editor y s
 un `.qvi` en JSON escrito a mano, un compilador que emite WebAssembly, y un host que lo
 ejecuta con Wasmtime.
 
-Su única función es responder **antes de comprometer meses** a la pregunta: ¿es viable
-compilar el modelo dataflow de Telekino a WASM? Si aquí algo se atraganta, la salida es
-replantear hacia el intérprete de grafo (§4 del estudio) habiendo gastado días, no meses.
+Su función es responder **antes de comprometer meses**: ¿es viable compilar el modelo
+dataflow de Telekino a WASM? Si algo se atranca aquí, la salida es replantear hacia el
+intérprete de grafo (§4 del estudio) habiendo gastado días, no meses.
 
 ## Uso
 
 ```bash
 cd telekino-spike
 cargo run -- run   ../vis/suma.qvi.json        # compila en memoria y ejecuta (DT-010)
-cargo run -- build ../vis/while-suma.qvi.json  # emite el .wasm
+cargo run -- build ../vis/adquisicion.qvi.json # emite el .wasm
 cargo run -- wat   ../vis/while-suma.qvi.json  # vuelca el WAT para depurar
-cargo test                                      # 9 tests
+cargo test                                      # 15 tests
 ```
 
 ## Resultado
 
 ```
 $ cargo run -- run ../vis/suma.qvi.json
-suma-basica  (91 bytes de WASM)
+suma-basica  (245 bytes de WASM)
   Resultado:               8
 
 $ cargo run -- run ../vis/while-suma.qvi.json
-while-suma  (180 bytes de WASM)
+while-suma  (344 bytes de WASM)
   Total:                   45
   Iteraciones:             10
+
+$ cargo run -- run ../vis/arrays-strings.qvi.json
+arrays-strings  (492 bytes de WASM)
+  Muestras:                [10 20 30]
+  Tamaño:                  3
+  Elemento [2]:            30
+  Texto:                   "Telekino en WASM"
+  Longitud del texto:      16
+
+$ cargo run -- run ../vis/adquisicion.qvi.json
+adquisicion  (428 bytes de WASM)
+  Muestras:                [0 10 20 30 40 50 60 70 ... ] (10 elementos)
+  Nº de muestras:          10
 ```
 
-Ambos reproducen ejemplos existentes de la versión Red: `examples/suma-basica.qvi` y
-`examples/while-loop-suma.qvi`.
+Los dos primeros reproducen ejemplos existentes de la versión Red: `examples/suma-basica.qvi`
+y `examples/while-loop-suma.qvi`.
 
 ## Qué queda validado
 
-- **Emisión de WASM** con `wasm-encoder`: módulos válidos, 91 y 180 bytes.
-- **Orden topológico** (Kahn) portado desde `compiler-topo.red`, con detección de ciclos.
-- **While Loop con shift registers**, que es la parte que más mejora. Comparado con la
-  versión Red, donde DT-027 obligaba a simular el bucle con un temporizador de View:
+- **Emisión de WASM** con `wasm-encoder`, y orden topológico (Kahn) portado desde
+  `compiler-topo.red` con detección de ciclos.
+
+- **While Loop con shift registers.** Es lo que más mejora respecto a Red, donde DT-027
+  obligaba a simular el bucle con un temporizador de View:
 
   ```wat
   loop  ;; label = @1
     ...
-    local.get 8
-    f64.const 0x0p+0
     f64.ne
     br_if 0  ;; Continue if True
   end
   ```
 
-  El bucle es una construcción nativa y los shift registers son locales que persisten
-  entre iteraciones. Ya no hay nada que simular.
+  Construcción nativa, y los shift registers son locales que persisten entre iteraciones.
 
-- **La frontera con el host** (§7.5): el módulo importa `fp.get` y `fp.set` y **no toca el
-  sistema para nada**. Consecuencia inmediata y comprobada en los tests: cambiar los valores
-  del panel altera el resultado sin tocar el compilador, y ejecutar un VI en un entorno
-  simulado es trivial. Eso hace testeable la Fase 4 de hardware, que hoy no lo es.
+- **La frontera con el host** (§7.5): el módulo importa `fp.get`, `fp.set`, `fp.set-array` y
+  `fp.set-str`, y **no toca el sistema para nada**. Cambiar los valores del panel altera el
+  resultado sin recompilar, y ejecutar un VI contra un host simulado es trivial — eso hace
+  testeable la Fase 4 de hardware, que hoy no lo es.
 
-  Efecto secundario a tener en cuenta: `wasmtime run x.wasm` **falla** por sí solo, porque
-  nadie satisface esos imports. El `.wasm` necesita un host — es exactamente el punto §5.3
-  del estudio.
+  Efecto secundario: `wasmtime run x.wasm` **falla** por sí solo, porque nadie satisface esos
+  imports. El `.wasm` necesita un host; es justo el punto §5.3 del estudio.
+
+- **Arrays y strings en memoria lineal**, con bump allocator. Por el wire viaja un puntero
+  `i32` a un bloque `[len][pad][datos]`. Los literales de texto se internan en la sección de
+  datos y se comparten.
+
+## La arena: el resultado que decide
+
+El riesgo señalado en §7.2 era que un bucle largo agotara la memoria, porque un bump
+allocator no libera nada. El compilador analiza si **algún puntero sobrevive a la iteración**
+(en la práctica: si algún shift register es un puntero) y, si no, restaura el tope de la
+arena al final de cada vuelta:
+
+| VI | Iteraciones | Arena consumida |
+|---|---:|---:|
+| `arena-estable` | 10 | **8 bytes** |
+| `arena-estable` | 100.000 | **8 bytes** |
+| `adquisicion` | 10 | 536 bytes |
+| `adquisicion` | 1.000 | 4.012.016 bytes |
+
+`arena-estable` construye un array en cada vuelta y solo deja salir un escalar: consumo
+plano, da igual cuántas vueltas dé. `adquisicion` acumula el array en un shift register, así
+que el dato sobrevive y no se puede liberar — crece, y es correcto que crezca.
+
+Dos tests fijan ambos comportamientos. Es lo que permite que un VI corra durante horas.
+
+**Detalle que conviene saber:** el crecimiento de `adquisicion` es cuadrático, porque
+`array-append` copia el array entero. Le pasa lo mismo a LabVIEW —por eso su documentación
+insiste en preasignar arrays en vez de ir concatenando— pero aquí se nota antes. Un
+`array-reserve` o la reutilización del buffer cuando el compilador ve que el original no se
+vuelve a usar lo arreglarían; no está hecho.
 
 ## Qué NO cubre (deliberadamente)
 
-- **Todos los valores son `f64`**, booleanos incluidos (0.0 / 1.0). No hay strings, arrays
-  ni clusters, porque exigen un allocator en memoria lineal — el riesgo principal
-  identificado en §7.2 y que este spike **no ha probado todavía**.
-- Sin For Loop, Case Structure ni sub-VIs.
+- **Booleanos como `f64`** (0.0 / 1.0). Un tipo `i32` propio es trivial pero no aporta nada
+  a la pregunta que este spike responde.
+- Sin For Loop, Case Structure, clusters ni sub-VIs.
+- **`index-array` no comprueba límites.** Un índice fuera de rango lee memoria arbitraria.
+  Antes de nada serio hay que añadir la comprobación y el error cluster de DT-029.
 - Sin editor, sin Front Panel gráfico, sin hardware.
 - Sin JSON Schema formal ni serialización determinista (hito 2).
 
 ## Veredicto
 
-La parte que se temía difícil —emisión, estructuras de control, frontera con el host— sale
-más limpia que en la versión Red. **El riesgo real sigue intacto y es el siguiente paso:
-el allocator para strings, arrays y clusters.** Hasta cruzarlo, el plan no está validado
-del todo.
+Las dos partes que se temían —las estructuras de control y el allocator— salieron bien, y la
+primera sale **más limpia que en Red**. El riesgo principal de §7.2 queda cerrado: hay un
+mecanismo que mantiene la memoria plana en bucles largos, medido y con tests.
+
+Con esto, el hito 1 cumple su criterio de continuación. Lo que queda por delante no es
+riesgo de viabilidad sino volumen de trabajo: clusters, comprobación de límites, error
+cluster, y el editor.

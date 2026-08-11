@@ -48,6 +48,7 @@ fn main() -> Result<()> {
             for ind in panel.indicators() {
                 println!("  {:<24} {}", format!("{}:", ind.label), ind.value);
             }
+            println!("  {:<24} {} bytes", "[arena usada]", panel.heap_end);
         }
         other => bail!("orden desconocida: '{other}'"),
     }

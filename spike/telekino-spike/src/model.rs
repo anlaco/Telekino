@@ -65,6 +65,14 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub value: Option<f64>,
 
+    /// `str-const`: literal de texto.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+
+    /// `build-array`: número de entradas (`e0`, `e1`, ... `eN-1`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inputs: Option<u32>,
+
     /// `tunnel`: puerto del ámbito exterior del que toma el valor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub src: Option<PortRef>,

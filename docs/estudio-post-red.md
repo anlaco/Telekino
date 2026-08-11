@@ -257,6 +257,13 @@ salidas: escribir un *bump allocator* con arena por ejecución de VI (simple, su
 recomendado para empezar), o adoptar el **Component Model**, que ofrece `string`, `list<T>` y
 `record` como tipos de interfaz y traslada el problema al *runtime*.
 
+> **Actualización 2026-08-11 — riesgo cerrado.** El spike implementa el bump allocator con
+> arrays y strings, y resuelve la objeción de fondo (que un bucle largo agote la memoria):
+> el compilador comprueba si algún puntero sobrevive a la iteración y, si no, restaura el
+> tope de la arena en cada vuelta. Medido: `arena-estable` consume **8 bytes tanto con 10
+> como con 100.000 iteraciones**. Ver `spike/README.md`. Los clusters siguen sin implementar,
+> pero son *structs* con desplazamientos fijos: el mecanismo que faltaba ya está.
+
 ### 7.3 Estructuras de control
 
 Esta es la parte que sale **más limpia que hoy**:
@@ -383,7 +390,7 @@ a cambio de eliminar los tres riesgos existenciales, no un atajo.
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| El allocator de memoria lineal se atasca | Alto | Hito 1 lo detecta pronto; salida: bump allocator con arena, o Component Model |
+| ~~El allocator de memoria lineal se atasca~~ | ~~Alto~~ | **Cerrado (2026-08-11)**: bump allocator con reseteo de arena por iteración, medido y con tests en `spike/` |
 | Reescritura interminable, proyecto muere a medias | **Crítico** | Hitos con entregable ejecutable cada uno; la versión Red sigue viva hasta el hito 4 |
 | Curva de Rust | Medio | El hito 1 también evalúa esto; salida: opción D (Go + wazero) |
 | El Component Model se mueve rápido | Medio | Empezar en core WASM; WIT solo en la frontera, que es fácil de re-generar |

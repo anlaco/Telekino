@@ -1,0 +1,55 @@
+{
+  "qvi": 1,
+  "meta": {
+    "name": "arena-estable",
+    "description": "En cada iteración se construye un array temporal y solo sale de ella un escalar. Como ningún puntero sobrevive a la iteración, el compilador resetea la arena: la memoria no crece por muchas vueltas que dé."
+  },
+  "front-panel": [
+    { "id": "limite", "kind": "control",   "label": "Límite (i <)", "default": 9.0 },
+    { "id": "suma",   "kind": "indicator", "label": "Suma de tamaños" }
+  ],
+  "diagram": {
+    "nodes": [
+      { "id": "lim",  "type": "control", "ref": "limite" },
+      { "id": "cero", "type": "const", "value": 0.0 },
+
+      {
+        "id": "w1",
+        "type": "while",
+        "shift-registers": [
+          { "id": "acc", "init": ["cero", "out"] }
+        ],
+        "condition": ["cmp", "out"],
+        "body": {
+          "nodes": [
+            { "id": "lee",  "type": "sr-read", "sr": "acc" },
+            { "id": "i",    "type": "iter" },
+            { "id": "buf",  "type": "build-array", "inputs": 3 },
+            { "id": "sz",   "type": "array-size" },
+            { "id": "suma", "type": "add" },
+            { "id": "esc",  "type": "sr-write", "sr": "acc" },
+            { "id": "tlim", "type": "tunnel", "src": ["lim", "out"] },
+            { "id": "cmp",  "type": "lt" }
+          ],
+          "wires": [
+            { "from": ["i",    "out"], "to": ["buf", "e0"] },
+            { "from": ["i",    "out"], "to": ["buf", "e1"] },
+            { "from": ["i",    "out"], "to": ["buf", "e2"] },
+            { "from": ["buf",  "out"], "to": ["sz",  "arr"] },
+            { "from": ["lee",  "out"], "to": ["suma", "a"] },
+            { "from": ["sz",   "out"], "to": ["suma", "b"] },
+            { "from": ["suma", "out"], "to": ["esc", "in"] },
+            { "from": ["i",    "out"], "to": ["cmp", "a"] },
+            { "from": ["tlim", "out"], "to": ["cmp", "b"] }
+          ]
+        }
+      },
+
+      { "id": "fin",  "type": "sr-read", "sr": "acc" },
+      { "id": "out1", "type": "indicator", "ref": "suma" }
+    ],
+    "wires": [
+      { "from": ["fin", "out"], "to": ["out1", "in"] }
+    ]
+  }
+}
