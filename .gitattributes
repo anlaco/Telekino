@@ -1,0 +1,2 @@
+# Los .qvi son JSON: que GitHub los coloree y no los cuente como binarios.
+*.qvi linguist-language=JSON diff=json

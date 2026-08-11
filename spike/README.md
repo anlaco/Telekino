@@ -12,25 +12,25 @@ intérprete de grafo (§4 del estudio) habiendo gastado días, no meses.
 
 ```bash
 cd telekino-spike
-cargo run -- run   ../vis/suma.qvi.json        # compila en memoria y ejecuta (DT-010)
-cargo run -- build ../vis/adquisicion.qvi.json # emite el .wasm
-cargo run -- wat   ../vis/while-suma.qvi.json  # vuelca el WAT para depurar
+cargo run -- run   ../vis/suma.qvi        # compila en memoria y ejecuta (DT-010)
+cargo run -- build ../vis/adquisicion.qvi # emite el .wasm
+cargo run -- wat   ../vis/while-suma.qvi  # vuelca el WAT para depurar
 cargo test                                      # 15 tests
 ```
 
 ## Resultado
 
 ```
-$ cargo run -- run ../vis/suma.qvi.json
+$ cargo run -- run ../vis/suma.qvi
 suma-basica  (245 bytes de WASM)
   Resultado:               8
 
-$ cargo run -- run ../vis/while-suma.qvi.json
+$ cargo run -- run ../vis/while-suma.qvi
 while-suma  (344 bytes de WASM)
   Total:                   45
   Iteraciones:             10
 
-$ cargo run -- run ../vis/arrays-strings.qvi.json
+$ cargo run -- run ../vis/arrays-strings.qvi
 arrays-strings  (492 bytes de WASM)
   Muestras:                [10 20 30]
   Tamaño:                  3
@@ -38,7 +38,7 @@ arrays-strings  (492 bytes de WASM)
   Texto:                   "Telekino en WASM"
   Longitud del texto:      16
 
-$ cargo run -- run ../vis/adquisicion.qvi.json
+$ cargo run -- run ../vis/adquisicion.qvi
 adquisicion  (428 bytes de WASM)
   Muestras:                [0 10 20 30 40 50 60 70 ... ] (10 elementos)
   Nº de muestras:          10
