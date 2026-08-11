@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Telekino — spike del editor</title>
+  <link rel="stylesheet" href="https://esm.sh/@xyflow/react@12.3.5/dist/style.css">
+  <link rel="stylesheet" href="/style.css">
+  <!--
+    Sin paso de compilación: React Flow entra por importmap desde un CDN, y el
+    código usa React.createElement en vez de JSX. Es lo que permite iterar sin
+    Vite ni npm en un spike. En el hito 4 esto pasaría a un bundle propio — que
+    además elimina la dependencia de red que tiene esta página la primera vez.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "@xyflow/react": "https://esm.sh/@xyflow/react@12.3.5?deps=react@18.3.1,react-dom@18.3.1"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>Este editor necesita JavaScript.</noscript>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

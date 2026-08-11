@@ -6,7 +6,8 @@
 
 **Rama `spike/wasm-migration`.** Se está evaluando abandonar Red-Lang: el `.qvi` pasaría a
 JSON declarativo y Telekino lo compilaría a WASM. Ver `docs/estudio-post-red.md` (análisis y
-plan) y `spike/` (hito 1, ya funcionando).
+plan), `spike/telekino-spike/` (hito 1, ya funcionando) y `spike/editor/` (canvas de nodos web
+sobre el mismo núcleo, pendiente de probar en navegador).
 
 Mientras dure la evaluación, **las reglas de abajo siguen siendo válidas para todo lo que hay
 en `src/`**, que es la versión Red y es la única que funciona hoy. Pero **no aplican dentro de

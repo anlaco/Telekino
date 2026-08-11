@@ -1,0 +1,145 @@
+/* Spike del editor. Los colores siguen a grandes rasgos docs/visual-spec.md,
+   pero esto NO es la identidad visual: aquí solo se mide si la librería de
+   nodos aguanta. El diseño de verdad es trabajo del hito 4. */
+
+:root {
+  --bg: #1e1e22;
+  --panel: #26262b;
+  --border: #3a3a42;
+  --text: #e6e6ea;
+  --dim: #9a9aa6;
+  --accent: #4a9eff;
+  --ok: #5fd08a;
+  --err: #ff6b6b;
+
+  --wire-num: #d8d8e0;
+  --wire-arr: #f2a33c;
+  --wire-str: #d86bd8;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* --- barra superior --- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.toolbar .brand { font-weight: 600; letter-spacing: .02em; }
+.toolbar .spacer { flex: 1; }
+.toolbar .hint { color: var(--dim); font-size: 12px; }
+
+select, button {
+  background: #32323a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled), select:hover { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #08101c; font-weight: 600; }
+
+/* --- cuerpo --- */
+
+.body { display: flex; flex: 1; min-height: 0; }
+.canvas { flex: 1; min-width: 0; }
+
+.side {
+  width: 320px;
+  flex: 0 0 auto;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.side h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--dim);
+  margin: 0 0 8px;
+}
+
+.side section + section { margin-top: 20px; }
+
+.readout { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.readout .label { color: var(--dim); }
+.readout .value { font-family: ui-monospace, "Cascadia Code", monospace; text-align: right; word-break: break-all; }
+
+.stat { color: var(--dim); font-size: 12px; }
+.error { color: var(--err); white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+.ok { color: var(--ok); }
+
+pre.wat {
+  background: #16161a;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px;
+  max-height: 320px;
+  overflow: auto;
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* --- nodos --- */
+
+.node {
+  background: #2f2f37;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 74px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.node.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.node .kind { padding: 6px 10px; font-weight: 600; }
+.node .sub { padding: 0 10px 6px; color: var(--dim); font-size: 11px; }
+
+/* Terminales de Front Panel: se distinguen del resto, como en LabVIEW. */
+.node.terminal { background: #333c33; border-color: #4d6b4d; }
+.node.terminal.indicator { background: #3c3333; border-color: #6b4d4d; }
+
+/* Estructura: contenedor con el cuerpo dentro. La prueba de fuego de la
+   librería — si esto no aguanta, no hay editor de LabVIEW que valga. */
+.node.structure {
+  background: rgba(74, 158, 255, .05);
+  border: 1.5px dashed #5a7fa8;
+  border-radius: 8px;
+}
+
+.node.structure .kind { text-align: left; color: var(--accent); }
+
+.react-flow__handle { width: 8px; height: 8px; background: var(--wire-num); border: 1px solid #1b1b1f; }
+.react-flow__handle.arr { background: var(--wire-arr); }
+.react-flow__handle.str { background: var(--wire-str); }
+
+.port-label {
+  position: absolute;
+  font-size: 9px;
+  color: var(--dim);
+  pointer-events: none;
+  white-space: nowrap;
+}

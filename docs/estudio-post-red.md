@@ -187,21 +187,25 @@ Todo en Rust: modelo, compilador, runtime con Wasmtime embebido, GUI inmediata c
   pero para diálogos, paletas y un diseñador de Front Panel es más árido que HTML/CSS.
 - **Veredicto: viable y la más "limpia".** Segunda opción.
 
-### Opción C — Híbrida: núcleo Rust + editor web en webview (Tauri) ✅
+### Opción C — Híbrida: núcleo Rust + editor web servido en local ✅
 
 - `telekino-core` (Rust): modelo, schema `serde`, validación, topo-sort, compilador a WASM.
   Compilable también a `wasm32` para poder correr dentro del navegador más adelante.
 - `telekino-host` (Rust): Wasmtime embebido + los *imports* de hardware y de Front Panel.
-- `telekino-editor` (TypeScript en el webview): canvas de nodos, paleta, diseñador de FP.
+- `telekino-editor` (TypeScript): canvas de nodos, paleta, diseñador de FP.
+
+El binario Rust levanta un servidor HTTP en `127.0.0.1` y abre el editor en una ventana de
+navegador. **Cómo se abre esa ventana es una decisión separada y reversible** — ver decisión 3
+del §11: navegador del sistema, Chromium empaquetado en modo `--app`, o Tauri como envoltorio.
+Lo que fija la arquitectura es la frontera entre núcleo y editor, no el contenedor.
 
 - **A favor:** el editor de nodos **no se reescribe desde cero** — se apoya en una librería
   madura, y el propio `roadmap-9-10.md` ya señala a Rete.js como el mejor ejemplo de separación
   modelo/vista de todos los proyectos comparados. Acceso completo al hardware por el lado
-  Rust. Binario de ~10 MB (Tauri usa el webview del sistema, no empaqueta Chromium: nada que
-  ver con los 300 MB de Electron que el roadmap descarta). El mismo núcleo sirve luego para la
-  versión web.
-- **En contra:** dos lenguajes, frontera IPC que diseñar, y el webview del sistema introduce
-  variabilidad entre plataformas (WebKitGTK en Linux — menos grave que GTK+Red, pero existe).
+  Rust. El mismo núcleo sirve luego para la versión web. La frontera núcleo↔editor es explícita
+  desde el primer día, y es la misma que separa el host del módulo WASM.
+- **En contra:** dos lenguajes y una frontera que diseñar. El contenedor gráfico aporta su
+  propio riesgo de plataforma, distinto según cuál se elija.
 - **Veredicto: recomendada.** Es la que mejor equilibra el criterio 1 (hardware completo) con
   el criterio 3 (no rehacer la UI por tercera vez).
 
@@ -222,7 +226,7 @@ Todo en Rust: modelo, compilador, runtime con Wasmtime embebido, GUI inmediata c
 | Reaprovecha UI existente | ✓✓ | ✗ | ✓✓ | ✗ |
 | Distribución | ✓✓ | ✓✓ | ✓ | ✓✓ |
 | Tooling de emisión WASM | ✓ | ✓✓ | ✓✓ | ✗ |
-| Riesgo de plataforma | ✓✓ | ✓✓ | ✓ | ✓✓ |
+| Riesgo de plataforma | ✓✓ | ✓✓ | ✓✓ | ✓✓ |
 | Un solo lenguaje | ✓ | ✓✓ | ✗ | ✓✓ |
 | Curva de aprendizaje | ✓✓ | ✗ | ✗ | ✓ |
 
@@ -394,7 +398,8 @@ a cambio de eliminar los tres riesgos existenciales, no un atajo.
 | Reescritura interminable, proyecto muere a medias | **Crítico** | Hitos con entregable ejecutable cada uno; la versión Red sigue viva hasta el hito 4 |
 | Curva de Rust | Medio | El hito 1 también evalúa esto; salida: opción D (Go + wazero) |
 | El Component Model se mueve rápido | Medio | Empezar en core WASM; WIT solo en la frontera, que es fácil de re-generar |
-| WebKitGTK en Linux da problemas (Tauri) | Medio | Menor que el GTK actual, pero conviene probarlo en el hito 4; salida: opción B (egui) |
+| ~~WebKitGTK en Linux da problemas (Tauri)~~ | ~~Medio~~ | **Evitado por diseño (2026-08-11)**: se descarta el webview del sistema. El editor se sirve por HTTP local y se abre en Chromium (§11.3), así que WebKitGTK sale del camino crítico |
+| El editor web no da la talla para un canvas de nodos serio | Alto | Es el riesgo grande que queda sin medir. Mini-spike en `spike/editor/` **antes** de comprometerse al hito 2; salida: opción B (egui) |
 | Se pierde el diferenciador "fichero ejecutable" | Medio | `telekino build → .wasm` lo recupera con más alcance (§5.3) |
 
 ---
@@ -405,8 +410,56 @@ a cambio de eliminar los tres riesgos existenciales, no un atajo.
    secundario cuando la frontera WIT esté estable. Es lo único compatible con la Fase 4.
 2. **¿Lenguaje del núcleo?** → recomendación: **Rust**, por el tooling de emisión de WASM y por
    las librerías de hardware.
-3. **¿Editor en webview o nativo?** → recomendación: **webview con librería de nodos**, para no
-   escribir un canvas de nodos por tercera vez.
+3. **¿Editor en webview o nativo?** → recomendación: **editor web con librería de nodos**, para
+   no escribir un canvas de nodos por tercera vez. Pero **no sobre el webview del sistema**:
+   el núcleo sirve el editor por HTTP en `127.0.0.1` y este se abre en una ventana de navegador.
+
+   **Por qué no Tauri de entrada.** Tauri en Linux *es* WebKitGTK: vuelve a poner GTK en el
+   camino crítico, justo el motor que ya costó 17 bugs en `GTK_ISSUES.md` y un fork propio de
+   Red para parchearlos. Y ahora no hay fork que valga, porque WebKitGTK es órdenes de magnitud
+   mayor que Red. El caso de uso agrava la apuesta: un canvas de nodos con pan, zoom y cientos
+   de elementos es precisamente donde WebKitGTK va peor frente a Chromium. Cambiar un riesgo de
+   plataforma por el mismo riesgo con otro nombre no es una migración.
+
+   **Qué hacer en su lugar, por fases:**
+
+   | Fase | Contenedor | Coste | Para qué |
+   |---|---|---|---|
+   | Spike | Navegador ya instalado (`xdg-open`) | ~0 | Validar la librería de nodos y la frontera |
+   | Producto | **Chromium empaquetado en modo `--app`** | Tamaño del instalador | Motor uniforme y bajo control, ventana de app |
+   | Opcional | Tauri, o CEF | Alto | Solo si hace falta integración de escritorio seria |
+
+   El paso intermedio es el que resuelve la pregunta de verdad. No hace falta CEF para embeber
+   Chromium: se empaqueta el binario junto a la app y se lanza como proceso hijo.
+
+   ```
+   chromium --app=http://127.0.0.1:PUERTO \
+            --user-data-dir=<perfil propio de Telekino> \
+            --class=Telekino
+   ```
+
+   Con `--app` no hay barra de direcciones ni pestañas; con `--user-data-dir` propio es un
+   proceso independiente, con su icono en la barra de tareas y su perfil aislado, que no toca
+   el navegador personal del usuario. Para quien la usa es una aplicación normal. A cambio:
+   cero *bindings*, cero *build system* exótico, y un solo motor en las tres plataformas.
+
+   El argumento clásico contra empaquetar Chromium —los ~200 MB que `roadmap-9-10.md` usaba
+   para descartar Electron— **no aplica aquí**: el competidor es LabVIEW, que ocupa gigas.
+   Nadie va a rechazar Telekino por el tamaño del instalador.
+
+   Descartadas, con criterio:
+   - **CEF con *bindings* Rust** — es el embebido "de verdad", con control total de ventana y
+     ciclo de vida, pero los *bindings* Rust han ido históricamente por detrás de CEF en C++,
+     con actualizaciones a trompicones y un *build* incómodo. No es una dependencia que se
+     quiera descubrir a mitad del hito 4. Conviene reevaluar su estado antes de necesitarlo.
+   - **Electron con el núcleo Rust como *sidecar*** — la ruta madura si hiciera falta
+     integración de escritorio completa (menús nativos, diálogos de fichero, autoactualización),
+     pero mete Node en la arquitectura y degrada el núcleo Rust a proceso hijo por IPC. Salto de
+     complejidad que hoy no se justifica.
+
+   Lo importante: mientras el editor hable con el núcleo por HTTP local, **la decisión es
+   reversible**. Envolverlo en Tauri más adelante cambia el transporte, no el editor. Al revés
+   no funciona: empezar en Tauri ata a su IPC y a su webview desde la primera línea.
 4. **¿Core WASM o Component Model desde el día uno?** → recomendación: **core primero**,
    Component Model cuando lo pida la concurrencia real.
 5. **¿Repositorio nuevo o rama?** → recomendación: **repositorio nuevo** (`Telekino` limpio) con

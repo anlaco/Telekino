@@ -1,0 +1,10 @@
+[package]
+name = "telekino-editor-spike"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+serde_json = "1.0.151"
+telekino-spike = { path = "../telekino-spike" }
+wasmprinter = "0.255.0"

@@ -1,5 +1,10 @@
 # Spike: .qvi JSON → WASM
 
+> Hay dos spikes en este directorio:
+> - **`telekino-spike/`** — este documento. Hito 1: la cadena `.qvi` → WASM → ejecución.
+> - **`editor/`** — canvas de nodos web sobre el mismo núcleo. Mide el riesgo del editor, que
+>   el hito 1 dejó sin medir. Ver `editor/README.md`.
+
 Hito 1 de `docs/estudio-post-red.md`. Valida la cadena completa **sin editor y sin GUI**:
 un `.qvi` en JSON escrito a mano, un compilador que emite WebAssembly, y un host que lo
 ejecuta con Wasmtime.
