@@ -1,7 +1,11 @@
 # Estudio: salida de Red-Lang — .qvi como JSON y compilación a WASM
 
 > **Fecha:** 2026-08-10
-> **Estado:** propuesta para decisión. No implementado, no acordado formalmente.
+> **Estado (2026-08-14):** **decidido técnicamente y en ejecución.** Los hitos 1 (núcleo) y T2
+> (componente para Anvil) están hechos y medidos; el riesgo del editor está cerrado. Lo que el
+> estudio llamaba «propuesta» es hoy el plan del proyecto — ver [`plan.md`](plan.md) y
+> [`vision.md`](vision.md). El texto de abajo se conserva **tal como se escribió**, porque es
+> el análisis que justifica el movimiento y sus estimaciones sirven para calibrar.
 > **Contexto:** el proyecto lleva parado desde el 12 de mayo de 2026 (último commit `63f9b81`).
 > La idea de abandonar Red se habló en su día pero nunca se subió al repositorio: no hay
 > commits, ramas ni documentos previos sobre ella.

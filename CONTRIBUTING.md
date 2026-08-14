@@ -6,24 +6,35 @@ Telekino es un proyecto open source en desarrollo inicial. Las contribuciones so
 
 ### 1. Contribuciones al código de Telekino
 
-Todo el código de Telekino está en Red-Lang. Ver [`CLAUDE.md`](CLAUDE.md) para el contexto completo del proyecto, la arquitectura, el stack y el orden de trabajo recomendado.
+**Hay dos bases de código y no se mezclan:**
+
+| Dónde | Qué es | Lenguaje |
+|---|---|---|
+| `src/` | Telekino v0.2, el producto que funciona hoy | Red-Lang, sin dependencias externas |
+| `spike/` | El sustituto: núcleo que compila a WebAssembly y editor web | Rust + web |
+
+El proyecto está migrando de lo primero a lo segundo. La razón, los riesgos y el plan están en
+[`docs/vision.md`](docs/vision.md), [`docs/estudio-post-red.md`](docs/estudio-post-red.md) y
+[`docs/plan.md`](docs/plan.md). **La versión Red debe seguir arrancando durante toda la
+transición**, así que se aceptan correcciones en `src/`, pero no funcionalidades nuevas.
 
 **Antes de contribuir:**
-- Lee [`docs/PLANNING.md`](docs/PLANNING.md) para entender qué decisiones arquitecturales están pendientes. No implementar módulos bloqueados por decisiones no tomadas (especialmente P1 — formato `.qvi`).
+- Lee [`CLAUDE.md`](CLAUDE.md): tiene las reglas absolutas del proyecto y los comandos.
+- Si vas a tocar algo visual, lee [`docs/visual-spec.md`](docs/visual-spec.md) primero. La
+  paridad con LabVIEW no es negociable mientras dure la paridad (DT-036).
 - Mira el backlog en https://github.com/users/anlaco/projects/1
-- Trabaja Issues en orden de Fase (no empezar Fase 1 sin completar Fase 0, etc.)
 
 **Flujo de trabajo:**
-1. Crea un branch desde `main`
-2. Implementa en el módulo correspondiente de `src/`
-3. Verifica con los ejemplos de `examples/`
+1. Crea un branch desde `main` (o desde `spike/wasm-migration` si trabajas en el núcleo nuevo)
+2. Implementa
+3. Verifica **ejecutando**: `red-cli tests/run-all.red` para `src/`, `cargo test` para el núcleo
 4. Abre un Pull Request
 
 ### 2. Contribuciones al backend GTK de Red (crítico para Linux)
 
 > Esta es una de las contribuciones más valiosas que alguien puede hacer al proyecto ahora mismo.
 
-Telekino en Linux depende del backend GTK de Red (`red/red`), que tiene varios bugs críticos que bloquean el funcionamiento del canvas visual. Ver [`docs/GTK_ISSUES.md`](docs/GTK_ISSUES.md) para la lista completa de bugs con descripción y estado.
+Telekino en Linux depende del backend GTK de Red (`red/red`), que tiene varios bugs críticos que bloquean el funcionamiento del canvas visual. Ver [`docs/red/GTK_ISSUES.md`](docs/red/GTK_ISSUES.md) para la lista completa de bugs con descripción y estado.
 
 **Por qué contribuir a `red/red` en lugar de parchear Telekino:**
 - Los fixes en `red/red` benefician a todo el ecosistema Red en Linux, no solo a Telekino.
@@ -52,15 +63,15 @@ Telekino en Linux depende del backend GTK de Red (`red/red`), que tiene varios b
    - Referencia el issue
    - Incluye test si es posible
 
-6. **Actualiza `docs/GTK_ISSUES.md`** en este repositorio con el link al issue/PR de `red/red`
+6. **Actualiza `docs/red/GTK_ISSUES.md`** en este repositorio con el link al issue/PR de `red/red`
 
 **Bugs prioritarios para Telekino** (en orden de impacto):
 
 | Bug | Descripción | Detalle |
 |-----|-------------|---------|
-| GTK-001 | `system/view/metrics/dpi` retorna `none` | [`docs/GTK_ISSUES.md#gtk-001`](docs/GTK_ISSUES.md#gtk-001-systemviewmetricsdpi-retorna-none) |
-| GTK-002 | Coordenadas físicas vs DPI virtual | [`docs/GTK_ISSUES.md#gtk-002`](docs/GTK_ISSUES.md#gtk-002-coordenadas-en-píxeles-físicos-vs-dpi-virtual) |
-| GTK-004 | Bug de locale — float incorrecto sin `LC_ALL=C` | [`docs/GTK_ISSUES.md#gtk-004`](docs/GTK_ISSUES.md#gtk-004-bug-de-locale--aritmética-float-incorrecta-sin-lc_allc) |
+| GTK-001 | `system/view/metrics/dpi` retorna `none` | [`docs/red/GTK_ISSUES.md#gtk-001`](docs/red/GTK_ISSUES.md#gtk-001-systemviewmetricsdpi-retorna-none) |
+| GTK-002 | Coordenadas físicas vs DPI virtual | [`docs/red/GTK_ISSUES.md#gtk-002`](docs/red/GTK_ISSUES.md#gtk-002-coordenadas-en-píxeles-físicos-vs-dpi-virtual) |
+| GTK-004 | Bug de locale — float incorrecto sin `LC_ALL=C` | [`docs/red/GTK_ISSUES.md#gtk-004`](docs/red/GTK_ISSUES.md#gtk-004-bug-de-locale--aritmética-float-incorrecta-sin-lc_allc) |
 
 ### 3. Documentación
 

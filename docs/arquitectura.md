@@ -1,328 +1,177 @@
 # Arquitectura — Telekino
 
-## Visión general
+> Última actualización: 2026-08-14
+> Describe la arquitectura **hacia la que va** el proyecto (núcleo Rust, WebAssembly, editor
+> web). La arquitectura de lo que funciona hoy en `src/` está en
+> [`red/arquitectura-red.md`](red/arquitectura-red.md).
+
+## El mapa en una imagen
 
 ```
-┌────────────────────────────────────────────────┐
-│                   Telekino App                  │
-│                                                │
-│  ┌──────────────┐       ┌──────────────────┐   │
-│  │  Front Panel │◄─────►│  Block Diagram   │   │
-│  │  (Red/View)  │       │  (Red/View+Draw) │   │
-│  └──────┬───────┘       └────────┬─────────┘   │
-│         │                        │             │
-│         ▼                        ▼             │
-│  ┌─────────────────────────────────────────┐   │
-│  │           Modelo del Grafo              │   │
-│  │   (nodos, puertos, wires, valores)      │   │
-│  └──────────────────┬──────────────────────┘   │
-│                     │                          │
-│         ┌───────────┼───────────┐              │
-│         ▼           ▼           ▼              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────────┐    │
-│  │ Compiler │ │  Runner  │ │ File I/O     │    │
-│  │ → .red   │ │ (do)     │ │ .qvi/.qproj  │    │
-│  └──────────┘ └──────────┘ └──────────────┘    │
-└────────────────────────────────────────────────┘
+        ┌──────────────────────────────────────────────┐
+        │  EDITOR  (web: Front Panel + Block Diagram)  │
+        │  · dibuja, valida tipos, comprueba cables    │
+        │  · telekino-core compilado a WASM, aquí      │
+        └───────────────┬──────────────────────────────┘
+                        │ HTTP en 127.0.0.1  (frontera intercambiable)
+        ┌───────────────▼──────────────────────────────┐
+        │  TELEKINO-CORE  (Rust)                       │
+        │  modelo · esquema .qvi · compilador → WASM   │
+        └───────────────┬──────────────────────────────┘
+                        │ produce
+                ┌───────▼────────┐
+                │  módulo WASM   │  el programa del usuario
+                └───────┬────────┘
+                        │ importa una frontera declarada
+        ┌───────────────▼──────────────────────────────┐
+        │  HOST                                        │
+        │  fp: valores del panel   io: instrumentos    │
+        └──────────────────────────────────────────────┘
+             nativo (hardware) · navegador (demo) · simulado (tests) · Anvil
 ```
 
-## Stack tecnológico
-
-| Capa | Tecnología | Notas |
-|------|-----------|-------|
-| Lenguaje | Red-Lang (100%) | Alpha stage, 32-bit |
-| UI del diagrama | Red/View + Draw | |
-| UI del panel | Red/View | |
-| Compilador | Red puro (manipulación de bloques) | |
-| Formato de fichero | Sintaxis Red nativa | |
-| Backend Linux | GTK3 (`GTK` branch de `red/red`) | Bugs críticos — ver `docs/GTK_ISSUES.md` |
-| Backend Windows | Win32 API nativo | Estable |
-
-> **Nota:** Red es actualmente 32-bit y alpha stage. El backend GTK de Linux requiere librerías i386 en sistemas 64-bit. Muchas distribuciones modernas están eliminando soporte 32-bit. La migración a 64-bit está en el roadmap de Red: v1.0 → core 64-bit, v1.1 → View engine 64-bit.
+Cuatro piezas y **tres fronteras explícitas**. Cada frontera es el sitio por donde se puede
+sustituir una pieza sin tocar las demás, y es donde está el valor de este diseño.
 
 ---
 
-## Modelo de ejecución: dataflow
+## 1. El fichero `.qvi`
 
-Telekino implementa el mismo modelo de ejecución que LabVIEW: **dataflow**.
+JSON con esquema versionado. Lleva el **grafo semántico**: nodos, cables, estructuras,
+front-panel. Lo puramente visual (posición, tamaño, color elegido) vive bajo claves `view` que
+el compilador **nunca mira**.
 
-### Principios fundamentales
+Es la fuente de verdad. El WebAssembly resultante es un artefacto; se puede borrar y
+regenerar. Ver [`formato-qvi.md`](formato-qvi.md).
 
-- **Nodo listo = nodo ejecutable:** un nodo ejecuta automáticamente cuando todos sus puertos de entrada tienen datos disponibles.
-- **El grafo define el orden:** el orden de ejecución se deduce de las conexiones del diagrama, no lo especifica el programador explícitamente.
-- **Compilación a imperativo:** Telekino compila el grafo dataflow a código Red secuencial ordenado topológicamente. El usuario programa como dataflow puro; el compilador genera el código imperativo.
-- **Ejecución continua:** la ejecución es un loop continuo, no single-shot.
-- **Paralelismo futuro:** cuando Red tenga concurrencia madura, el mismo `.qvi` se ejecutará con paralelismo automático sin cambios para el usuario.
-
-### Flujo Run vs Save
-
-**Al pulsar Run:**
-1. Telekino serializa el estado en memoria al `.qvi` en disco (mismo que Save)
-2. Ejecuta el `.qvi` con Red directamente
-
-**Al pulsar Save:**
-- Serializa el estado actual en memoria al `.qvi` asociado (sin ejecutar)
-
-> **Decisión (DT-010):** Run compila el grafo en memoria y ejecuta con `do` de Red directamente, sin tocar el disco. Save escribe el `.qvi` completo. Son operaciones independientes. El Runner es el módulo responsable de la ejecución en memoria; File I/O es el responsable exclusivo de leer y escribir `.qvi`.
+Por qué JSON y no un formato propio: se versiona en git, se revisa en un *pull request*, se
+genera por script y se diferencia línea a línea. Es el diferenciador declarado del proyecto
+frente a un `.vi` binario.
 
 ---
 
-## Módulos principales
+## 2. `telekino-core` — el núcleo, en Rust
 
-### 1. Modelo del Grafo (`graph/`)
+Modelo, validación, inferencia de tipos y compilador. **No sabe nada de interfaz gráfica.**
 
-Estructura de datos central. Todo el resto opera sobre este modelo.
+Por qué Rust: el ecosistema de WebAssembly —emisión, validación, ejecución, componentes— es
+suyo, y Anvil ya es Rust, así que las dos mitades del puente hablan el mismo idioma.
 
-- **Nodo:** id, tipo, posición (x, y), `name` (identificador estático para el compilador), `label` (objeto con `text`, `visible`, `offset`), puertos de entrada, puertos de salida, configuración
-- **Puerto:** id, nombre, tipo de dato, dirección (in/out)
-- **Wire:** id, puerto-origen, puerto-destino, `label` (objeto, mismo formato que el nodo)
-- **Diagrama:** lista de nodos + lista de wires + metadatos
+El compilador emite WebAssembly directamente con `wasm-encoder`, **sin pasar por texto**: se
+manipulan estructuras y se serializan al final. Es la misma regla que tenía la versión Red
+(nunca generar cadenas intermedias que luego haya que volver a analizar), y sobrevive intacta.
 
-`name` y `label` son independientes (DT-024): `name` es un identificador inmutable generado al crear el nodo (ej. `"ctrl_1"`, `"add_1"`), usado exclusivamente por el compilador. `label` es un objeto compuesto (DT-022) con texto visible, visibilidad y offset, editable libremente por el usuario. Renombrar una label no afecta al código generado.
+Lo que ya existe y está medido (`spike/telekino-spike/`):
 
-El modelo es un bloque Red (datos Red puros). No hay objetos opacos. Los nodos se construyen por composición (DT-023): `base-element` como prototipo + `make-label` como componente.
+- orden topológico (Kahn) con detección de ciclos;
+- escalares en locales, arrays y cadenas en memoria lineal con *bump allocator*;
+- bucles `while` con registros de desplazamiento **nativos** (`loop` / `br_if`);
+- reseteo de la arena por iteración cuando ningún puntero sobrevive — memoria plana en
+  bucles largos, medido: 8 bytes tanto a 10 como a 100.000 iteraciones.
 
-### 2. Canvas / Block Diagram (`ui/diagram/`)
+**El núcleo se compila también a WebAssembly y corre dentro del editor.** Eso mata la
+duplicación de conocimiento (qué puertos tiene cada bloque hoy está escrito dos veces) y da
+comprobación de tipos en vivo mientras se dibuja, que es una de las cosas buenas de LabVIEW:
+el cable se rompe en cuanto conectas algo incompatible, sin ejecutar nada.
 
-Vista visual del grafo. Responsabilidades:
+---
 
-- Renderizar nodos como bloques dibujados con Red/Draw
-- Renderizar wires como líneas/curvas entre puertos
-- Gestionar interacción: drag, clic, selección, conexión de wires
-- Sincronizar con el modelo del grafo (el canvas lee el modelo, las acciones del usuario lo modifican)
+## 3. La frontera con el host
 
-### 3. Front Panel (`ui/panel/`)
+El módulo compilado **no toca el sistema**. Todo lo que necesita del exterior entra por
+funciones importadas, agrupadas en dos interfaces:
 
-Vista de controles/indicadores. Responsabilidades:
+| Interfaz | Qué hace | Estado |
+|---|---|---|
+| `fp` | leer controles y escribir indicadores del Front Panel | Prototipada (`fp.get`, `fp.set`, `fp.set-array`, `fp.set-str`) |
+| `io` | hablar con instrumentos: TCP, serie, USBTMC, adquisición | Por diseñar. Reimplementa el issue #19 |
 
-- Generar widgets Red/View para cada control/indicador del diagrama
-- Binding reactivo: el valor del control actualiza el nodo en el grafo
+Quien implemente esas funciones decide qué hay detrás, y ahí está lo que hace testeable la
+parte de hardware:
 
-### 4. Compilador (`compiler/`)
+- **host nativo** — el entorno Telekino de escritorio, con hardware real;
+- **navegador** — para editar y ejecutar demos sin instalar nada (sin `io`, evidentemente);
+- **host simulado** — el mismo VI contra instrumentos falsos, en una prueba automática;
+- **Anvil** — que aporta su propio host y ejecuta el VI como un paso de test.
 
-Transforma el modelo del grafo en código Red. El compilador produce salidas diferentes según el tipo de VI:
+Consecuencia práctica: un `.wasm` de Telekino **no arranca solo**. Necesita a alguien que
+satisfaga sus imports. Es el precio de la frontera, y es un precio que compensa.
 
-**VI principal (sin connector pane) → genera Red/View completo:**
+### El caso `anvil:paso`
 
-El código generado construye una ventana con el Front Panel. Al ejecutar `red mi-programa.qvi` aparece la interfaz gráfica, igual que en LabVIEW. El usuario ve los controles de entrada, pulsa Run, y los indicadores se actualizan con el resultado.
+Cuando el destino es Anvil, el VI no tiene Front Panel: los items del panel *son* la interfaz.
+El compilador emite entonces un **componente WASM sin imports**, con la firma que declara el
+WIT de Anvil. Las funciones `fp` no desaparecen: se definen dentro del propio módulo y leen
+una tabla de slots en memoria estática.
 
-Estructura de la sección generada:
-```red
-view layout [
-    ; controles (field editables con el valor por defecto)
-    label "A"    fA: field "5.0"
-    label "B"    fB: field "3.0"
-    ; botón Run con la lógica del diagrama incrustada
-    button "Run" [
-        A: to-float fA/text
-        B: to-float fB/text
-        Resultado: A + B
-        lResultado/text: form Resultado
-    ]
-    ; indicadores (text que se actualiza al pulsar Run)
-    label "Resultado:"  lResultado: text "---"
-]
-```
+Detalle de diseño que conviene conservar: esas cuatro funciones ocupan **los mismos índices**
+en los dos modos, así que la emisión del grafo es idéntica y todo el cambio queda confinado al
+montaje final. Ver el apartado T2 de [`../spike/README.md`](../spike/README.md).
 
-**Sub-VI (con connector pane) → genera `func` Red sin UI:**
+---
 
-- Envuelve el código en una `func` Red
-- No genera ninguna llamada a `view`
-- La guarda `if not value? 'telekino-runtime [...]` permite ejecución standalone
-- El VI padre hace `do %sub-vi.qvi` para cargar la función
+## 4. El editor
 
-**En ambos casos el compilador:**
+Dos superficies con necesidades técnicas distintas, y conviene no mezclarlas:
 
-- Ordena los nodos topológicamente
-- Usa `name` (no `label/text`) como identificador de variable en el código generado (DT-024)
-- Usa `label/text` para los textos visibles del Front Panel (ej. `label "Temperatura (C)"`)
-- Instancia plantillas de código por tipo de nodo (dialecto `emit`)
-- Si el VI contiene sub-VIs → emite `do %sub-vi.qvi` al inicio
-- Si el VI pertenece a una `.qlib` → el código va dentro de un `context`
+**Block Diagram** — un grafo. Se construye sobre una librería de nodos web (React Flow),
+verificada en navegador: aguanta estructuras anidadas (un bucle es un nodo que contiene otros,
+y arrastrarlo mueve su contenido), el ciclo modelo→vista→modelo cierra, y 200 nodos se pintan
+en 413 ms. Lo que hay que escribir encima: nodos con icono propio, cables ortogonales con
+enrutado que esquiva, y los terminales de las estructuras dibujados **en el borde**.
 
-### 5. Runner (`runner/`)
+**Front Panel** — no es un grafo, es un lienzo de diseño: colocar, redimensionar, alinear,
+agrupar, ordenar en capas. Se parece más a una herramienta de diseño que a un editor de nodos,
+y se construye aparte.
 
-Ejecuta el diagrama:
+Reparto de tecnologías de dibujo:
 
-- Define `telekino-runtime: true` en el entorno
-- Compila en memoria (misma lógica que el compilador)
-- Ejecuta con `do`
-- Captura salida y la escribe en los indicadores del Front Panel
+| Capa | Cómo se pinta | Por qué |
+|---|---|---|
+| Nodos, puertos, widgets del panel | Documento + vectorial | Selección, foco, edición in situ, temas y nitidez a cualquier resolución, gratis |
+| Cables | Un vectorial único para todo el diagrama | Rendimiento y trazado propio |
+| Iconos de sub-VI | Mapa de bits 32×32, escala entera | Son *pixel art* editable por el usuario |
+| Gráficas de señal, editor de iconos | Lienzo directo | Miles de puntos por cuadro; control de píxel |
 
-### 6. File I/O (`io/`)
+**Consecuencia del pixel art:** un icono de 32×32 sólo se ve bien a escala entera. Por eso el
+diagrama **no tiene zoom libre** — decisión que ya estaba tomada en la especificación visual
+(regla 1.1) y que además coincide con LabVIEW.
 
-Serialización/deserialización de VIs y proyectos. Al guardar, el `.qvi` se genera completo con sus dos secciones:
+### El contenedor: ni Tauri, ni el navegador del usuario
 
-1. **Cabecera gráfica** (`qvi-diagram: [...]`): estado actual del Front Panel y Block Diagram
-2. **Código generado**: resultado de compilar el diagrama
+| Fase | Contenedor |
+|---|---|
+| Prototipo (hoy) | El navegador ya instalado, abierto con `xdg-open` |
+| Producto | **Chromium empaquetado**, lanzado en modo aplicación con perfil propio |
+| Descartados | Tauri (en Linux *es* WebKitGTK), CEF, Electron |
 
-- Guardar VI: modelo del grafo → cabecera + compilación → fichero .qvi
-- Cargar VI: fichero .qvi → `load` → reconstruir modelo desde `qvi-diagram`
-- Guardar proyecto: referencias + config → fichero .qproj
-- Cargar proyecto: fichero .qproj → `load` → árbol de ficheros
+Tauri no trae motor: usa el del sistema, y en Linux eso es WebKitGTK. Volvería a poner GTK en
+el camino crítico — el motor que ya costó 17 bugs documentados y un fork propio de Red para
+parchearlos. Cambiar un riesgo de plataforma por el mismo riesgo con otro nombre no es migrar.
 
-## Flujo de datos
+Y **lo que de verdad fija la arquitectura no es la ventana, es la frontera**: mientras el
+editor hable con el núcleo por HTTP local, la decisión es reversible. De ahí una regla que hay
+que respetar desde la primera línea:
 
-```
-Usuario arrastra bloque  →  Modelo se actualiza  →  Canvas se redibuja
-Usuario conecta wire     →  Modelo se actualiza  →  Canvas se redibuja
-Usuario pulsa Run        →  Runner define telekino-runtime → Compilador genera Red → do ejecuta → Panel muestra resultado
-Usuario pulsa Save       →  Compilador genera código + cabecera gráfica → Se escribe fichero .qvi completo
-Usuario abre .qvi        →  load lee el fichero → qvi-diagram se parsea → Canvas + Panel se reconstruyen
-```
-
-## El fichero `.qvi` como ejecutable
-
-Un `.qvi` guardado es directamente ejecutable con Red (`red mi-vi.qvi`):
+> **El editor no puede usar ninguna API del contenedor.** Ni diálogos nativos de fichero, ni
+> acceso directo al disco, ni nada que sólo exista dentro de Tauri o Electron. Todo pasa por
+> el núcleo. Es barato hoy y carísimo de recuperar si se cuela.
 
-1. Red ejecuta `qvi-diagram: [...]` → asigna el bloque a una variable, sin efectos
-2. Red ejecuta el código generado debajo → resultado
+Razonamiento completo en el §11.3 de [`estudio-post-red.md`](estudio-post-red.md).
 
-La clave es que la cabecera es una asignación inerte. El código vive debajo. Un mismo fichero, dos usos (Telekino para editar, Red para ejecutar).
+---
 
-## Sub-VIs
+## Qué sobrevive de la arquitectura anterior
 
-Cuando un VI se usa dentro de otro:
+No todo cambia. Sobreviven intactas, y siguen siendo buenas decisiones:
 
-1. El sub-VI define un **connector pane** (entradas/salidas expuestas)
-2. Su código generado se envuelve en una `func` Red en lugar de código lineal
-3. La guarda `if not value? 'telekino-runtime` permite ejecución standalone
-4. El VI padre emite `do %sub-vi.qvi` para cargar la función, y la llama como `nombre-funcion arg1 arg2`
-
-## Namespacing con `context`
+- **el diagrama es la fuente de verdad**, el código es artefacto;
+- **el tipo de VI lo determina el contexto de llamada**, no el fichero;
+- **composición sobre herencia** en el modelo, y `name` estático separado de la etiqueta
+  visible;
+- **manejo de errores progresivo**, con puertos de tipo error reservados desde el principio;
+- **toda la especificación visual**, que era independiente del lenguaje de implementación.
 
-Los VIs dentro de una `.qlib` (librería) se aíslan usando `context` de Red:
-
-```
-LabVIEW:   Utilidades.lvlib » Suma.vi
-Telekino:   utilidades/suma
-```
-
-Esto evita colisiones de nombres: `utilidades/suma` y `matematica/suma` coexisten sin problema. Es el mecanismo nativo de Red, no una convención de nombres.
-
-## Registro de bloques
-
-Cada tipo de bloque se registra con el dialecto `block-def` (ver sección Dialectos).
-
-Esto permite extender Telekino con nuevos bloques sin modificar el núcleo: basta con escribir una nueva definición `block` siguiendo la gramática del dialecto.
-
-## Dialectos de Telekino
-
-Telekino define tres dialectos Red propios. Cada uno tiene una gramática procesable con `parse` y una función específica dentro del sistema. No son convenciones — son mini-lenguajes enforzados por el procesador.
-
-### 1. `block-def` — Definición de tipos de bloques
-
-**Dónde:** `src/graph/blocks.red`  
-**Qué hace:** Define los tipos de bloques disponibles de forma declarativa.  
-**Quién lo procesa:** El registro de bloques al cargar.
-
-```red
-block add 'math [
-    in a 'number
-    in b 'number
-    out result 'number
-    emit [result: a + b]
-]
-```
-
-**Gramática:**
-- `block <nombre> <categoría> [<cuerpo>]` — define un tipo de bloque
-- `in <puerto> <tipo>` — declara un puerto de entrada
-- `out <puerto> <tipo>` — declara un puerto de salida
-- `config <nombre> <tipo> <default>` — declara un parámetro configurable
-- `emit [<código Red>]` — define la semántica de compilación como un bloque Red
-
-**Por qué es un dialecto:** Porque tiene gramática propia que se procesa con `parse`. No es un bloque de datos con campos — es una DSL con vocabulario (`block`, `in`, `out`, `emit`, `config`) y reglas de composición.
-
-### 2. `qvi-diagram` — Descripción de un Virtual Instrument
-
-**Dónde:** Cabecera de cada fichero `.qvi`  
-**Qué hace:** Describe el Front Panel, Block Diagram y connector pane de un VI.  
-**Quién lo procesa:** El File I/O al cargar un VI.
-
-```red
-qvi-diagram: [
-    connector: [
-        input  [id: 1  name: "ctrl_1"  label: [text: "A"]]
-        output [id: 3  name: "ind_1"   label: [text: "Resultado"]]
-    ]
-    front-panel: [
-        control   [id: 1  type: 'numeric  name: "ctrl_1"  label: [text: "A" visible: true]  default: 5.0]
-        indicator [id: 3  type: 'numeric  name: "ind_1"   label: [text: "Resultado" visible: true]]
-    ]
-    block-diagram: [
-        nodes: [
-            node [id: 1  type: 'control  x: 40  y: 80  name: "ctrl_1"  label: [text: "A" visible: true]]
-            node [id: 2  type: 'add      x: 200 y: 120 name: "add_1"   label: [text: "Add"]]
-            ...
-        ]
-        wires: [
-            wire [from: 1  port: 'out  to: 2  port: 'a]
-            ...
-        ]
-    ]
-]
-```
-
-**Gramática:**
-- `front-panel [<controles e indicadores>]`
-- `block-diagram [nodes [...] wires [...]]`
-- `connector [<inputs y outputs>]` (opcional)
-- `control [<spec>]`, `indicator [<spec>]` — elementos del panel
-- `node [<spec>]`, `wire [<spec>]` — elementos del diagrama
-- Cada elemento lleva `name` (identificador estático, ej. `"ctrl_1"`) y `label` como bloque (`[text: "A" visible: true]`) — ver DT-022/DT-024
-
-**Por qué es un dialecto:** Aunque parece "solo datos", tiene estructura obligatoria que se valida con `parse`. El procesador sabe qué palabras son válidas, qué campos son obligatorios y qué tipos se esperan. Un bloque malformado se rechaza con error claro.
-
-### 3. `emit` — Semántica de compilación
-
-**Dónde:** Dentro de cada definición `block-def`  
-**Qué hace:** Define qué código Red genera un bloque cuando se compila.  
-**Quién lo procesa:** El compilador.
-
-```red
-emit [result: a + b]
-```
-
-**Cómo funciona el procesador:**
-1. El compilador toma el bloque `emit` de la definición del bloque
-2. Identifica las palabras que corresponden a puertos (`a`, `b`, `result`)
-3. Las sustituye por los `name` reales de los nodos conectados vía wires (DT-024)
-4. El resultado es un bloque Red válido listo para insertar en el código generado
-
-```red
-; emit original:     [result: a + b]
-; port bindings:     a → ctrl_1, b → ctrl_2, result → ind_1
-; resultado:         [ind_1: ctrl_1 + ctrl_2]
-```
-
-**Por qué es un dialecto:** Es código Red que el compilador manipula como datos antes de emitirlo como código. La sustitución de puertos por variables es la operación del procesador. No es interpolación de strings — es manipulación de bloques Red (homoiconicidad en acción).
-
-### Dialectos de Red que Telekino usa (no propios)
-
-Además de los tres dialectos propios, Telekino usa estos dialectos nativos de Red:
-
-| Dialecto | Uso en Telekino |
-|----------|---------------|
-| **Draw** | Renderizar bloques y wires en el canvas del Block Diagram |
-| **View/VID** | Construir el Front Panel (controles, indicadores, layout) |
-| **Parse** | Procesador de los tres dialectos propios |
-
-### Mapa de dialectos
-
-```
-                      block-def
-                     (definición)
-                          │
-                          ▼
-┌────────────┐    ┌──────────────────┐    ┌───────────┐
-│ qvi-diagram│ ──►│   Modelo en      │───►│  emit     │
-│ (carga)    │    │   memoria        │    │ (compila) │
-└────────────┘    └──────────────────┘    └─────┬─────┘
-                                               │
-                                               ▼
-                                        Código Red puro
-                                        (sección del .qvi)
-```
-
-`qvi-diagram` entra, se construye el modelo, `emit` sale como código Red ejecutable. `block-def` define las reglas de transformación.
+Lo que muere es lo atado a Red: que el fichero sea un bloque Red, que el compilador emita
+Red/View, que la concurrencia se simule con temporizadores. Ver [`decisiones.md`](decisiones.md),
+donde cada decisión lleva su estado.

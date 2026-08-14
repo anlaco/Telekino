@@ -1,6 +1,8 @@
 # Comportamiento de LabVIEW — referencia para Telekino
 
-> **Propósito:** Documentar cómo funciona LabVIEW internamente para que las decisiones de arquitectura de Telekino estén informadas. No se pretende replicar LabVIEW — se pretende entender los principios y adaptarlos a Red/View.
+> **Propósito:** documentar cómo funciona LabVIEW por dentro para que las decisiones de Telekino estén informadas.
+>
+> **Actualización 2026-08-14:** este documento gana peso. La paridad visual con LabVIEW es ahora el objetivo declarado hasta que esté alcanzada (DT-036), así que esto deja de ser «entender los principios para adaptarlos» y pasa a ser **la referencia de a qué hay que parecerse**. Las conclusiones que hablan de Red/View siguen siendo válidas como historia; el editor nuevo es web (ver [`arquitectura.md`](arquitectura.md)).
 
 ---
 

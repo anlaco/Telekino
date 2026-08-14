@@ -1,10 +1,30 @@
 # Decisiones técnicas — Telekino
 
+> Última actualización: 2026-08-14
+
 Registro de decisiones clave del proyecto. Cada decisión documentada para referencia futura.
+
+**Las decisiones no se borran.** La migración a Rust + WebAssembly deroga algunas: quedan
+donde están, con una nota de estado al principio de su sección explicando qué las sustituye y
+por qué. Sin ese rastro, dentro de un año nadie sabría si algo se decidió mal o si el mundo
+cambió.
+
+## Qué está vigente y qué no
+
+| Estado | Decisiones |
+|---|---|
+| **Derogadas** por la migración | DT-001 (todo en Red), DT-002 (ficheros como bloques Red), DT-005 (`.qvi` ejecutable), DT-008 (dialectos Red), DT-030 (capa de widgets propia), DT-031 (`red-sg`) |
+| **Sustituidas** | DT-009 (genera Red/View → genera WASM), DT-027 (concurrencia con temporizadores → bucles nativos), DT-028 (compilable con `red -c` → el `.wasm` valida) |
+| **Vigentes e intactas** | DT-011 (el diagrama es la fuente de verdad), DT-017 (el tipo de VI lo da el contexto), DT-022/023/024 (label como objeto, composición sobre herencia, name estático), DT-029 (errores progresivos), DT-032 (tipos centralizados), y el resto |
+| **Vigentes sólo para `src/`** | DT-006, DT-007, DT-025, DT-026, DT-034 — atadas a Red, siguen siendo correctas para la versión que funciona hoy |
+
+Las decisiones de la migración empiezan en **DT-035**.
 
 ---
 
 ## DT-001: Lenguaje y plataforma — Red-Lang 100%
+
+> **DEROGADA por la migración a Rust + WASM (2026-08-14).** El núcleo pasa a Rust y el destino de compilación a WebAssembly. Sigue vigente para `src/`.
 
 **Fecha:** 2026-03-14  
 **Estado:** Adoptada  
@@ -23,6 +43,8 @@ Registro de decisiones clave del proyecto. Cada decisión documentada para refer
 ---
 
 ## DT-002: Formato de fichero — Sintaxis Red nativa
+
+> **DEROGADA por la migración a Rust + WASM (2026-08-14).** Los ficheros pasan a JSON con esquema versionado. Ver [`formato-qvi.md`](formato-qvi.md).
 
 **Fecha:** 2026-03-14  
 **Estado:** Adoptada  
@@ -77,6 +99,8 @@ Registro de decisiones clave del proyecto. Cada decisión documentada para refer
 ---
 
 ## DT-005: El .qvi es ejecutable — cabecera gráfica + código generado
+
+> **DEROGADA por la migración a Rust + WASM (2026-08-14).** El `.qvi` deja de llevar código dentro: es sólo el grafo. El artefacto ejecutable es un `.wasm` aparte.
 
 **Fecha:** 2026-03-14  
 **Estado:** Adoptada  
@@ -142,6 +166,8 @@ El `.qvi` se ejecuta directamente con `red mi-vi.qvi` sin Telekino instalado.
 
 ## DT-009: El .qvi genera Red/View — el Front Panel siempre se muestra al ejecutar
 
+> **SUSTITUIDA por la migración a Rust + WASM (2026-08-14).** El compilador emite WebAssembly, no Red/View. El Front Panel lo pinta el host.
+
 **Fecha:** 2026-03-15  
 **Estado:** Adoptada  
 
@@ -192,6 +218,8 @@ view layout [
 ---
 
 ## DT-008: Tres dialectos Red propios
+
+> **DEROGADA por la migración a Rust + WASM (2026-08-14).** Los tres dialectos Red los sustituye el esquema JSON y el registro de bloques del núcleo.
 
 **Fecha:** 2026-03-14  
 **Estado:** Adoptada  
@@ -464,7 +492,7 @@ meta: [
 - Sin casos especiales ni excepciones sintácticas innecesarias
 - Todos los formatos del ecosistema (`.qvi`, `.qprim`, `.qlib`, `.qproj`, `.qctl`) siguen el mismo patrón estructural
 
-**Cuando hay conflicto:** prevalece la funcionalidad de la herramienta. Si la precisión técnica requiere complejidad adicional en el dialecto, se añade esa complejidad y se documenta en `docs/ai-reference.md` para que los agentes de IA puedan manejarla.
+**Cuando hay conflicto:** prevalece la funcionalidad de la herramienta. Si la precisión técnica requiere complejidad adicional en el dialecto, se añade esa complejidad y se documenta en `docs/red/ai-reference.md` para que los agentes de IA puedan manejarla.
 
 **Justificación:** La homoiconicidad de Red hace que los dialectos se comporten como datos estructurados, el formato ideal para un LLM. Pero Telekino es una herramienta industrial primero — la IA es una audiencia de primera clase (DT-019), no la audiencia principal.
 
@@ -483,7 +511,7 @@ meta: [
 
 Un agente de IA externo (Claude Code, Kilo Code, Ollama, o cualquier herramienta) genera ficheros `.qvi` individuales a partir de una descripción en lenguaje natural. El agente solo trabaja con la sección `qvi-diagram` — el compilador de Telekino genera el código ejecutable.
 
-**Requisito:** el agente necesita una referencia del formato (`docs/ai-reference.md`) con la gramática, los bloques disponibles y ejemplos funcionales.
+**Requisito:** el agente necesita una referencia del formato (`docs/red/ai-reference.md`) con la gramática, los bloques disponibles y ejemplos funcionales.
 
 **Ejemplo:**
 ```
@@ -840,6 +868,8 @@ El patrón Draw-based permite diseñar widgets propios sin límite:
 
 ## DT-027: Concurrencia cooperativa — scheduler basado en `rate`/`on-time`
 
+> **SUSTITUIDA por la migración a Rust + WASM (2026-08-14).** Los bucles son construcciones nativas de WASM (`loop`/`br_if`); no hacen falta temporizadores para simularlos.
+
 **Fecha:** 2026-03-24
 **Estado:** Adoptada
 
@@ -934,6 +964,8 @@ Para instrumentación y control (target de Telekino), la diferencia es pequeña.
 ---
 
 ## DT-028: Compilabilidad — cero código dinámico en el código generado
+
+> **SUSTITUIDA por la migración a Rust + WASM (2026-08-14).** Ya no hay código generado que compilar con `red -c`. La garantía equivalente es que el `.wasm` valide.
 
 **Fecha:** 2026-03-24
 **Estado:** Adoptada
@@ -1077,6 +1109,8 @@ _err: tcp-read-block 256 _err
 
 ## DT-030: UI Framework — Red/View + Draw con capa QT-Widgets propia
 
+> **DEROGADA por la migración a Rust + WASM (2026-08-14).** No habrá capa de widgets sobre Red/View: el editor es web. Ver DT-035.
+
 **Fecha:** 2026-04-10
 **Estado:** Adoptada
 
@@ -1122,6 +1156,8 @@ Red/View (ventanas + event loop)
 
 ## DT-031: Undo/Redo via red-sg
 
+> **CANCELADA por la migración a Rust + WASM (2026-08-14).** La integración con `red-sg` se cancela. Deshacer/rehacer se resuelve en el editor nuevo.
+
 **Contexto:** Todo editor visual necesita undo/redo. LabVIEW tiene un stack global. GRC Qt
 tiene QUndoStack por flowgraph. Orange tiene QUndoCommand. Rete.js tiene HistoryPlugin.
 Telekino, al integrar red-sg (Fase 4.5), dispone de `sg-undo.red` ya implementado y
@@ -1162,7 +1198,7 @@ sg-can-redo? scene                 ; hay algo que rehacer?
 - Los comandos de Front Panel (posición, tamaño de controles) quedan fuera del primer
   alcance; se añaden cuando FP tenga su propio modelo de comandos.
 
-**Referencias:** `docs/roadmap-9-10.md` sección 5.1; memoria `project_red_sg.md`.
+**Referencias:** `docs/historico/roadmap-9-10.md` sección 5.1; memoria `project_red_sg.md`.
 
 ---
 
@@ -1238,7 +1274,7 @@ Cada widget sigue el patrón: función `render-*` que devuelve bloque Draw + fun
 - Si red-sg entrega widgets Draw-based equivalentes antes de Fase 5, **Telekino los usa
   directamente** y este DT se revisa.
 
-**Referencias:** DT-030 (arquitectura UI general); `docs/roadmap-9-10.md` apéndice.
+**Referencias:** DT-030 (arquitectura UI general); `docs/historico/roadmap-9-10.md` apéndice.
 
 ---
 
@@ -1277,4 +1313,148 @@ Cada widget sigue el patrón: función `render-*` que devuelve bloque Draw + fun
 - Esperar a Red upstream: ralentización inaceptable (GTK bugs llevan meses).
 - Usar Rebol 3: sin View funcional completo, no es opción.
 
-**Referencias:** `docs/GTK_ISSUES.md` (estado de bugs resueltos en el fork); CLAUDE.md (sección "Fork `anlaco/red`").
+**Referencias:** `docs/red/GTK_ISSUES.md` (estado de bugs resueltos en el fork); CLAUDE.md (sección "Fork `anlaco/red`").
+
+---
+
+## DT-035: Contenedor gráfico — Chromium empaquetado, ni Tauri ni webview del sistema
+
+**Fecha:** 2026-08-14
+**Estado:** Adoptada
+
+**Decisión:** el editor se sirve por HTTP en `127.0.0.1` y se abre en una ventana de navegador.
+En fase de prototipo, el navegador que el usuario ya tiene. En el producto, **Chromium
+empaquetado** y lanzado en modo aplicación con perfil propio.
+
+**Por qué no Tauri.** Tauri no trae motor: usa el del sistema, y en Linux eso es WebKitGTK.
+Volvería a poner GTK en el camino crítico — el motor que ya costó 17 bugs documentados en
+`red/GTK_ISSUES.md` y un fork propio de Red para parchearlos. Y ahora no hay fork que valga:
+WebKitGTK es órdenes de magnitud mayor que Red. Además, un canvas de nodos con desplazamiento
+y cientos de elementos es justo donde peor va frente a Chromium. Cambiar un riesgo de
+plataforma por el mismo riesgo con otro nombre no es una migración.
+
+**Por qué no CEF ni Electron.** No hace falta *embeber* nada: se empaqueta el binario de
+Chromium junto a la aplicación y se lanza como proceso hijo apuntando al servidor local. Cero
+*bindings*, cero sistema de construcción exótico, un solo motor en las tres plataformas. CEF
+tiene *bindings* Rust que han ido por detrás históricamente; Electron mete Node en la
+arquitectura y degrada el núcleo a proceso hijo.
+
+**El coste que hay que aceptar:** empaquetar un motor de navegador te hace responsable de sus
+parches de seguridad. Es asumible porque la aplicación no navega —sólo carga contenido propio
+desde la máquina local—, así que la superficie expuesta es mínima.
+
+**La regla que hace la decisión reversible:**
+
+> **El editor no puede usar ninguna API del contenedor.** Ni diálogos nativos de fichero, ni
+> acceso directo al disco, ni nada que sólo exista dentro de Tauri o Electron. Todo pasa por
+> el núcleo, por HTTP local.
+
+Mientras se respete, envolver el editor en otra cosa más adelante cambia el transporte, no el
+editor. Al revés no funciona: empezar en Tauri ata a su IPC y a su webview desde la primera
+línea.
+
+**Referencias:** §11.3 de `estudio-post-red.md`; `arquitectura.md`.
+
+---
+
+## DT-036: Paridad visual con LabVIEW primero, identidad después
+
+**Fecha:** 2026-08-14
+**Estado:** Adoptada
+
+**Decisión:** hasta que la paridad esté alcanzada, ante la duda entre «como LabVIEW» y «como
+a nosotros nos parece mejor», **gana LabVIEW**. La identidad propia se construye después, por
+adición.
+
+**Por qué.** El primer usuario es un ingeniero que ya sabe programación gráfica y la sabe
+mejor que nosotros. Lo que necesita es reconocer lo que tiene delante. Un diagrama que no se
+parece a uno de LabVIEW obliga a reaprender, y entonces el argumento de venta —«si sabes
+LabVIEW, sabes Telekino»— desaparece. Contra un producto de National Instruments no se compite
+diciendo «es diferente».
+
+**Qué deroga.** El `plan.md` anterior declaraba «identidad visual propia y más moderna (no un
+clon visual de LabVIEW)» como principio de diseño. Se invierte el orden: primero alcanzar,
+después diferenciarse.
+
+**Dónde sí hay margen desde el principio:** el acabado de los controles del Front Panel. Mismo
+repertorio y misma semántica, dibujo actual. Un ingeniero reconoce un mando giratorio aunque
+esté dibujado con criterio de 2026.
+
+**Referencias:** `vision.md`, `visual-spec.md` §0.
+
+---
+
+## DT-037: Iconos — repertorio compartido, dibujo propio, pixel art para los VIs
+
+**Fecha:** 2026-08-14
+**Estado:** Adoptada
+
+**Decisión:** se replica la gramática visual de LabVIEW —formas, símbolos, posiciones de
+terminal— con **dibujos propios**. Los iconos concretos de National Instruments no se copian
+ni se redibujan «igual pero hechos por nosotros»: eso sería una obra derivada.
+
+Dos clases de icono:
+
+- **Primitivas:** vectorial propio, pequeño y reconocible, con criterio unificado.
+- **Sub-VIs:** *pixel art* de 32×32, dibujado por el usuario en un editor propio del entorno,
+  y guardado dentro del `.qvi` como imagen codificada en texto.
+
+**Consecuencia técnica:** un mapa de bits de 32×32 sólo se ve nítido a escala entera. Refuerza
+la regla de **no zoom** de `visual-spec.md` §1.1, que ya existía por motivos de diseño del
+lenguaje y que además coincide con LabVIEW. Si algún día hace falta zoom por densidad de
+pantalla, será por pasos enteros.
+
+**Pendiente de decidir:** de dónde salen los iconos de las primitivas —dibujo propio desde
+cero, adaptación de un juego libre, o un lenguaje visual más abstracto—. Son doscientos y pico
+dibujos y condiciona meses de trabajo; es una decisión de producto, no técnica.
+
+---
+
+## DT-038: El núcleo corre también dentro del editor
+
+**Fecha:** 2026-08-14
+**Estado:** Adoptada
+
+**Decisión:** `telekino-core` se compila además a WebAssembly y se ejecuta **dentro del
+editor**, en el navegador.
+
+**Por qué.** Hoy el conocimiento de tipos está duplicado: qué puertos tiene cada bloque está
+escrito en el compilador (Rust) y otra vez en el editor (JavaScript). Es exactamente la deuda
+que señala DT-032, ahora repartida entre dos lenguajes. Con el núcleo en el navegador hay una
+sola fuente, y de regalo:
+
+- comprobación de tipos **en vivo** mientras se dibuja — el cable se rompe en cuanto conectas
+  algo incompatible, sin ejecutar nada, que es una de las cosas buenas de LabVIEW;
+- una versión web pura para que alguien pruebe Telekino sin instalar nada, que como
+  herramienta de captación vale mucho.
+
+**Límite claro:** esto vale para **editar**. Ejecutar contra hardware —serie, USB,
+adquisición— nunca será el navegador. La arquitectura queda en dos piezas separadas: núcleo de
+edición que corre en cualquier sitio, y proceso nativo local que es el único que toca el mundo
+físico. Es la misma frontera que separa el programa compilado de su host.
+
+**Referencias:** `arquitectura.md`.
+
+---
+
+## DT-039: Los terminales de estructura son puertos del contenedor, no nodos
+
+**Fecha:** 2026-08-14
+**Estado:** Adoptada, pendiente de implementar (hito T3)
+
+**Decisión:** registros de desplazamiento, túneles y contador de iteración dejan de ser nodos
+del grafo y pasan a ser **puertos del nodo contenedor**. El cambio es de representación, no de
+semántica: el compilador los traduce a lo mismo que hoy.
+
+**Por qué.** El prototipo los modela como nodos sueltos (`sr-read`, `sr-write`, `tunnel`,
+`iter`) flotando dentro del bucle. En LabVIEW son propiedades del borde de la estructura: dos
+flechas a los lados, un cuadradito donde el cable cruza el marco, la `i` en la esquina. Un
+diagrama que enseña esos conceptos como nodos está enseñando las tripas de la implementación,
+y para quien viene de LabVIEW es ilegible.
+
+**Por qué ahora y no en el hito del editor.** El editor pinta lo que el formato dice. Si el
+esquema se publica con los terminales como nodos, cualquier editor construido encima heredará
+el problema, y para entonces habrá gente dependiendo del formato. Se arregla **antes** de
+publicar el esquema.
+
+**Referencias:** `formato-qvi.md`, `visual-spec.md` §5.5.

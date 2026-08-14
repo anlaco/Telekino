@@ -1,7 +1,7 @@
 # Planning — Decisiones pendientes críticas
 
 Decisiones arquitecturales que **deben tomarse antes de implementar** los módulos afectados.
-Para el registro de decisiones ya adoptadas, ver [`decisiones.md`](decisiones.md).
+Para el registro de decisiones ya adoptadas, ver [`decisiones.md`](../decisiones.md).
 
 ---
 

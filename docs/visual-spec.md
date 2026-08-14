@@ -1,10 +1,27 @@
 # Especificación visual — Telekino
 
-Documento vivo que define la identidad visual de Telekino.
+> Última actualización: 2026-08-14. Documento vivo.
+
 Principio rector: **igual que LabVIEW en forma, tamaños y comportamiento; no en estilos.**
 Un programador de LabVIEW debe sentirse cómodo desde el primer momento.
 
-Este documento crecerá conforme se implementen nuevos tipos y funcionalidades.
+Eso no es estética: es el producto. Un diagrama que no se parece a uno de LabVIEW obliga a
+reaprender, y el argumento de venta desaparece. **Primero alcanzar, después diferenciarse** —
+ver [`vision.md`](vision.md).
+
+Esta especificación es independiente del lenguaje de implementación: se escribió para la
+versión Red y sigue vigente entera para el editor nuevo.
+
+## 0. Qué se copia y qué no
+
+**Se copia la gramática visual**, que es vocabulario de una disciplina y no es de nadie: las
+formas de las primitivas, la codificación de tipo por color y grosor del cable, el marco de
+las estructuras con sus terminales en el borde, el connector pane, las dos vistas.
+
+**No se copian los dibujos.** Los iconos concretos de LabVIEW son obra de National
+Instruments; redibujarlos «igual pero hechos por nosotros» sería una obra derivada. Los
+nuestros son propios: mismo repertorio, misma semántica, mismos símbolos universales, dibujo
+nuestro.
 
 ---
 
@@ -14,6 +31,11 @@ Este documento crecerá conforme se implementen nuevos tipos y funcionalidades.
 
 Telekino no implementa zoom, igual que LabVIEW. Esto es una decisión de diseño
 deliberada para evitar que los diagramas crezcan al infinito.
+
+**Refuerzo (2026-08-14):** hay ahora un segundo motivo, técnico. Los iconos de sub-VI son
+*pixel art* de 32×32, y un mapa de bits sólo se ve nítido a escala entera; a 1,37 aumentos se
+convierte en una mancha. Si algún día hiciera falta zoom por densidad de pantalla, va **por
+pasos enteros**, nunca continuo.
 
 ### 1.2 Scrollbars dinámicas
 
@@ -167,8 +189,11 @@ Cuando se conecta un wire entre terminales de tipos incompatibles:
 - Al pasar el ratón por el wire roto: tooltip con el motivo
   ("Type mismatch: expected DBL, got TF")
 
-*Nota: el comportamiento actual de Telekino impide dibujar el wire. Hay que
-cambiar a este modelo donde se dibuja pero se marca como roto.*
+*Estado: la versión Red impide dibujar el wire, y el visor del editor nuevo lo rechaza con un
+mensaje. Hay que llegar al modelo de arriba — se dibuja y se marca como roto — que además es
+lo que permite dejar un diagrama a medias sin perder trabajo. Con el núcleo corriendo dentro
+del editor, el motivo del error puede darlo el propio compilador en vez de duplicar la lógica
+de tipos en la interfaz.*
 
 ### 5.2 Una entrada, un solo wire
 
@@ -178,8 +203,8 @@ cambiar a este modelo donde se dibuja pero se marca como roto.*
 - Intentar conectar un segundo wire a una entrada que ya tiene uno
   es un error → wire roto o rechazo
 
-*Nota: el comportamiento actual de Telekino permite múltiples wires a una
-entrada. Hay que corregir esto.*
+*Estado: corregido. La versión Red lo respeta, y el editor nuevo rechaza el segundo cable con
+un mensaje explícito.*
 
 ### 5.3 Coercion dots (futuro — Fase 2 tardía o Fase 3)
 
@@ -189,6 +214,89 @@ Cuando se conectan tipos compatibles pero no idénticos (ej: Integer a Double):
   conversión implícita
 - Indica posible pérdida de precisión o coste de rendimiento
 - Se implementará cuando existan subtipos numéricos (integer vs float vs double)
+
+---
+
+## 5.4 Enrutado de los wires
+
+En LabVIEW los cables van en **ángulo recto** y esquivan lo que se encuentran; un diagrama
+con cables desordenados se considera mal escrito. No es cosmético: el trazado forma parte de
+cómo se lee el programa.
+
+- Segmentos ortogonales, con codos, nunca curvas.
+- El enrutado **esquiva nodos**, no los atraviesa.
+- Los cables que salen del mismo puerto comparten tramo antes de bifurcarse.
+
+La librería de nodos trae cables en ángulo recto pero **no el algoritmo que rodea
+obstáculos**: eso hay que escribirlo, y conviene tratarlo como una pieza aparte con sus
+propias pruebas.
+
+---
+
+## 5.5 Terminales de las estructuras — van en el borde
+
+En LabVIEW, un registro de desplazamiento **no es un nodo**: son dos flechas en el borde del
+bucle, una a cada lado. Un túnel es un cuadradito donde el cable atraviesa el marco. El
+contador de iteraciones es la `i` clavada en la esquina inferior izquierda.
+
+El prototipo los modela como nodos sueltos flotando dentro del bucle (`sr-read`, `sr-write`,
+`tunnel`, `iter`), y eso hace el diagrama ilegible para quien viene de LabVIEW: se están
+enseñando las tripas de la implementación.
+
+**No es un problema de dibujo, es del formato**, y por eso se arregla en el hito del formato y
+no en el del editor: los terminales pasan a ser puertos del nodo contenedor. Ver
+[`formato-qvi.md`](formato-qvi.md).
+
+| Elemento | Dónde se dibuja | Aspecto |
+|---|---|---|
+| Registro de desplazamiento | Bordes izquierdo y derecho, a la misma altura | Flecha ▲ a la derecha (escribe), ▼ a la izquierda (lee) |
+| Túnel | En el borde que cruza el cable | Cuadradito relleno del color del tipo |
+| Contador de iteración | Esquina inferior izquierda, dentro | `i` |
+| Terminal de condición | Esquina inferior derecha, dentro | Símbolo de parada o de bucle |
+
+---
+
+## 5.6 Iconos
+
+Los iconos son lo que hace que un diagrama se lea de un vistazo. Son de dos clases:
+
+**Iconos de sistema** (las primitivas: Add, Multiply, Index Array…). Dibujo **vectorial**,
+propio, con la misma gramática que LabVIEW: formas pequeñas y reconocibles, símbolos
+matemáticos universales, terminales en posiciones fijas. Son el activo visual del proyecto y
+hay que dibujarlos con criterio unificado, no uno a uno según haga falta.
+
+**Iconos de VI** (los que hace el usuario para sus sub-VIs). **Pixel art de 32×32**, igual que
+en LabVIEW, y editables desde el propio entorno. En un diagrama de trabajo real son la mitad
+de lo que se ve.
+
+### 5.6.1 El editor de iconos
+
+Un componente autocontenido, dibujado en lienzo directo:
+
+- Rejilla de 32×32 ampliada ×16, con cuadrícula visible.
+- Herramientas: lápiz, línea, rectángulo, relleno, cuentagotas, texto, borrador.
+- Capas, como en LabVIEW (plantilla / cuerpo / decoración).
+- Paleta de colores y transparencia.
+
+El icono se guarda **dentro del propio `.qvi`** como imagen codificada en texto: unos cientos
+de bytes, el fichero sigue siendo legible, y no aparecen ficheros sueltos que se pierdan al
+mover un proyecto.
+
+---
+
+## 5.7 Cómo se pinta cada cosa
+
+| Capa | Técnica | Por qué |
+|---|---|---|
+| Nodos, puertos, widgets del panel | Documento + vectorial | Selección, foco, edición in situ, temas y nitidez a cualquier resolución |
+| Cables | Un vectorial único para todo el diagrama | Trazado propio y rendimiento |
+| Iconos de sub-VI | Mapa de bits 32×32 a escala entera | Son *pixel art*; escalar fraccionario los destruye |
+| Gráficas de señal | Lienzo directo | Miles de puntos por cuadro |
+| Editor de iconos | Lienzo directo | Control de píxel |
+
+Regla de fondo: **en documento va lo que el usuario toca; en lienzo, sólo lo que el documento
+hace mal.** Dibujarlo todo a mano en un lienzo es exactamente el pozo del que se sale con esta
+migración.
 
 ---
 
@@ -292,18 +400,70 @@ especificado. Se documentarán conforme sea necesario:
 - Chart input: naranja (numérico escalar)
 - Graph input: naranja con borde doble (array)
 
-### 8.5 Compilación
+### 8.5 Implementación
 
-El código generado usa `base` faces con Draw:
+En la versión Red se dibujan con `base` faces y el dialecto Draw (ver
+[`red/arquitectura-red.md`](red/arquitectura-red.md)).
 
-```red
-; Waveform Chart
-chart_1: base 200x160 draw []
+En el editor nuevo, las gráficas de señal son de las pocas cosas que van en **lienzo directo**:
+un chart con un búfer de 1024 puntos redibujándose diez veces por segundo no es trabajo para
+elementos de documento. Conviene una librería especializada en series temporales antes que
+escribirlo desde cero.
 
-; En el botón Run (dentro del loop):
-append chart_1/draw/values new-value
-chart_1/draw: render-waveform chart_1/draw/values
-```
+El programa compilado **no dibuja**: escribe valores por la interfaz `fp` y quien renderiza es
+el host. Un chart es, del lado del programa, un indicador que acepta un escalar; el búfer
+circular vive en el host.
+
+---
+
+## 9. Controles e indicadores del Front Panel
+
+El catálogo es la mitad del trabajo de paridad, y hoy sólo hay una parte mínima. El criterio:
+
+> **Mismo repertorio y misma semántica que LabVIEW; acabado de hoy.**
+
+Un ingeniero reconoce un mando giratorio aunque esté dibujado con criterio de 2026. Los
+controles clásicos de LabVIEW tienen el aspecto de los noventa —relieves, degradados—; su
+juego moderno mejora pero sigue siendo denso. **Aquí es donde entra la identidad propia sin
+romper el reconocimiento.**
+
+### 9.1 Catálogo a igualar
+
+| Familia | Controles | Indicadores |
+|---|---|---|
+| Numérico | campo, deslizador, mando giratorio, dial, selector | display, aguja, termómetro, tanque, barra de progreso |
+| Booleano | pulsador, interruptor, palanca, botón de parada | LED, luz redonda/cuadrada |
+| Texto | campo de texto, combo, ruta de fichero | display de texto, cuadro de texto |
+| Compuestos | array, cluster, tabla, enum, ring | array, cluster, tabla, listbox |
+| Gráficas | — | waveform chart, waveform graph, XY graph, intensity |
+| Decoración | etiquetas, marcos, separadores, agrupadores | |
+
+### 9.2 Cómo se dibujan
+
+**Vectorial parametrizado**, no imágenes. Un mando giratorio es un dibujo con ángulo, rango,
+escala y colores como parámetros; así el mismo control sirve para cualquier tamaño, cualquier
+tema y cualquier densidad de pantalla, y pesa poco.
+
+De ahí sale gratis una cosa que LabVIEW hace regular: **temas**. Si los colores salen de un
+juego de variables, cambiar el aspecto entero es cambiar el juego, no redibujar nada.
+
+### 9.3 El lienzo del panel
+
+El Front Panel **no es un grafo**: es un lienzo de diseño. Colocar en posición absoluta,
+redimensionar por tiradores, alinear a rejilla, distribuir, agrupar, ordenar en capas. Se
+parece más a una herramienta de diseño que a un editor de nodos, y se construye aparte del
+diagrama.
+
+No conviene traer una librería genérica para esto: daría el noventa por ciento y estorbaría
+justo en el diez que importa (agrupación en clusters, terminales enlazados con el diagrama,
+modo edición contra modo ejecución).
+
+### 9.4 Modo edición y modo ejecución
+
+Como en LabVIEW, el panel tiene dos modos: mientras se edita, los controles se seleccionan y
+se mueven; mientras se ejecuta, responden al usuario. Es la distinción que hace que la misma
+superficie sirva para diseñar y para operar. Ver
+[`labview-comportamiento.md`](labview-comportamiento.md).
 
 ---
 
@@ -311,5 +471,6 @@ chart_1/draw: render-waveform chart_1/draw/values
 
 | Fecha      | Cambio |
 |------------|--------|
+| 2026-08-14 | Doctrina de paridad y derechos (§0), enrutado ortogonal (§5.4), terminales de estructura al borde (§5.5), iconos y editor de pixel art (§5.6), técnicas de dibujo (§5.7), catálogo del Front Panel (§9) |
 | 2026-04-03 | Añadida sección 8: Waveform Chart y Graph |
 | 2026-03-22 | Creación inicial — reunión de planificación |

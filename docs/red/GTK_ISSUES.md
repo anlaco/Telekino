@@ -2,7 +2,7 @@
 
 > **Contexto:** Telekino usa Red/View para su interfaz gráfica. En Linux, Red/View usa el backend GTK3, que actualmente tiene varios bugs críticos. El canvas visual de Telekino depende de posicionamiento preciso — un cable que conecta dos nodos no puede aparecer desplazado entre plataformas. Estos bugs son por tanto **bloqueantes** para Telekino en Linux.
 >
-> **Estrategia:** Contribuir los fixes directamente al repositorio `red/red`, no añadir workarounds locales en Telekino. Ver [`CONTRIBUTING.md`](../CONTRIBUTING.md) para el proceso.
+> **Estrategia:** Contribuir los fixes directamente al repositorio `red/red`, no añadir workarounds locales en Telekino. Ver [`CONTRIBUTING.md`](../../CONTRIBUTING.md) para el proceso.
 
 ---
 
@@ -247,4 +247,4 @@ Para cada bug, el proceso es:
 
 - Repositorio Red: https://github.com/red/red
 - Branch GTK de Red: rama `GTK` del repositorio oficial
-- Proceso de contribución: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
+- Proceso de contribución: [`CONTRIBUTING.md`](../../CONTRIBUTING.md)

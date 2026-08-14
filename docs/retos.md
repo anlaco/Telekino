@@ -1,137 +1,119 @@
-# Retos y dificultades — Telekino
+# Retos y riesgos — Telekino
+
+> Última actualización: 2026-08-14
+> Los riesgos de la etapa Red (madurez del lenguaje, canvas en Red/View, bugs de GTK) están en
+> [`red/`](red/) y en [`historico/roadmap-9-10.md`](historico/roadmap-9-10.md). Varios los
+> **elimina** la migración, que es buena parte de su justificación.
 
 ## Riesgo alto
 
-### Madurez de Red-Lang
+### El editor es el 70% del trabajo que queda
 
-**Riesgo:** Red no ha alcanzado la versión 1.0. La comunidad es pequeña. El desarrollo es lento.
+Lo que hay es un visor de 400 líneas que carga un fichero, lo dibuja y lo ejecuta. Lo que hace
+falta es un editor con dos superficies distintas, un catálogo de widgets, un editor de iconos,
+enrutado de cables y paleta. No hay incógnitas técnicas grandes —eso ya se midió— pero sí
+mucho volumen.
 
-**Estado actual:** Red es alpha stage, 32-bit. El backend GTK de Linux tiene bugs críticos (ver sección específica más abajo). El backend Windows (Win32 API nativo) es el más estable.
+**Mitigación:** orden de ataque que deje algo enseñable cada vez, empezando por un solo bloque
+bien dibujado. Ver [`plan.md`](plan.md), T4.
 
-**Impacto:** Puede haber bugs o carencias en Red/View que haya que resolver nosotros mismos. En Linux, algunos bugs son bloqueantes para funcionalidad core de Telekino.
+### Un desarrollador, un día por semana
 
-**Mitigación:**
-- Contribuir fixes y mejoras upstream a `red/red` cuando se encuentren problemas (estrategia principal para los bugs GTK)
-- Construir las utilidades que falten dentro del ecosistema Red (si algo no existe, se crea)
-- Validar Red/View en las tres plataformas durante el spike técnico
-- Seguir el roadmap de Red para la migración a 64-bit
+Es la restricción que de verdad manda. A este ritmo, la realimentación llega despacio y un
+plan que sólo produce valor al final no llega nunca. Ya pasó: el proyecto estuvo parado del 12
+de mayo al 10 de agosto de 2026.
 
-### Canvas interactivo en Red/View
+**Mitigación:** cada hito cierra con algo demostrable, y el estado se escribe sin maquillar
+para que retomar el hilo tras una pausa cueste minutos y no días.
 
-**Riesgo:** Red/View + Draw no tienen primitivas de alto nivel para editores gráficos (hit testing, z-order, layout automático de wires). Hay que construirlas.
+### Quedarse sin nada usable a mitad de camino
 
-**Impacto:** Construir el canvas puede consumir la mayor parte del esfuerzo en Fase 1.
+La versión Red funciona y tiene 40 bloques. La nueva tiene 15. Si `src/` se abandona antes de
+que el sustituto sirva, hay un periodo —potencialmente largo— sin producto.
 
-**Mitigación:**
-- Spike técnico (Fase 0) antes de cualquier otra cosa
-- Construir las primitivas que falten (hit testing, z-order) como módulos Red reutilizables
-- Diseñar el canvas como módulo aislado dentro del proyecto
+**Mitigación:** **la versión Red debe seguir arrancando durante toda la transición.** No se le
+añaden funcionalidades, pero no se rompe.
+
+### La paridad visual es más trabajo del que parece
+
+Doscientos y pico iconos de primitiva, un catálogo de controles e indicadores completo,
+enrutado ortogonal de cables, connector panes. Es la clase de trabajo que no tiene un final
+nítido y que se puede alargar indefinidamente.
+
+**Mitigación:** definir qué subconjunto constituye «paridad suficiente» para el primer usuario
+—probablemente lo que se usa en el 90% de los diagramas reales— y medirlo contra VIs de
+verdad, no contra el catálogo completo de LabVIEW.
+
+---
 
 ## Riesgo medio
 
-### Routing de wires
+### Publicar el formato antes de tiempo
 
-**Riesgo:** Dibujar wires que no se solapen, que rodeen bloques y que sean legibles es un problema de layout no trivial.
+El esquema del `.qvi` es el diferenciador declarado. En cuanto se publique y alguien dependa
+de él, cambiarlo cuesta. Y **el prototipo tiene ya una deuda de modelo** conocida: los
+terminales de estructura son nodos cuando deberían ser puertos del contenedor (DT-039).
 
-**Impacto:** Un diagrama ilegible hace que Telekino sea inutilizable incluso si todo funciona.
+**Mitigación:** arreglarlo antes de publicar, en el hito del formato. Y versionar desde el
+primer día, con el número de esquema en el propio fichero.
 
-**Mitigación:**
-- Fase 1 con wires rectos (línea directa entre puertos)
-- Routing ortogonal (estilo LabVIEW) como mejora posterior
-- Estudiar algoritmos existentes de routing en editores de grafos
+### Dependencia de la librería de nodos
 
-### Modelo de ejecución dataflow
+El diagrama se apoya en React Flow. Si su desarrollo se detiene o cambia de licencia, hay
+trabajo de reemplazo — aunque el modelo y el núcleo no se verían afectados.
 
-**Riesgo:** LabVIEW ejecuta nodos cuando sus entradas están listas (dataflow). Compilar a código imperativo Red (secuencial) requiere un sort topológico que se complica con estructuras de control.
+**Mitigación:** la frontera con el núcleo es HTTP y el modelo es nuestro; lo que se perdería
+es la capa de interacción, no el producto. Verificado que aguanta lo difícil (estructuras
+anidadas, 200 nodos), así que la decisión es informada y no una apuesta.
 
-**Impacto:** Bucles y condicionales pueden requerir un rediseño del compilador si no se anticipan.
+### El rendimiento del canvas con diagramas grandes
 
-**Mitigación:**
-- Fase 1 solo tiene aritmética lineal (sort topológico trivial)
-- Diseñar la representación intermedia del grafo pensando en que habrá estructuras de control
-- Estudiar cómo LabVIEW internamente compila sus diagramas
+Medido: 203 nodos y 401 aristas se pintan en 413 ms, y responde al arrastre. Por encima del
+millar largo de elementos, un canvas basado en documento empieza a sufrir.
 
-### Gestión de errores del usuario
+**Mitigación:** si algún día pasa, la salida es dibujar el diagrama en lienzo directo, no
+cambiar de arquitectura. No es un riesgo hoy.
 
-**Riesgo:** Sin mensajes de error claros, el usuario no sabe por qué su diagrama no compila o no funciona.
+### Empaquetar Chromium implica mantenerlo
 
-**Impacto:** Usabilidad baja → abandonan Telekino.
+Un motor de navegador acumula vulnerabilidades y hay que actualizarlo.
 
-**Mitigación:**
-- Definir desde el inicio qué errores se detectan: tipos incompatibles, ciclos, puertos sin conectar
-- Mostrar errores visualmente en el diagrama (wire rojo, bloque resaltado), no solo en texto
+**Mitigación:** la aplicación no navega, sólo carga contenido propio desde la máquina local,
+así que la superficie es mínima y la cadencia puede ser tranquila. Pero es un coste recurrente
+que hay que asumir conscientemente (DT-035).
 
-## Riesgo bajo (pero a tener en cuenta)
+---
 
-### Tipado de wires
+## Riesgo bajo
 
-Los wires en LabVIEW tienen tipo (numérico, string, booleano, cluster, array). El color del wire indica el tipo. Esto hay que diseñarlo desde el inicio aunque en Fase 1 solo use numéricos, para no tener que refactorizar la estructura de datos del grafo.
+### Comprobación de límites y errores en el compilador
 
-### Rendimiento del canvas
+El prototipo no comprueba índices fuera de rango: un `index-array` con índice inválido lee
+memoria arbitraria. Hace falta la comprobación y el cluster de error (DT-029) antes de nada
+serio.
 
-Con pocos bloques no hay problema. Con 50+ bloques y wires, el redibujo del canvas con Red/Draw puede ser lento. Hay que perfilar temprano.
+### Crecimiento cuadrático al concatenar arrays
 
-### Undo/Redo
+`array-append` copia el array entero, así que acumular en un bucle es cuadrático. Le pasa lo
+mismo a LabVIEW —por eso su documentación insiste en preasignar— pero aquí se nota antes. Un
+`array-reserve`, o reutilizar el búfer cuando el compilador ve que el original no se vuelve a
+usar, lo arreglan.
 
-No está en Fase 1 pero es imprescindible para cualquier editor. La arquitectura del modelo de datos debe contemplarlo (command pattern o similar) desde el diseño.
+### Iconos: de dónde salen
 
-## Preguntas abiertas (actualizadas 2026-03-24)
+Decisión de producto pendiente (DT-037). No bloquea nada todavía, pero condiciona meses en
+cuanto empiece T4.
 
-1. ~~¿Red interpretado o compilado como target de ejecución para Run?~~ → **RESUELTO:** Run usa `do` en memoria (DT-010). Save genera código compilable con `red -c` (DT-028).
-2. ¿Soporta Red/View canvas con scroll nativo o hay que construirlo?
-3. ~~¿El usuario objetivo es ingeniero saliendo de LabVIEW o programador Red?~~ → **RESUELTO:** Tres audiencias: ingenieros LabVIEW, programadores generales, agentes IA (DT-019).
+---
 
-### Bugs del backend GTK en Linux
+## Riesgos que la migración elimina
 
-**Riesgo:** Alto — **BLOQUEANTE para Telekino en Linux**
-**Estado:** Caracterizados — pendiente de contribuir fixes a `red/red`
+Merece la pena dejarlos escritos, porque son la justificación de todo el movimiento:
 
-El canvas visual de Telekino depende de posicionamiento preciso: un cable que conecta dos nodos no puede aparecer desplazado entre plataformas. Los bugs del backend GTK son por tanto bloqueantes para el uso en Linux.
-
-**Bugs confirmados** (ver detalle completo en [`docs/GTK_ISSUES.md`](GTK_ISSUES.md)):
-
-| Bug | Impacto en Telekino |
-|-----|--------------------|
-| `system/view/metrics/dpi` retorna `none` | Offsets incorrectos en el canvas |
-| Coordenadas: Windows usa DPI virtual, Linux usa píxeles físicos | Posiciones distintas entre plataformas |
-| Eventos `resize` reportan tamaños incorrectos en GTK | Canvas no se adapta al resize de ventana |
-| Bug de locale: aritmética float incorrecta sin `LC_ALL=C` | Resultados numéricos incorrectos |
-| `system/view/metrics/colors` retorna `none` en Linux | Sin acceso a colores del sistema |
-| Backend GTK es 32-bit, requiere libs i386 en sistemas 64-bit | Instalación compleja; muchas distros eliminan soporte 32-bit |
-
-**Estrategia:**
-- Contribuir los fixes directamente al repo `red/red`, no workarounds locales en Telekino.
-- La migración a 64-bit está en el roadmap de Red: v1.0 → core 64-bit, v1.1 → View engine 64-bit.
-- Ver [`CONTRIBUTING.md`](../CONTRIBUTING.md) para el proceso de contribución a `red/red`.
-
-### Diferencias visuales entre plataformas (Windows / Linux)
-
-**Riesgo:** Medio (derivado en parte de los bugs GTK de arriba)
-**Estado:** Detectado — parcialmente caracterizado
-
-Red/View delega el renderizado de widgets nativos al sistema operativo, por lo que fuentes, espaciado, tamaño de controles y colores por defecto varían entre Windows y Linux. Además de esto, los bugs de DPI y coordenadas del backend GTK agravan el problema.
-
-**Impacto:**
-- El Front Panel generado por el compilador puede verse desalineado o con proporciones distintas según la plataforma.
-- El Block Diagram (canvas.red) usa Draw dialect y debería ser más consistente, pero el tamaño de texto de labels puede diferir.
-- Las coordenadas de nodos guardadas en el `.qvi` pueden no reproducir el mismo layout visual en diferentes plataformas.
-
-**Mitigación (propuesta):**
-- Usar tamaños y fuentes explícitos en lugar de depender de los defaults del SO.
-- Crear un smoke test visual en Linux y Windows para detectar regresiones al implementar el Front Panel modular (Issue #12).
-- Normalizar estilos en una constante compartida cuando se implemente la identidad visual (Issue #22).
-- Resolver primero los bugs GTK (sección anterior) antes de construir más UI.
-
-## Retos resueltos en diseño
-
-### .qvi como ejecutable
-
-Resuelto: el .qvi contiene cabecera gráfica (inerte para Red) + código generado. Se ejecuta con `red mi-vi.qvi` directamente. No hay paso de compilación separado.
-
-### Sub-VIs y reutilización
-
-Resuelto: VIs con connector pane generan una `func` Red. La guarda `telekino-runtime` distingue ejecución standalone de carga como sub-VI. El VI padre hace `do %sub-vi.qvi` y llama la función.
-
-### Colisiones de nombres en librerías
-
-Resuelto: los VIs de una `.qlib` se encapsulan en `context` de Red. Acceso con `libreria/funcion`. Aislamiento enforced por el lenguaje.
+| Riesgo de la etapa Red | Estado |
+|---|---|
+| Red-Lang es alpha, 32 bits, y su evolución no depende de nosotros | **Eliminado** |
+| El backend GTK3 tiene bugs bloqueantes; hizo falta un fork propio de Red | **Eliminado** (y es la razón de descartar Tauri, DT-035) |
+| Dibujar el canvas a mano: cada gesto —arrastre, selección, deshacer— cuesta implementarlo | **Eliminado**: lo trae la librería de nodos |
+| La parte de hardware no es testeable sin hardware | **Eliminado**: la frontera `io` permite un host simulado |
+| Sin concurrencia real; los bucles se simulaban con temporizadores | **Eliminado**: bucles nativos de WASM |
