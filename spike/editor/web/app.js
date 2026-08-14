@@ -61,11 +61,42 @@ const WIRE_COLOR = { num: "#d8d8e0", arr: "#f2a33c", str: "#d86bd8" };
 
 // --- modelo .qvi → grafo de React Flow ---------------------------------------
 
-const GRID_X = 170, GRID_Y = 90, PAD = 34;
+const PAD = 34, GAP_X = 56, GAP_Y = 26;
+// Tamaño de un nodo normal. Sale del CSS (.node): si cambia allí, cambia aquí.
+const NODE_W = 118, NODE_H = 70;
+// Hueco que la cabecera del contenedor deja libre para su cuerpo.
+const HEADER = 30;
+
+// Tamaño que va a ocupar un nodo. Un contenedor no mide lo mismo que un `add`:
+// mide lo que ocupa su cuerpo, y sin esto el layout coloca a los nodos de
+// alrededor encima de él. Memoizado porque el cálculo es recursivo.
+const sizeCache = new WeakMap();
+function sizeOf(node) {
+  if (node.type !== "while") return { w: NODE_W, h: NODE_H };
+  if (sizeCache.has(node)) return sizeCache.get(node);
+
+  const body = node.body || { nodes: [], wires: [] };
+  const inner = autoLayout(body);
+  let right = 0, bottom = 0;
+  for (const child of body.nodes || []) {
+    const p = inner.get(child.id) || { x: 0, y: 0 };
+    const s = sizeOf(child);
+    right = Math.max(right, p.x + s.w);
+    bottom = Math.max(bottom, p.y + s.h);
+  }
+  const size = { w: right + PAD, h: bottom + HEADER + PAD };
+  sizeCache.set(node, size);
+  return size;
+}
 
 // Auto-layout por capas topológicas, para los VIs del hito 1 que no llevan
 // `view` (se escribieron a mano, sin editor). Longest-path rank: cada nodo va
 // una columna a la derecha de su entrada más profunda.
+//
+// Las columnas y las filas se dimensionan con el tamaño real de cada nodo, no
+// con una rejilla fija: en cuanto hay un While Loop en el diagrama, la rejilla
+// fija mete a los nodos de la columna siguiente dentro del contenedor y el
+// dibujo miente sobre qué está dentro del bucle y qué no.
 function autoLayout(graph) {
   const rank = new Map();
   const nodes = graph.nodes || [];
@@ -83,13 +114,27 @@ function autoLayout(graph) {
     }
   }
 
-  const perColumn = new Map();
+  // Ancho de cada columna = el del nodo más ancho que cae en ella.
+  const colW = new Map();
+  for (const n of nodes) {
+    const r = rank.get(n.id) ?? 0;
+    colW.set(r, Math.max(colW.get(r) ?? 0, sizeOf(n).w));
+  }
+  const colX = new Map();
+  let x = PAD;
+  for (const r of [...colW.keys()].sort((a, b) => a - b)) {
+    colX.set(r, x);
+    x += colW.get(r) + GAP_X;
+  }
+
+  // Dentro de la columna, cada nodo empieza donde acabó el anterior.
+  const cursorY = new Map();
   const pos = new Map();
   for (const n of nodes) {
     const r = rank.get(n.id) ?? 0;
-    const row = perColumn.get(r) ?? 0;
-    perColumn.set(r, row + 1);
-    pos.set(n.id, { x: PAD + r * GRID_X, y: PAD + row * GRID_Y });
+    const y = cursorY.get(r) ?? PAD;
+    pos.set(n.id, { x: colX.get(r) ?? PAD, y });
+    cursorY.set(r, y + sizeOf(n).h + GAP_Y);
   }
   return pos;
 }
@@ -113,12 +158,12 @@ function toFlow(graph, parentId = null, acc = { nodes: [], edges: [] }) {
     };
 
     if (isStructure) {
-      const body = n.body || { nodes: [], edges: [] };
+      const body = n.body || { nodes: [], wires: [] };
       const inner = autoLayout(body);
-      const maxX = Math.max(0, ...[...inner.values()].map((p) => p.x));
-      const maxY = Math.max(0, ...[...inner.values()].map((p) => p.y));
-      // Hueco para la cabecera del contenedor y para los nodos de dentro.
-      node.style = { width: maxX + 150, height: maxY + 110 };
+      // El mismo tamaño que usó el layout para reservarle sitio: si aquí se
+      // calculara aparte, el contenedor y su hueco dejarían de coincidir.
+      const size = sizeOf(n);
+      node.style = { width: size.w, height: size.h };
       acc.nodes.push(node);
       toFlow(shiftBody(body, inner), n.id, acc);
     } else {
@@ -154,7 +199,7 @@ function toFlow(graph, parentId = null, acc = { nodes: [], edges: [] }) {
 function shiftBody(body, layout) {
   const nodes = (body.nodes || []).map((n) => ({
     ...n,
-    view: n.view || { x: layout.get(n.id).x, y: layout.get(n.id).y + 26 },
+    view: n.view || { x: layout.get(n.id).x, y: layout.get(n.id).y + HEADER },
   }));
   return { ...body, nodes };
 }
@@ -362,8 +407,12 @@ function Editor() {
         h(ReactFlow, flowProps, [
           h(Background, { key: "bg", gap: 16, color: "#33333c" }),
           h(Controls, { key: "ctl" }),
+          // Los colores por defecto del minimapa son para tema claro: sobre
+          // este fondo quedaba una mancha blanca en la esquina.
           h(MiniMap, { key: "mm", pannable: true, zoomable: true,
-            style: { background: "#26262b" }, maskColor: "rgba(0,0,0,.45)" }),
+            style: { background: "#26262b" }, maskColor: "rgba(0,0,0,.55)",
+            nodeColor: (n) => (n.type === "qviStructure" ? "#3d4a63" : "#54545f"),
+            nodeStrokeColor: "#7a7a88", nodeStrokeWidth: 2 }),
         ])),
 
       h("div", { key: "side", className: "side" }, [

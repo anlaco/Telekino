@@ -143,3 +143,29 @@ pre.wat {
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* El CSS que trae React Flow es para tema claro: sin esto, el minimapa y los
+   controles salen como dos manchas blancas sobre el canvas oscuro. */
+.react-flow__minimap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.react-flow__controls {
+  box-shadow: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  fill: var(--text);
+  width: 26px;
+  height: 26px;
+}
+
+.react-flow__controls-button:hover { background: #32323a; }
+.react-flow__controls-button:last-child { border-bottom: none; }

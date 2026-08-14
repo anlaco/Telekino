@@ -82,8 +82,39 @@ hito 1: `suma` → 8, `while-suma` → 45 en 10 iteraciones, `arrays-strings` �
 índice y texto. Path traversal en `/api/vi` rechazado; un tipo de bloque inventado da un error
 legible en el panel lateral.
 
-**Frontend sin verificar en navegador.** Solo está comprobada la sintaxis del módulo. Abrirlo y
-juzgar los cinco puntos de arriba es el paso que decide, y es manual.
+**Frontend verificado en navegador (Chromium, 1400×900).** Los cinco puntos, medidos:
+
+| Qué | Resultado |
+|---|---|
+| Monta y pinta | 15 nodos y 10 aristas en `adquisicion.qvi`, **cero errores de consola** |
+| Anidamiento | arrastrar el contenedor mueve el cuerpo el mismo (Δx, Δy); `extent: "parent"` retiene a un hijo al que se le tira 900 px fuera |
+| Round-trip | mover nodos y volver a Run **no cambia el resultado**, y los cuatro VIs dan lo mismo que el hito 1 |
+| Regla absoluta #6 | el segundo wire a una entrada se rechaza con «El puerto n3.a ya tiene un wire»; el contador de aristas no sube |
+| Auto-layout | ver abajo: tenía un fallo real, arreglado |
+
+**Estrés (`../vis/estres-200.qvi`, 203 nodos y 401 aristas):** pintado en **413 ms**, Run
+completo (reconstruir + compilar + ejecutar + red) en **212 ms**, y el canvas responde al
+arrastre. El VI lo genera `gen-estres.mjs` (`node gen-estres.mjs 200 ../vis/estres-200.qvi`),
+así que la medida se repite con cualquier tamaño.
+
+### El fallo que encontró la prueba
+
+El auto-layout usaba una rejilla fija de 170×90, así que **no sabía que un `while` es
+enorme**: los nodos de las columnas siguientes acababan dibujados *dentro* del contenedor. En
+`adquisicion.qvi` había dos `sr-read` solapados, uno del cuerpo del bucle y otro del ámbito
+raíz — el dibujo mentía sobre qué está dentro del bucle y qué no, que es justo lo que un
+editor dataflow no se puede permitir.
+
+Arreglado midiendo el tamaño real de cada nodo (`sizeOf`, recursivo para los contenedores) y
+dimensionando columnas y filas con él. Solapes: **1 → 0**, y los nodos de raíz salen fuera de
+la caja del bucle. De paso, el minimapa y los controles llevaban los colores de tema claro de
+React Flow: dos manchas blancas sobre el canvas oscuro.
+
+### Veredicto
+
+**Opción C confirmada.** El anidamiento aguanta, el round-trip cierra y 200 nodos no despeinan
+al canvas. No hay motivo para irse a egui (opción B), que era la salida prevista si esto
+fallaba.
 
 ## Qué NO cubre (deliberadamente)
 
