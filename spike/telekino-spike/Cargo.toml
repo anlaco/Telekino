@@ -7,9 +7,15 @@ edition = "2024"
 anyhow = "1.0.104"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-wasm-encoder = "0.255.0"
-wasmprinter = "0.255.0"
+wasm-encoder = "0.256.0"
+wasmprinter = "0.256.0"
 wasmtime = "47.0.3"
+# Componente WASM (modo `component`, T2): embeber el WIT en el módulo core y
+# encodearlo a componente sin depender de `cargo-component`.
+wit-component = "0.256.0"
+wit-parser = "0.256.0"
 
 [dev-dependencies]
-wasmprinter = "0.255.0"
+wasmprinter = "0.256.0"
+wasmtime = "47.0.3"
+wit-component = "0.256.0"

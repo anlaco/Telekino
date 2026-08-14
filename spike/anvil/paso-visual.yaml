@@ -1,0 +1,46 @@
+# Un paso de banco de test escrito visualmente, corriendo dentro de Anvil (T2).
+#
+# `paso-visual.wasm` NO está escrito en Rust: sale de `../vis/paso-anvil.qvi`,
+# un grafo dataflow, compilado por Telekino a componente WASM con la interfaz
+# `anvil:paso@0.1.0`. Anvil no distingue este `.wasm` de uno hecho a mano — su
+# roadmap ya declaraba ser agnóstico al origen del componente.
+#
+# Regenerar el .wasm (no hace falta cargo-component: sale de `cargo run`):
+#   cd spike/telekino-spike
+#   cargo run -- component ../vis/paso-anvil.qvi -o ../anvil/paso-visual.wasm
+#
+# Ejecutar, **desde el directorio de Telekino y con el path relativo** (el
+# guest sólo tiene preabierto su CWD; con una ruta absoluta muere con
+# `os error 44`, que parece otro fallo y no lo es):
+#   /media/alaforga/ssd/01-ANLACO/Anvil/packaging/anvil-host/target/debug/anvil \
+#     spike/anvil/paso-visual.yaml --json /tmp/t2.json
+#
+# El `path:` se resuelve contra el directorio de este YAML, así que el .wasm
+# vive aquí al lado.
+
+nombre: paso_visual_telekino
+ejecutores:
+  - nombre: telekino
+    tipo: wasm
+    path: paso-visual.wasm
+main:
+  # El grafo toma 10 muestras (4,2 + i·0,05), las acumula en un array y
+  # devuelve su media: 4,425. El límite lo evalúa el motor de Anvil, no el
+  # componente (ADR-0008).
+  - nombre: medir_tension
+    ejecutor: telekino
+    reintentos: 1
+    limite:
+      tipo: rango
+      min: 4.0
+      max: 5.0
+
+  # Segundo paso sobre el mismo `.wasm`: un único Store, N llamadas. Sirve
+  # para comprobar que el estado del panel se reinicia entre llamadas.
+  - nombre: comprobar_repetibilidad
+    ejecutor: telekino
+    reintentos: 1
+    limite:
+      tipo: rango
+      min: 4.0
+      max: 5.0

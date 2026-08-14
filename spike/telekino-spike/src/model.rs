@@ -34,11 +34,21 @@ pub struct FpItem {
     pub kind: String,
     #[serde(default)]
     pub label: String,
+    /// Tipo del dato que lleva el item: `"num"` (por defecto) o `"str"`.
+    ///
+    /// Hasta T2 todo el panel era numérico. La interfaz `anvil:paso` recibe y
+    /// devuelve texto, así que el `.qvi` tiene que poder decirlo.
+    #[serde(default = "datatype_num")]
+    pub datatype: String,
     #[serde(default)]
     pub default: f64,
     /// Metadato de presentación: el compilador nunca lo mira.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub view: Option<serde_json::Value>,
+}
+
+fn datatype_num() -> String {
+    "num".into()
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

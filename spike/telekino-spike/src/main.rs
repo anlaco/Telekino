@@ -6,6 +6,8 @@
 //!   telekino-spike run   vi.json          compila en memoria y ejecuta (DT-010)
 //!   telekino-spike build vi.json -o x.wasm   emite el artefacto
 //!   telekino-spike wat   vi.json          vuelca el WAT para depurar (§7.1)
+//!   telekino-spike component vi.qvi -o x.wasm   componente con la interfaz
+//!                                               `anvil:paso` de Anvil (T2)
 
 use anyhow::{bail, Context, Result};
 use std::path::Path;
@@ -19,25 +21,37 @@ fn load(path: &str) -> Result<model::Vi> {
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 {
-        eprintln!("uso: telekino-spike <run|build|wat> <vi.json> [-o salida.wasm]");
+        eprintln!("uso: telekino-spike <run|build|wat|component> <vi.qvi> [-o salida.wasm]");
         std::process::exit(2);
     }
     let (cmd, path) = (args[1].as_str(), args[2].as_str());
     let vi = load(path)?;
+    let salida = || -> Result<String> {
+        Ok(match args.iter().position(|a| a == "-o") {
+            Some(i) => args
+                .get(i + 1)
+                .cloned()
+                .context("falta el nombre de fichero tras -o")?,
+            None => Path::new(path).with_extension("wasm").to_string_lossy().into_owned(),
+        })
+    };
+
+    // El modo `component` no pasa por aquí: emite otro módulo core (sin
+    // imports y con la firma de la canonical ABI) y lo encodea a componente.
+    if cmd == "component" {
+        let wit = Path::new(env!("CARGO_MANIFEST_DIR")).join("../wit");
+        let wasm = compile::compile_component(&vi, &wit).context("error de compilación")?;
+        let out = salida()?;
+        std::fs::write(&out, &wasm)?;
+        println!("{out} ({} bytes, componente anvil:paso@0.1.0)", wasm.len());
+        return Ok(());
+    }
+
     let wasm = compile::compile(&vi).context("error de compilación")?;
 
     match cmd {
         "build" => {
-            let out = match args.iter().position(|a| a == "-o") {
-                Some(i) => args
-                    .get(i + 1)
-                    .cloned()
-                    .context("falta el nombre de fichero tras -o")?,
-                None => Path::new(path)
-                    .with_extension("wasm")
-                    .to_string_lossy()
-                    .into_owned(),
-            };
+            let out = salida()?;
             std::fs::write(&out, &wasm)?;
             println!("{out} ({} bytes)", wasm.len());
         }

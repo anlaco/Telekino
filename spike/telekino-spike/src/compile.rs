@@ -24,7 +24,7 @@
 //!   +8  ...  datos
 //! ```
 
-use crate::model::{Graph, Node, PortRef, Vi};
+use crate::model::{FpItem, Graph, Node, PortRef, Vi};
 use crate::topo;
 use anyhow::{anyhow, bail, Context, Result};
 use std::collections::HashMap;
@@ -34,18 +34,45 @@ use wasm_encoder::{
     MemoryType, Module, TypeSection, ValType,
 };
 
-// Funciones importadas del host (ver §7.5 del estudio).
+// Los cuatro primeros índices son la frontera con el panel (§7.5 del estudio).
+// En modo `Host` son imports; en modo `Component` son funciones definidas por
+// el propio módulo que leen y escriben la tabla de slots. Los índices no
+// cambian entre modos, así que la emisión del grafo es idéntica en los dos.
 const F_FP_GET: u32 = 0;
 const F_FP_SET: u32 = 1;
 const F_FP_SET_ARRAY: u32 = 2;
 const F_FP_SET_STR: u32 = 3;
-// Funciones definidas por el módulo.
 const F_ALLOC: u32 = 4;
 const F_RUN: u32 = 5;
+// Sólo en modo `Component`.
+const F_REALLOC: u32 = 6;
+const F_EXPORT_RUN: u32 = 7;
+const F_POST_RETURN: u32 = 8;
 
 const G_HEAP: u32 = 0;
 /// Desplazamiento de los datos respecto al puntero. Ver la cabecera de arriba.
 const DATA_OFF: u64 = 8;
+
+/// Nombres de export que exige la canonical ABI para el world `anvil-paso`.
+/// Son los mismos que genera `cargo component` (ver `bindings.rs` de
+/// `Anvil/ejemplos/hola-paso`).
+const EXPORT_RUN: &str = "anvil:paso/paso@0.1.0#run";
+const EXPORT_POST: &str = "cabi_post_anvil:paso/paso@0.1.0#run";
+
+/// Tamaño del slot de un item del Front Panel en modo `Component`.
+const SLOT: u32 = 16;
+/// Marca de «este indicador no lo ha escrito el grafo».
+const TAG_UNSET: i32 = -1;
+
+/// Para qué se compila el módulo.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Mode {
+    /// Módulo core con imports `fp.*`: lo ejecuta el host del spike (`host.rs`).
+    Host,
+    /// Módulo core **sin imports**, con la firma de la canonical ABI de
+    /// `anvil:paso`. Es el que `wit-component` convierte en componente.
+    Component,
+}
 
 /// Tipo de dato de un wire. El spike cubre estos tres.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -95,6 +122,9 @@ fn produces_out(ty: &str) -> bool {
 /// todavía al visitarlos.
 fn infer(vi: &Vi) -> Result<HashMap<String, Ty>> {
     let mut tys = HashMap::new();
+    // Los controles no dicen su tipo: lo dice el item del panel al que apuntan.
+    let fp: HashMap<&str, Ty> = vi.front_panel.iter().map(|it| (it.id.as_str(), fp_ty(it))).collect();
+    seed_controls(&vi.diagram, &fp, &mut tys);
     loop {
         let before = tys.len();
         infer_graph(&vi.diagram, &mut tys);
@@ -103,6 +133,29 @@ fn infer(vi: &Vi) -> Result<HashMap<String, Ty>> {
         }
     }
     Ok(tys)
+}
+
+/// Tipo de dato declarado por un item del Front Panel.
+fn fp_ty(it: &FpItem) -> Ty {
+    if it.datatype == "str" {
+        Ty::Str
+    } else {
+        Ty::F64
+    }
+}
+
+fn seed_controls(g: &Graph, fp: &HashMap<&str, Ty>, tys: &mut HashMap<String, Ty>) {
+    for n in &g.nodes {
+        if n.ty == "control" {
+            let id = n.r#ref.as_deref().unwrap_or(&n.id);
+            if let Some(t) = fp.get(id) {
+                tys.insert(port_key(&n.id, "out"), *t);
+            }
+        }
+        if let Some(body) = &n.body {
+            seed_controls(body, fp, tys);
+        }
+    }
 }
 
 fn infer_graph(g: &Graph, tys: &mut HashMap<String, Ty>) {
@@ -239,6 +292,31 @@ impl Statics {
         self.at.insert(s.to_string(), ptr);
         ptr
     }
+
+    /// Reserva la tabla de slots del Front Panel (modo `Component`), donde el
+    /// módulo guarda lo que en modo `Host` vive al otro lado de los imports.
+    /// Cada slot ocupa 16 bytes:
+    ///
+    /// ```text
+    ///   +0   f64  valor numérico
+    ///   +8   i32  puntero (array o string, formato [len][pad][datos])
+    ///   +12  i32  tag: -1 sin escribir · 0 num · 1 arr · 2 str
+    /// ```
+    ///
+    /// Se reserva antes de internar literales para que `heap_start` la cuente.
+    fn reserve_slots(&mut self, items: &[FpItem]) -> u32 {
+        let base = self.bytes.len() as u32;
+        for it in items {
+            let es_control = it.kind == "control";
+            let valor = if es_control { it.default } else { 0.0 };
+            self.bytes.extend_from_slice(&valor.to_le_bytes());
+            self.bytes.extend_from_slice(&0u32.to_le_bytes());
+            // Un control ya tiene valor; un indicador todavía no.
+            let tag: i32 = if es_control { 0 } else { TAG_UNSET };
+            self.bytes.extend_from_slice(&tag.to_le_bytes());
+        }
+        base
+    }
 }
 
 fn collect_statics(g: &Graph, st: &mut Statics) {
@@ -252,7 +330,12 @@ fn collect_statics(g: &Graph, st: &mut Statics) {
     }
 }
 
+/// Compila para el host del spike (modo por defecto, DT-010).
 pub fn compile(vi: &Vi) -> Result<Vec<u8>> {
+    compile_core(vi, Mode::Host)
+}
+
+pub fn compile_core(vi: &Vi, mode: Mode) -> Result<Vec<u8>> {
     if vi.qvi != 1 {
         bail!("versión de formato .qvi no soportada: {}", vi.qvi);
     }
@@ -265,20 +348,38 @@ pub fn compile(vi: &Vi) -> Result<Vec<u8>> {
         .collect();
 
     let tys = infer(vi)?;
+    if mode == Mode::Component {
+        check_anvil_panel(vi, &tys)?;
+    }
     let mut order = Vec::new();
     collect_locals(&vi.diagram, &tys, &mut order);
     let locals = Locals::build(&order);
 
     let mut statics = Statics::new();
+    let slots = match mode {
+        Mode::Component => Some(statics.reserve_slots(&vi.front_panel)),
+        Mode::Host => None,
+    };
     collect_statics(&vi.diagram, &mut statics);
 
     let mut f = Function::new([
         (locals.n_f64, ValType::F64),
         (locals.n_i32, ValType::I32),
     ]);
-    let mut cx = Ctx { fp_index: &fp_index, locals: &locals, statics: &mut statics, scope: None };
+    let mut cx = Ctx {
+        fp_index: &fp_index,
+        locals: &locals,
+        statics: &mut statics,
+        scope: None,
+        mode,
+        slots,
+    };
     emit_graph(&vi.diagram, &mut cx, &mut f)?;
     f.instructions().end();
+
+    // Cadena vacía compartida: lo que devuelve un indicador de texto que el
+    // grafo no llegó a escribir.
+    let empty = if mode == Mode::Component { statics.intern("") } else { 0 };
 
     // --- ensamblado del módulo (el orden de secciones lo fija el formato) ---
     let mut types = TypeSection::new();
@@ -287,16 +388,37 @@ pub fn compile(vi: &Vi) -> Result<Vec<u8>> {
     types.ty().function([ValType::I32, ValType::I32], []); // 2: fp.set-array / set-str
     types.ty().function([ValType::I32], [ValType::I32]); // 3: alloc
     types.ty().function([], []); // 4: run
+    if mode == Mode::Component {
+        // 5: cabi_realloc, 6: run de la canonical ABI, 7: post-return
+        types.ty().function([ValType::I32; 4], [ValType::I32]);
+        types.ty().function([ValType::I32; 3], [ValType::I32]);
+        types.ty().function([ValType::I32], []);
+    }
 
     let mut imports = ImportSection::new();
-    imports.import("fp", "get", EntityType::Function(0));
-    imports.import("fp", "set", EntityType::Function(1));
-    imports.import("fp", "set-array", EntityType::Function(2));
-    imports.import("fp", "set-str", EntityType::Function(2));
+    if mode == Mode::Host {
+        imports.import("fp", "get", EntityType::Function(0));
+        imports.import("fp", "set", EntityType::Function(1));
+        imports.import("fp", "set-array", EntityType::Function(2));
+        imports.import("fp", "set-str", EntityType::Function(2));
+    }
 
     let mut funcs = FunctionSection::new();
+    if mode == Mode::Component {
+        // Las mismas cuatro funciones de panel, pero definidas aquí: el
+        // componente no puede importar nada o Anvil no lo instancia.
+        funcs.function(0);
+        funcs.function(1);
+        funcs.function(2);
+        funcs.function(2);
+    }
     funcs.function(3); // alloc
     funcs.function(4); // run
+    if mode == Mode::Component {
+        funcs.function(5); // cabi_realloc
+        funcs.function(6); // anvil:paso/paso@0.1.0#run
+        funcs.function(7); // cabi_post_...#run
+    }
 
     let mut mems = MemorySection::new();
     mems.memory(MemoryType {
@@ -316,21 +438,45 @@ pub fn compile(vi: &Vi) -> Result<Vec<u8>> {
     );
 
     let mut exports = ExportSection::new();
-    exports.export("run", ExportKind::Func, F_RUN);
-    exports.export("memory", ExportKind::Memory, 0);
-    // Se exporta para poder medir cuánta arena se ha consumido.
-    exports.export("heap", ExportKind::Global, G_HEAP);
-
     let mut code = CodeSection::new();
-    code.function(&emit_alloc());
-    code.function(&f);
+    match mode {
+        Mode::Host => {
+            exports.export("run", ExportKind::Func, F_RUN);
+            exports.export("memory", ExportKind::Memory, 0);
+            // Se exporta para poder medir cuánta arena se ha consumido.
+            exports.export("heap", ExportKind::Global, G_HEAP);
+            code.function(&emit_alloc());
+            code.function(&f);
+        }
+        Mode::Component => {
+            // Los nombres son los que espera `wit-component`: el export de la
+            // función del world, su post-return y el realloc de la ABI.
+            exports.export(EXPORT_RUN, ExportKind::Func, F_EXPORT_RUN);
+            exports.export(EXPORT_POST, ExportKind::Func, F_POST_RETURN);
+            exports.export("cabi_realloc", ExportKind::Func, F_REALLOC);
+            exports.export("memory", ExportKind::Memory, 0);
+
+            let base = slots.expect("modo componente sin tabla de slots");
+            code.function(&emit_fp_get(base));
+            code.function(&emit_fp_set(base));
+            code.function(&emit_fp_set_ptr(base, 1)); // set-array
+            code.function(&emit_fp_set_ptr(base, 2)); // set-str
+            code.function(&emit_alloc());
+            code.function(&f);
+            code.function(&emit_realloc());
+            code.function(&emit_abi_run(vi, base, empty)?);
+            code.function(&emit_post_return(heap_start));
+        }
+    }
 
     let mut data = DataSection::new();
     data.active(0, &ConstExpr::i32_const(0), statics.bytes.iter().copied());
 
     let mut module = Module::new();
     module.section(&types);
-    module.section(&imports);
+    if mode == Mode::Host {
+        module.section(&imports);
+    }
     module.section(&funcs);
     module.section(&mems);
     module.section(&globals);
@@ -386,6 +532,19 @@ struct Ctx<'a> {
     statics: &'a mut Statics,
     /// Local que guarda el contador de iteración del bucle actual.
     scope: Option<u32>,
+    mode: Mode,
+    /// Dirección de la tabla de slots del panel (sólo en modo `Component`).
+    slots: Option<u32>,
+}
+
+impl Ctx<'_> {
+    /// Dirección del slot del item `idx` del Front Panel.
+    fn slot(&self, idx: i32) -> Result<i32> {
+        let base = self
+            .slots
+            .ok_or_else(|| anyhow!("no hay tabla de slots: sólo existe en modo componente"))?;
+        Ok(base as i32 + idx * SLOT as i32)
+    }
 }
 
 fn mem(offset: u64, align: u32) -> MemArg {
@@ -489,7 +648,22 @@ fn emit_node(n: &Node, g: &Graph, cx: &mut Ctx, f: &mut Function) -> Result<()> 
                 .fp_index
                 .get(id)
                 .ok_or_else(|| anyhow!("control '{id}' no existe en el front-panel"))?;
-            f.instructions().i32_const(idx).call(F_FP_GET).local_set(out()?);
+            let o = out()?;
+            if cx.locals.get(&port_key(&n.id, "out"))?.1 == Ty::F64 {
+                f.instructions().i32_const(idx).call(F_FP_GET).local_set(o);
+            } else if cx.mode == Mode::Component {
+                // Un control que no es numérico lleva un puntero, y `fp.get`
+                // devuelve `f64`. Aquí se lee el slot directamente.
+                f.instructions()
+                    .i32_const(cx.slot(idx)? + 8)
+                    .i32_load(mem(0, 2))
+                    .local_set(o);
+            } else {
+                bail!(
+                    "el control '{id}' no es numérico, y el host del spike sólo sabe \
+                     inyectar números: sólo funciona compilando con `component`"
+                );
+            }
         }
         "indicator" => {
             let id = n.r#ref.as_deref().unwrap_or(&n.id);
@@ -757,4 +931,274 @@ fn emit_while(n: &Node, cx: &mut Ctx, f: &mut Function) -> Result<()> {
         .br_if(0);
     f.instructions().end();
     Ok(())
+}
+
+// ------------------------------------------------------- componente (T2)
+//
+// Lo que sigue sólo se emite en modo `Component`. Cubre las tres cosas que le
+// faltaban al módulo core para que Anvil lo cargue: la firma de la canonical
+// ABI, `cabi_realloc`, y una frontera de panel que no dependa de imports.
+
+/// Las cuatro funciones de panel, definidas en vez de importadas: leen y
+/// escriben la tabla de slots. Índices 0-3, los mismos que los imports del
+/// modo `Host`, para que la emisión del grafo no cambie.
+fn emit_fp_get(base: u32) -> Function {
+    let mut f = Function::new([]);
+    let mut i = f.instructions();
+    i.local_get(0).i32_const(SLOT as i32).i32_mul().i32_const(base as i32).i32_add();
+    i.f64_load(mem(0, 3));
+    i.end();
+    f
+}
+
+fn emit_fp_set(base: u32) -> Function {
+    let mut f = Function::new([(1, ValType::I32)]);
+    const ADDR: u32 = 2;
+    let mut i = f.instructions();
+    i.local_get(0).i32_const(SLOT as i32).i32_mul().i32_const(base as i32).i32_add();
+    i.local_set(ADDR);
+    i.local_get(ADDR).local_get(1).f64_store(mem(0, 3));
+    i.local_get(ADDR).i32_const(0).i32_store(mem(12, 2));
+    i.end();
+    f
+}
+
+/// `set-array` (tag 1) y `set-str` (tag 2): guardan el puntero, no el valor.
+fn emit_fp_set_ptr(base: u32, tag: i32) -> Function {
+    let mut f = Function::new([(1, ValType::I32)]);
+    const ADDR: u32 = 2;
+    let mut i = f.instructions();
+    i.local_get(0).i32_const(SLOT as i32).i32_mul().i32_const(base as i32).i32_add();
+    i.local_set(ADDR);
+    i.local_get(ADDR).local_get(1).i32_store(mem(8, 2));
+    i.local_get(ADDR).i32_const(tag).i32_store(mem(12, 2));
+    i.end();
+    f
+}
+
+/// `cabi_realloc(old, old_size, align, new_size) -> ptr`.
+///
+/// Lo llama el host para dejar los parámetros (aquí, el string `nombre`) dentro
+/// de la memoria del componente. Se apoya en el bump allocator: no libera, y el
+/// caso real es siempre `old == 0`. Se implementa el crecimiento igualmente
+/// porque la ABI lo permite y salir mal aquí es muy difícil de depurar.
+fn emit_realloc() -> Function {
+    let mut f = Function::new([(1, ValType::I32)]);
+    const OLD: u32 = 0;
+    const OLD_SIZE: u32 = 1;
+    const NEW_SIZE: u32 = 3;
+    const PTR: u32 = 4;
+    let mut i = f.instructions();
+    i.local_get(NEW_SIZE).call(F_ALLOC).local_set(PTR);
+    i.local_get(OLD);
+    i.if_(BlockType::Empty);
+    i.local_get(PTR).local_get(OLD);
+    // min(old_size, new_size)
+    i.local_get(OLD_SIZE)
+        .local_get(NEW_SIZE)
+        .local_get(OLD_SIZE)
+        .local_get(NEW_SIZE)
+        .i32_lt_u()
+        .select();
+    i.memory_copy(0, 0);
+    i.end();
+    i.local_get(PTR);
+    i.end();
+    f
+}
+
+/// Post-return: el host ya ha leído el record y los strings, así que la arena
+/// se puede devolver entera. Es el único momento seguro para hacerlo — al
+/// entrar todavía no se han leído los parámetros que dejó `cabi_realloc`.
+fn emit_post_return(heap_start: i32) -> Function {
+    let mut f = Function::new([]);
+    let mut i = f.instructions();
+    i.i32_const(heap_start).global_set(G_HEAP);
+    i.end();
+    f
+}
+
+/// Índice del item del panel con ese id.
+fn fp_slot_of(vi: &Vi, id: &str) -> Result<i32> {
+    vi.front_panel
+        .iter()
+        .position(|it| it.id == id)
+        .map(|p| p as i32)
+        .ok_or_else(|| anyhow!("el .qvi no tiene ningún item de panel llamado '{id}'"))
+}
+
+/// `run(nombre_ptr, nombre_len, intento) -> ptr_al_record`.
+///
+/// El record `resultado` aplana a seis valores, más de uno, así que la
+/// canonical ABI lo devuelve por retorno indirecto. Layout (align 8):
+///
+/// ```text
+///   +0  i32 ptr estado     +4  i32 len
+///   +8  i32 ptr mensaje   +12  i32 len
+///  +16  i32 discriminante del option   +24  f64 valor
+/// ```
+fn emit_abi_run(vi: &Vi, base: u32, empty: u32) -> Result<Function> {
+    let slot = |id: &str| -> Result<i32> { Ok(base as i32 + fp_slot_of(vi, id)? * SLOT as i32) };
+
+    let mut f = Function::new([(2, ValType::I32)]);
+    const NOMBRE_PTR: u32 = 0;
+    const NOMBRE_LEN: u32 = 1;
+    const INTENTO: u32 = 2;
+    const T: u32 = 3;
+    const RET: u32 = 4;
+
+    let mut i = f.instructions();
+
+    // 1. Los slots son estáticos y sobreviven entre llamadas; Anvil reutiliza
+    //    un único Store para todos los pasos del mismo `.wasm`. Sin esto, un
+    //    indicador escrito en la llamada anterior parecería escrito en ésta.
+    for (k, it) in vi.front_panel.iter().enumerate() {
+        if it.kind == "indicator" {
+            i.i32_const(base as i32 + k as i32 * SLOT as i32)
+                .i32_const(TAG_UNSET)
+                .i32_store(mem(12, 2));
+        }
+    }
+
+    // 2. `nombre` llega como (ptr, len) en la memoria del componente; el grafo
+    //    espera el formato del spike, [len][pad][utf8].
+    i.local_get(NOMBRE_LEN).i32_const(DATA_OFF as i32).i32_add().call(F_ALLOC).local_set(T);
+    i.local_get(T).local_get(NOMBRE_LEN).i32_store(mem(0, 2));
+    i.local_get(T)
+        .i32_const(DATA_OFF as i32)
+        .i32_add()
+        .local_get(NOMBRE_PTR)
+        .local_get(NOMBRE_LEN)
+        .memory_copy(0, 0);
+    i.i32_const(slot("nombre")?).local_get(T).i32_store(mem(8, 2));
+    i.i32_const(slot("nombre")?).i32_const(2).i32_store(mem(12, 2));
+
+    // 3. `intento` es s32 y el spike trabaja en f64.
+    i.i32_const(slot("intento")?).local_get(INTENTO).f64_convert_i32_s().f64_store(mem(0, 3));
+    i.i32_const(slot("intento")?).i32_const(0).i32_store(mem(12, 2));
+
+    // 4. El grafo, tal cual lo emite el compilador.
+    i.call(F_RUN);
+
+    // 5. El record.
+    i.i32_const(32).call(F_ALLOC).local_set(RET);
+    for (id, off) in [("estado", 0u64), ("mensaje", 8)] {
+        let s = slot(id)?;
+        // Un indicador de texto que el grafo no escribió sale como "".
+        i.i32_const(s).i32_load(mem(12, 2)).i32_const(TAG_UNSET).i32_ne();
+        i.if_(BlockType::Result(ValType::I32));
+        i.i32_const(s).i32_load(mem(8, 2));
+        i.else_();
+        i.i32_const(empty as i32);
+        i.end();
+        i.local_set(T);
+        // La cadena sale sin copiar: los datos ya están detrás de la cabecera.
+        i.local_get(RET).local_get(T).i32_const(DATA_OFF as i32).i32_add().i32_store(mem(off, 2));
+        i.local_get(RET).local_get(T).i32_load(mem(0, 2)).i32_store(mem(off + 4, 2));
+    }
+    // `valor-medido` es un option: sin escribir → none.
+    let v = slot("valor-medido")?;
+    i.local_get(RET).i32_const(v).i32_load(mem(12, 2)).i32_const(TAG_UNSET).i32_ne();
+    i.i32_store(mem(16, 2));
+    i.local_get(RET).i32_const(v).f64_load(mem(0, 3)).f64_store(mem(24, 3));
+
+    i.local_get(RET);
+    i.end();
+    Ok(f)
+}
+
+/// El `.qvi` tiene que traer exactamente los items que la interfaz `anvil:paso`
+/// necesita. Se comprueba al compilar y se dice cuál falta: adivinarlo o poner
+/// valores por defecto sólo aplaza el error hasta que Anvil devuelve algo raro.
+fn check_anvil_panel(vi: &Vi, tys: &HashMap<String, Ty>) -> Result<()> {
+    let exigido: [(&str, &str, Ty); 5] = [
+        ("nombre", "control", Ty::Str),
+        ("intento", "control", Ty::F64),
+        ("estado", "indicator", Ty::Str),
+        ("mensaje", "indicator", Ty::Str),
+        ("valor-medido", "indicator", Ty::F64),
+    ];
+    let mut faltan = Vec::new();
+    for (id, kind, ty) in exigido {
+        match vi.front_panel.iter().find(|it| it.id == id) {
+            None => faltan.push(format!("falta el {kind} '{id}'")),
+            Some(it) if it.kind != kind => {
+                faltan.push(format!("'{id}' es un {} y tiene que ser un {kind}", it.kind))
+            }
+            Some(it) if fp_ty(it) != ty => faltan.push(format!(
+                "'{id}' es de tipo {:?} y la interfaz lo declara {ty:?}",
+                fp_ty(it)
+            )),
+            Some(_) => {}
+        }
+    }
+    if !faltan.is_empty() {
+        bail!(
+            "el .qvi no cumple la interfaz anvil:paso@0.1.0 — {}.\n\
+             Hacen falta los controles 'nombre' (str) e 'intento' (num) y los \
+             indicadores 'estado' (str), 'mensaje' (str) y 'valor-medido' (num)",
+            faltan.join("; ")
+        );
+    }
+    check_indicator_wires(&vi.diagram, vi, tys)
+}
+
+/// Lo que el grafo cablea a un indicador tiene que ser del tipo que el panel
+/// declara: si no, el componente devolvería un puntero donde el host espera un
+/// número, y el error saldría lejos de aquí.
+fn check_indicator_wires(g: &Graph, vi: &Vi, tys: &HashMap<String, Ty>) -> Result<()> {
+    for n in &g.nodes {
+        if n.ty == "indicator" {
+            let id = n.r#ref.as_deref().unwrap_or(&n.id);
+            if let Some(it) = vi.front_panel.iter().find(|it| it.id == id) {
+                if let Some(src) = g.source_of(&n.id, "in") {
+                    if let Some(t) = tys.get(&port_key(&src.0, &src.1)) {
+                        if *t != fp_ty(it) {
+                            bail!(
+                                "el indicador '{id}' está declarado {:?} pero el wire que le \
+                                 llega es {t:?}",
+                                fp_ty(it)
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(body) = &n.body {
+            check_indicator_wires(body, vi, tys)?;
+        }
+    }
+    Ok(())
+}
+
+/// Compila un `.qvi` a **componente WASM** con la interfaz `anvil:paso`.
+///
+/// Se hace desde aquí, con `wit-component`, y no con `cargo-component`: el
+/// artefacto tiene que salir de `cargo run`, sin cadena de herramientas
+/// externa. `wit_dir` es el directorio que contiene `anvil-paso.wit`.
+pub fn compile_component(vi: &Vi, wit_dir: &std::path::Path) -> Result<Vec<u8>> {
+    let mut core = compile_core(vi, Mode::Component)?;
+
+    let mut resolve = wit_parser::Resolve::default();
+    let (pkg, _) = resolve
+        .push_path(wit_dir)
+        .with_context(|| format!("no se pudo leer el WIT de {}", wit_dir.display()))?;
+    let world = resolve
+        .select_world(&[pkg], Some("anvil-paso"))
+        .context("el WIT no declara el world 'anvil-paso'")?;
+
+    wit_component::embed_component_metadata(
+        &mut core,
+        &resolve,
+        world,
+        wit_component::StringEncoding::UTF8,
+    )
+    .context("no se pudo embeber el WIT en el módulo core")?;
+
+    wit_component::ComponentEncoder::default()
+        .module(&core)
+        .context("wit-component rechazó el módulo core")?
+        .validate(true)
+        .encode()
+        .context("no se pudo encodear el componente")
 }

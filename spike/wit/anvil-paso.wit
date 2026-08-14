@@ -1,0 +1,14 @@
+package anvil:paso@0.1.0;
+
+interface paso {
+  record resultado {
+    estado: string,
+    mensaje: string,
+    valor-medido: option<f64>,
+  }
+  run: func(nombre: string, intento: s32) -> resultado;
+}
+
+world anvil-paso {
+  export paso;
+}

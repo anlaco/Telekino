@@ -1,0 +1,113 @@
+{
+  "qvi": 1,
+  "meta": {
+    "name": "paso-anvil",
+    "description": "Un paso de banco de test escrito como grafo: toma 10 muestras, las acumula en un array y devuelve su media como valor-medido. Compila con `component` a la interfaz anvil:paso@0.1.0 — el .wasm que carga Anvil. Los items del panel se corresponden con los parámetros y los campos del record: nombre/intento entran, estado/mensaje/valor-medido salen."
+  },
+  "front-panel": [
+    { "id": "nombre",       "kind": "control",   "datatype": "str", "label": "Nombre del paso" },
+    { "id": "intento",      "kind": "control",   "label": "Nº de intento", "default": 1.0 },
+    { "id": "estado",       "kind": "indicator", "datatype": "str", "label": "Estado" },
+    { "id": "mensaje",      "kind": "indicator", "datatype": "str", "label": "Mensaje" },
+    { "id": "valor-medido", "kind": "indicator", "label": "Valor medido" }
+  ],
+  "diagram": {
+    "nodes": [
+      { "id": "c_nombre",  "type": "control", "ref": "nombre" },
+      { "id": "c_intento", "type": "control", "ref": "intento" },
+
+      { "id": "vacio", "type": "build-array", "inputs": 0 },
+      { "id": "cero",  "type": "const", "value": 0.0 },
+
+      { "id": "base",  "type": "const", "value": 4.2 },
+      { "id": "paso",  "type": "const", "value": 0.05 },
+
+      { "id": "uno",    "type": "const", "value": 1.0 },
+      { "id": "deriva", "type": "const", "value": 0.1 },
+      { "id": "n_prev", "type": "sub" },
+      { "id": "offset", "type": "mul" },
+
+      {
+        "id": "muestreo",
+        "type": "while",
+        "shift-registers": [
+          { "id": "buf", "init": ["vacio", "out"] },
+          { "id": "acc", "init": ["cero", "out"] }
+        ],
+        "condition": ["cmp", "out"],
+        "body": {
+          "nodes": [
+            { "id": "i",      "type": "iter" },
+            { "id": "t_base", "type": "tunnel", "src": ["base", "out"] },
+            { "id": "t_paso", "type": "tunnel", "src": ["paso", "out"] },
+            { "id": "t_off",  "type": "tunnel", "src": ["offset", "out"] },
+
+            { "id": "rampa",   "type": "mul" },
+            { "id": "parcial", "type": "add" },
+            { "id": "muestra", "type": "add" },
+
+            { "id": "lee_buf", "type": "sr-read",  "sr": "buf" },
+            { "id": "app",     "type": "array-append" },
+            { "id": "esc_buf", "type": "sr-write", "sr": "buf" },
+
+            { "id": "lee_acc", "type": "sr-read",  "sr": "acc" },
+            { "id": "suma",    "type": "add" },
+            { "id": "esc_acc", "type": "sr-write", "sr": "acc" },
+
+            { "id": "ultima", "type": "const", "value": 9.0 },
+            { "id": "cmp",    "type": "lt" }
+          ],
+          "wires": [
+            { "from": ["i",       "out"], "to": ["rampa",   "a"] },
+            { "from": ["t_paso",  "out"], "to": ["rampa",   "b"] },
+            { "from": ["t_base",  "out"], "to": ["parcial", "a"] },
+            { "from": ["rampa",   "out"], "to": ["parcial", "b"] },
+            { "from": ["parcial", "out"], "to": ["muestra", "a"] },
+            { "from": ["t_off",   "out"], "to": ["muestra", "b"] },
+
+            { "from": ["lee_buf", "out"], "to": ["app",     "arr"] },
+            { "from": ["muestra", "out"], "to": ["app",     "v"] },
+            { "from": ["app",     "out"], "to": ["esc_buf", "in"] },
+
+            { "from": ["lee_acc", "out"], "to": ["suma",    "a"] },
+            { "from": ["muestra", "out"], "to": ["suma",    "b"] },
+            { "from": ["suma",    "out"], "to": ["esc_acc", "in"] },
+
+            { "from": ["i",       "out"], "to": ["cmp",     "a"] },
+            { "from": ["ultima",  "out"], "to": ["cmp",     "b"] }
+          ]
+        }
+      },
+
+      { "id": "fin_buf", "type": "sr-read", "sr": "buf" },
+      { "id": "fin_acc", "type": "sr-read", "sr": "acc" },
+      { "id": "cuantas", "type": "array-size" },
+      { "id": "media",   "type": "div" },
+
+      { "id": "texto",   "type": "str-const", "text": "media de 10 muestras para " },
+      { "id": "informe", "type": "str-concat" },
+      { "id": "ok",      "type": "str-const", "text": "paso" },
+
+      { "id": "out_estado",  "type": "indicator", "ref": "estado" },
+      { "id": "out_mensaje", "type": "indicator", "ref": "mensaje" },
+      { "id": "out_valor",   "type": "indicator", "ref": "valor-medido" }
+    ],
+    "wires": [
+      { "from": ["c_intento", "out"], "to": ["n_prev", "a"] },
+      { "from": ["uno",       "out"], "to": ["n_prev", "b"] },
+      { "from": ["n_prev",    "out"], "to": ["offset", "a"] },
+      { "from": ["deriva",    "out"], "to": ["offset", "b"] },
+
+      { "from": ["fin_buf", "out"], "to": ["cuantas", "arr"] },
+      { "from": ["fin_acc", "out"], "to": ["media",   "a"] },
+      { "from": ["cuantas", "out"], "to": ["media",   "b"] },
+
+      { "from": ["texto",    "out"], "to": ["informe", "a"] },
+      { "from": ["c_nombre", "out"], "to": ["informe", "b"] },
+
+      { "from": ["ok",      "out"], "to": ["out_estado",  "in"] },
+      { "from": ["informe", "out"], "to": ["out_mensaje", "in"] },
+      { "from": ["media",   "out"], "to": ["out_valor",   "in"] }
+    ]
+  }
+}

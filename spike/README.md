@@ -20,7 +20,8 @@ cd telekino-spike
 cargo run -- run   ../vis/suma.qvi        # compila en memoria y ejecuta (DT-010)
 cargo run -- build ../vis/adquisicion.qvi # emite el .wasm
 cargo run -- wat   ../vis/while-suma.qvi  # vuelca el WAT para depurar
-cargo test                                      # 15 tests
+cargo run -- component ../vis/paso-anvil.qvi -o ../anvil/paso-visual.wasm  # T2
+cargo test                                      # 20 tests
 ```
 
 ## Resultado
@@ -107,6 +108,65 @@ Dos tests fijan ambos comportamientos. Es lo que permite que un VI corra durante
 insiste en preasignar arrays en vez de ir concatenando— pero aquí se nota antes. Un
 `array-reserve` o la reutilización del buffer cuando el compilador ve que el original no se
 vuelve a usar lo arreglarían; no está hecho.
+
+## T2 — un `.qvi` que Anvil ejecuta como paso
+
+Hito T2 de la decisión 0002 de dirección, y el que hace que Telekino deje de ser un proyecto
+paralelo: **un paso de banco de test escrito como grafo, corriendo dentro de Anvil**.
+
+`../vis/paso-anvil.qvi` no tiene Front Panel: sus items de panel son la interfaz.
+`nombre` (texto) e `intento` (número) son los parámetros que pasa Anvil; `estado`, `mensaje` y
+`valor-medido` son los campos del record que devuelve. El grafo toma 10 muestras
+(4,2 + i·0,05 + (intento−1)·0,1), las acumula en un array con un shift register y devuelve su
+media — **4,425**, calculada, no constante.
+
+```
+$ cargo run -- component ../vis/paso-anvil.qvi -o ../anvil/paso-visual.wasm
+../anvil/paso-visual.wasm (2100 bytes, componente anvil:paso@0.1.0)
+
+$ wasm-tools component wit ../anvil/paso-visual.wasm
+world root { export anvil:paso/paso@0.1.0; }
+
+$ cd ../.. && anvil spike/anvil/paso-visual.yaml
+=== paso_visual_telekino: paso ===
+  [paso] medir_tension: media de 10 muestras para medir_tension
+  [paso] comprobar_repetibilidad: media de 10 muestras para comprobar_repetibilidad
+```
+
+Con `--json`, `valor_medido: 4.425` en los dos pasos.
+
+### Lo que hubo que construir
+
+El hito 1 emitía un **módulo core** con imports `fp.*`. Anvil carga **componentes** sin
+imports. La brecha eran tres cosas, todas en `compile.rs`:
+
+- **La frontera del panel sin imports.** En modo componente las cuatro funciones `fp.*` se
+  *definen* en vez de importarse, en los mismos índices 0-3, y leen y escriben una tabla de
+  slots en memoria estática (16 B por item: valor, puntero, tag). Efecto: **la emisión del
+  grafo no cambia ni una instrucción entre los dos modos**.
+- **La canonical ABI.** `run` recibe `(ptr, len, intento)` y devuelve un puntero a un área de
+  32 bytes con el record; los strings salen sin copia, porque el formato del spike
+  (`[len][pad][datos]`) ya deja los bytes detrás de la cabecera. `option<f64>` sale `none` si
+  el grafo no escribió el indicador — de ahí el tag.
+- **`cabi_realloc`**, que el host usa para dejar el string del parámetro dentro del
+  componente, montado sobre el bump allocator que ya existía.
+
+La arena se devuelve en el **post-return**, no al entrar ni al salir: al entrar todavía no se
+han leído los parámetros que dejó `cabi_realloc`, y al salir el host aún no ha leído los
+strings del record. `wasm-tools print` confirma que quedó enganchado:
+`(canon lift ... (post-return $cabi_post_anvil:paso/paso@0.1.0#run))`.
+
+El componente se genera **dentro de Rust** con `wit-component`: `cargo-component` no está
+instalado y el `.wasm` tiene que salir de `cargo run`.
+
+### Detalles que conviene saber
+
+- **Paths relativos, siempre.** El guest sólo tiene preabierto su CWD; una ruta absoluta —en
+  el `path:` del YAML o en `--json`— muere con `os error 44`, que parece otro fallo y no lo es.
+- **Un control de texto sólo funciona en modo `component`.** El host del spike sabe inyectar
+  números, no cadenas; `cargo run -- run ../vis/paso-anvil.qvi` da un error explícito.
+- El `.qvi` debe traer exactamente los cinco items que la interfaz exige. Si falta uno, el
+  compilador dice cuál en vez de inventarse un valor.
 
 ## Qué NO cubre (deliberadamente)
 
