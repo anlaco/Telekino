@@ -4,7 +4,7 @@
     "Un esquema que acepte alguno tiene un agujero. Igual que casos-no-validos.json",
     "para el .qvi, estos casos son la prueba de que el esquema verifica algo.",
     "Cada uno parte de un documento válido y cambia una sola cosa.",
-    "Verificado el 2026-09-29: los 23 se rechazan, contra jsonschema 4.26",
+    "Verificado el 2026-09-29: los 24 se rechazan, contra jsonschema 4.26",
     "(Draft 2020-12). inventario-labview.json e inventario-ilustrativo.json validan."
   ],
   "casos": [
@@ -154,6 +154,13 @@
       "porque": "Si LabVIEW enseña algo en el elemento, se escribe; un campo vacío no calca nada",
       "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
         { "id": "window.block-diagram.menu.tools.compare", "etiqueta": "Compare", "estado": "elsewhere", "labview": "Compara dos VIs.", "telekino": "git diff", "muestra": "" }
+      ] }
+    },
+    {
+      "nombre": "oculto a false",
+      "porque": "Lo visible no lleva el campo: dos formas de decir lo mismo acaban desincronizadas",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "palette.functions.favorites", "etiqueta": "Favorites", "estado": "never", "labview": "Favoritos.", "porque": "Ver DT-035", "oculto": false }
       ] }
     },
     {

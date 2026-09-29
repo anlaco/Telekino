@@ -1,0 +1,204 @@
+/* Colores y aspecto de las ventanas de un VI, calcados de LabVIEW 2026Q3.
+ * Las posiciones y los tamaños los pone vista.mjs, con las medidas de las
+ * capturas; aquí van los colores, la tipografía y los huecos (regla 57).
+ * El tema oscuro que pide spec/05-editor.md §2 está pendiente. */
+
+:root {
+  /* Segoe UI a 12 px si está, que es la de LabVIEW; si no, Noto Sans a 11,3 px,
+     que iguala sus anchos. Lo decide app.mjs (spec/06-visual.md §10). */
+  --fuente: 11.3px;
+  --cromo: #f0f0f0;
+  --borde-oscuro: #2a2a2a;
+  --borde-caja: #7a7a7a;
+  --texto-hueco: #696969;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--cromo);
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  font-size: var(--fuente);
+  color: #000;
+  cursor: default;
+  user-select: none;
+}
+
+svg { display: block; overflow: visible; }
+
+.ventana { position: absolute; inset: 0; }
+
+/* Cabecera: menús, surco, barra de herramientas y zona de iconos */
+.cabecera { position: absolute; left: 0; right: 0; top: 0; background: var(--cromo); }
+.menus { position: absolute; left: 0; top: 0; display: flex; align-items: center; padding-left: 0.3px; }
+/* El texto va dos veces, apilado: el derecho, invisible, da el ancho. */
+.menu { padding: 0 7px; height: 100%; display: grid; align-items: center; white-space: nowrap; }
+.menu > span { grid-area: 1 / 1; }
+.menu > .medida { visibility: hidden; font-style: normal; }
+/* La línea base de LabVIEW cae en la fila 19 de la barra de menús. */
+.menu > .texto { position: relative; top: -0.667px; }
+/* Las líneas finas de la cabecera van fila a fila de la captura a 150 %:
+   cada una mide 2/3 px. */
+.surco {
+  position: absolute; left: 0;
+  background: linear-gradient(#e3e3e3 0 0.667px, #aeaeae 0.667px 1.333px, #cecece 1.333px 2px, #fdfdfd 2px 2.667px, #f3f3f3 2.667px);
+}
+.barra { position: absolute; left: 0; }
+.barra > div { position: absolute; top: 0; height: 100%; display: flex; align-items: center; }
+.borde-barra {
+  position: absolute; left: 0; right: 0; z-index: 1;
+  background: linear-gradient(#aeaeae 0 0.667px, #7c7c7c 0.667px 1.333px, #e2e2e2 1.333px);
+}
+.zona-iconos { position: absolute; right: 0; top: 0; }
+/* El separador baja desde arriba del todo hasta el borde de la barra, que lo cruza. */
+.zona-iconos::before {
+  content: ""; position: absolute; left: 0.33px; top: 0; bottom: 0;
+  border-left: 1px solid #808080;
+}
+.icono-vi { position: absolute; }
+.icono-vi svg { width: 100%; height: 100%; }
+
+.menu:hover, .boton:hover { box-shadow: inset 0 0 0 1px #b9b9b9; border-radius: 2px; }
+
+.boton { justify-content: center; }
+.boton .glifo svg { width: 16px; height: 16px; }
+.boton.con-desplegable { justify-content: flex-start; padding-left: 4px; }
+.boton.con-desplegable .triangulo { margin-left: 3px; }
+.triangulo svg { width: 6px; height: 3.6px; }
+
+/* Text Settings es un anillo: gris como la barra. La búsqueda, blanca. Las dos
+   ocupan de la fila 34 a la 66, con el borde centrado en la 35 y la 65. */
+.barra > .caja-valor, .barra > .caja-busqueda {
+  border: 1px solid var(--borde-caja);
+  top: 0.667px;
+  bottom: 0.5px;
+  height: auto;
+}
+.caja-busqueda { background: #fff; }
+.caja-valor .valor { padding-left: 5px; flex: 1; overflow: hidden; white-space: nowrap; }
+/* La flecha, a 12,7 px del borde derecho (597–604 px de 399–619). */
+.caja-valor .triangulo { position: absolute; right: 9.7px; }
+.caja-busqueda .selector {
+  width: 10.7px; align-self: stretch; display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid #c8c8c8; margin: 3px 0;
+}
+.caja-busqueda .selector svg { width: 3.4px; height: 5px; }
+.caja-busqueda .valor { padding-left: 5.3px; flex: 1; white-space: nowrap; }
+.caja-busqueda .lupa svg { width: 14px; height: 14px; margin-right: 7px; }
+.texto-barra { white-space: nowrap; }
+/* La línea base del texto de la barra cae en la fila 55, como en LabVIEW. */
+.barra .valor { position: relative; top: -0.667px; }
+.barra > .texto-barra { top: -0.667px; }
+
+/* Lienzos */
+.lienzo { position: absolute; left: 0; }
+.lienzo-block-diagram { background: #fff; }
+/* La rejilla del panel: cada 12 px, desde el borde mismo del lienzo. */
+.lienzo-front-panel {
+  background-color: #e2e2e2;
+  background-image:
+    linear-gradient(#dadada 1px, transparent 1px),
+    linear-gradient(90deg, #dadada 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.canalon { position: absolute; right: 0; background: var(--cromo); border-left: 1px solid #fcfcfc; }
+
+/* Barra de estado */
+.barra-estado { position: absolute; left: 0; right: 0; bottom: 0; background: var(--cromo); border-top: 1px solid #fcfcfc; }
+.instancia {
+  height: calc(100% + 1px); margin-top: -1px;
+  border-top: 1px solid var(--borde-oscuro);
+  box-shadow: 0 -0.7px 0 var(--borde-caja);
+  border-left: 1px solid var(--borde-oscuro);
+  border-right: 1px solid var(--borde-oscuro);
+  margin-left: 0.667px;
+  padding-left: 2px; white-space: nowrap; overflow: hidden;
+  display: flex; align-items: center;
+}
+
+/* Desactivado por contexto: gris más claro, sin cursiva ni esquina. Lo usará
+   lo que exista y no aplique ahora, como Undo sin nada que deshacer. */
+.desactivado { color: #a0a0a0; }
+.desactivado .glifo, .desactivado svg { opacity: 0.35; }
+
+/* Huecos (regla 57): gris, cursiva si es texto, esquina doblada si es icono.
+   La esquina va arriba a la derecha porque LabVIEW ya usa la de abajo para los
+   botones con menú al mantener pulsado. */
+.hueco { color: var(--texto-hueco); }
+.menu.hueco > .texto, .texto-barra.hueco, .instancia.hueco, .hueco .valor, .fila.hueco .fila-texto { font-style: italic; }
+.hueco .glifo, .icono-vi.hueco svg, .carpeta.hueco svg, .chincheta.hueco svg { opacity: 0.6; }
+.boton.hueco::after, .icono-vi.hueco::after, .carpeta.hueco .caja-carpeta::after, .chincheta.hueco::after {
+  content: ""; position: absolute; top: 1px; right: 1px; width: 5px; height: 5px; pointer-events: none;
+  background: linear-gradient(225deg, #c8c8c8 0 50%, #878787 50% calc(50% + 0.8px), transparent calc(50% + 0.8px));
+}
+
+/* Paleta, de paletas/functions-programming-desplegada.png. El borde mide
+   1 px a 150 %; dentro, un bisel: más oscuro en el título. */
+.paleta {
+  position: absolute; z-index: 10;
+  background: #dddddd;
+  border: 0.667px solid #a0a0a0;
+}
+.paleta::after, .paleta::before { content: ""; position: absolute; left: 0; right: 0; pointer-events: none; z-index: 3; }
+.paleta::after { top: 0; bottom: 0; box-shadow: inset 0 0 0 0.667px #cccccc; }
+.paleta::before { top: 0; height: 22px; z-index: 4; box-shadow: inset 0.667px 0.667px 0 #bebebe, inset -0.667px 0 0 #bebebe; }
+.paleta-titulo { position: relative; }
+.chincheta { position: absolute; left: 9px; top: 4.33px; width: 17.33px; height: 17.33px; }
+.chincheta svg { width: 100%; height: 100%; }
+.paleta-nombre { position: absolute; left: 39px; top: 50%; transform: translateY(calc(-50% + 1.3px)); white-space: nowrap; }
+/* Columnas 221–313 y filas 8–33: pegada al separador, sin redondeo. */
+.paleta-busqueda { position: absolute; left: 146.67px; width: 62px; top: 4.67px; bottom: 0; background: #f8f8f8; }
+.paleta-busqueda .lupa { position: absolute; left: 4px; top: 0.67px; width: 16px; height: 16px; }
+.paleta-busqueda .lupa svg { width: 100%; height: 100%; }
+.paleta-busqueda .valor { position: absolute; left: 22.6px; top: 50%; transform: translateY(calc(-50% - 1px)); white-space: nowrap; }
+.paleta-separador { background: linear-gradient(#d4d4d4 0 0.667px, #d3d3d3 0.667px 1.333px, #f1f1f1 1.333px); }
+.fila { position: relative; background: #dddddd; }
+.fila.desplegada { background: #f8f8f8; }
+/* El texto va arriba en su fila, no centrado, como en LabVIEW. */
+.fila-texto { position: absolute; top: -0.6px; line-height: 16px; white-space: nowrap; }
+.fila.desplegada .fila-texto { top: -1.27px; }
+.fila .flecha { position: absolute; top: 2px; }
+.fila.desplegada .flecha { top: 2.67px; }
+.fila .flecha svg { width: 6.67px; height: 12px; }
+/* La lista de categorías lleva un realce dentro del bisel: a los lados y abajo. */
+.fila:not(.desplegada), .flechas-dobles, .paleta-enlace, .paleta-pie {
+  box-shadow: inset 1.333px 0 0 #f3f3f3, inset 2px 0 0 #e2e2e2, inset -1.333px 0 0 #f3f3f3, inset -2px 0 0 #e2e2e2;
+}
+.paleta-pie {
+  box-shadow: inset 0 -1.333px 0 #f3f3f3, inset 0 -2px 0 #e2e2e2,
+    inset 1.333px 0 0 #f3f3f3, inset 2px 0 0 #e2e2e2, inset -1.333px 0 0 #f3f3f3, inset -2px 0 0 #e2e2e2;
+}
+.rejilla { position: relative; background: #f8f8f8; }
+/* Una carpeta: pestaña (filas 84–86), lomo (87–88) y caja (90–143). */
+.carpeta { position: absolute; }
+.pestana {
+  position: absolute; left: 3.33px; top: 0; width: 16.67px; height: 2px; background: #6e706f;
+  clip-path: polygon(1.33px 0, calc(100% - 0.67px) 0, 100% 100%, 0 100%);
+}
+.lomo { position: absolute; left: 2px; top: 2px; width: 36px; height: 1.333px; background: linear-gradient(#7b7e7d 0 0.667px, #aeb0b0 0.667px); }
+.caja-carpeta {
+  position: absolute; left: 0; right: 0; top: 4px; bottom: 0;
+  background: #fff; border: 0.667px solid #858786; border-radius: 1px;
+  box-shadow: inset 0 0 0 0.667px #b6b7b7;
+  display: flex; align-items: center; justify-content: center;
+}
+.caja-carpeta svg { width: 30px; height: 30px; }
+.flechas-dobles { display: flex; align-items: center; justify-content: center; }
+.flechas-dobles svg { width: 7.33px; height: 8px; position: relative; top: 0.67px; }
+.paleta-enlace { position: relative; }
+.paleta-enlace .valor { position: absolute; left: 4px; right: 0; top: 1.5px; line-height: 16px; text-align: center; white-space: nowrap; }
+
+/* Explicaciones: la abierta al activar un hueco, y la que sale al pasar el ratón */
+.explicacion, .emergente {
+  position: absolute; z-index: 20; max-width: 360px;
+  background: #fff; border: 1px solid #b4b4b4; border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  padding: 6px 8px; font-size: 12px; font-style: normal; color: #000; user-select: text;
+}
+.emergente { z-index: 30; pointer-events: none; }
+.explicacion p, .emergente p { margin: 4px 0 0; }
+.explicacion-cabeza em { color: #6e6e6e; margin-left: 4px; }
+.explicacion code, .emergente code { display: block; margin-top: 4px; font-size: 10px; color: #828282; }

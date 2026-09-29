@@ -55,7 +55,7 @@ es una implementación.
 |----------|--------|
 | **`.qprim`** (primitivas como tipo de fichero) | DT-013 es ficción: cero ficheros, cero código. No se especifica lo que nunca existió |
 | **Sistema de librerías en tres niveles** tal como estaba descrito | DT-014 es ficción parcial: sólo existe un nivel, y no es ninguno de los tres. Se rediseña desde cero en `02-sintaxis.md` |
-| **`red-sg`** | Grafo de escena propio para Red. egui lo sustituye por completo. DT-030, DT-031 y DT-033 quedan derogadas |
+| **`red-sg`** | Grafo de escena propio para Red. La interfaz web ([DT-037](../design/05-decisiones.md#dt-037)) lo sustituye por completo. DT-030, DT-031 y DT-033 quedan derogadas |
 | **El fork `anlaco/red`** | Desaparece con Red. Era una de las razones para migrar |
 | **Las seis restricciones de GTK** | Ventanas fijas, diálogos no modales, ausencia de navegación por Tab, colores fijos, sin HiDPI, scrollbars a mano. Ninguna es decisión de producto; todas son parches. Ver `whitelist.md` §11.3 |
 | **Undo/redo** | Iba a heredarse de `red-sg`. Queda **sin decidir**, no excluido: hay que darle sitio |

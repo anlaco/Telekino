@@ -18,6 +18,7 @@ toda la historia del proyecto, sin tener que aclarar de qué etapa es.
 |----|----------|--------|
 | [035](#dt-035) | El editor calca la arquitectura de información de LabVIEW y declara lo que no hace | Aceptada · en implementación |
 | [036](#dt-036) | El asistente de IA es externo, y se lanza desde el botón que en LabVIEW abre Nigel | Aceptada · sin implementar |
+| [037](#dt-037) | La interfaz del editor se hace con tecnologías web y corre en Electron | Aceptada · implementada en el esqueleto |
 
 ## Las 34 decisiones de Red
 
@@ -34,9 +35,9 @@ una y qué la sustituye.
 su sitio lo que no hace.**
 
 - **Estado:** Aceptada el 2026-09-29. **Implementación empezada** el mismo día:
-  el esqueleto del *Front Panel* y del *Block Diagram* (`crates/tk-ui`), calcado
-  de las capturas y con todo lo que muestra tomado del inventario. Se arranca con
-  `cargo run -p telekino`.
+  el esqueleto del *Front Panel* y del *Block Diagram* (`editor/`, en Electron
+  desde [DT-037](#dt-037)), calcado de las capturas y con todo lo que muestra
+  tomado del inventario. Se arranca con `npm run app` en `editor/`.
 - **Qué obliga:** las reglas 52–56 de [`spec/05-editor.md`](../spec/05-editor.md)
   §9, la regla 57 de [`spec/06-visual.md`](../spec/06-visual.md) §9 y el formato
   de [`schema/inventario-labview.schema.json`](../schema/inventario-labview.schema.json).
@@ -282,14 +283,14 @@ h. **No se decide aquí:** el orden en que se construye cada casilla; la marca
 
 | Qué | Mecanismo | Estado |
 |-----|-----------|--------|
-| El inventario tiene la forma correcta: cada veredicto lleva su campo y sólo el suyo, `built` exige `prueba`, un `never` cita una decisión | [`inventario-labview.schema.json`](../schema/inventario-labview.schema.json) + [casos negativos](../schema/ejemplos/inventario-casos-no-validos.json), en `cargo test` (`crates/tk-ui/tests/esquema.rs`) | **Verificado** |
-| Cada `necesita` nombra un desbloqueo declarado, y cada desbloqueo lo espera alguna entrada | Test del inventario (`crates/tk-ui/src/inventario.rs`) | **Verificado** |
-| Cada `prueba` nombra un test que existe, y cada `bloque`, un bloque de `blocks.json` | Test del inventario | **Escrito**; aún no hay ninguna entrada `built` que comprobar |
+| El inventario tiene la forma correcta: cada veredicto lleva su campo y sólo el suyo, `built` exige `prueba`, un `never` cita una decisión | [`inventario-labview.schema.json`](../schema/inventario-labview.schema.json) + [casos negativos](../schema/ejemplos/inventario-casos-no-validos.json), en `npm test` (`editor/test/esquema.test.mjs`) | **Verificado** |
+| Cada `necesita` nombra un desbloqueo declarado, y cada desbloqueo lo espera alguna entrada | Test del inventario (`editor/test/inventario.test.mjs`) | **Verificado** |
+| Cada `prueba` nombra un test que existe, y cada `bloque`, un bloque de `blocks.json` | Test del inventario | **Verificado**. La primera entrada `built` son las flechas dobles de la paleta, con su test |
 | Los identificadores son únicos | Test del inventario | **Verificado** |
-| El editor pinta exactamente lo declarado, y en su orden | Test de pintado sin pantalla (`crates/tk-ui/src/ventanas.rs`, reglas 52 y 55 de [`05`](../spec/05-editor.md)) | **Verificado** para el *Front Panel* y el *Block Diagram*; el *Project Explorer* aún no se pinta |
-| Y en el sitio donde lo pone LabVIEW | Test de posiciones contra las capturas, a 2 pt ([`06-visual.md`](../spec/06-visual.md) §10) | **Verificado** para la barra del *Front Panel* y del *Block Diagram* |
+| El editor pinta exactamente lo declarado, y en su orden | Test de pintado sin pantalla (`editor/test/vista.test.mjs`, reglas 52 y 55 de [`05`](../spec/05-editor.md)) | **Verificado** para el *Front Panel* y el *Block Diagram*; el *Project Explorer* aún no se pinta |
+| Y en el sitio donde lo pone LabVIEW | Test de posiciones contra las capturas, a 2 px ([`06-visual.md`](../spec/06-visual.md) §10) | **Verificado** para la barra del *Front Panel* y del *Block Diagram*; la cabecera y la paleta, comparadas píxel a píxel |
 | La página generada coincide con los datos | Generador con modo de comprobación en CI | Pendiente |
-| Cada entrada está comprobada contra 2026Q3 | Campo `captura` | **En curso**: 94 de 94 con captura. Desglosados el *Project Explorer*, el *Front Panel* y el *Block Diagram*; el contenido de los menús, no |
+| Cada entrada está comprobada contra 2026Q3 | Campo `captura` | **En curso**: 127 de 127 con captura. Desglosados el *Project Explorer*, el *Front Panel*, el *Block Diagram* y la paleta de funciones; el contenido de los menús, no |
 
 ---
 
@@ -330,3 +331,90 @@ a. En el inventario, el botón pasa de `elsewhere` a `todo`: Telekino sí va a
 b. El glifo es propio, como todos (DT-035 §1): el de Nigel es la marca de NI.
 
 c. La caja de búsqueda no cambia: sigue esperando `busqueda-en-paletas`.
+
+---
+
+## DT-037
+
+**La interfaz del editor se hace con tecnologías web y corre en Electron.**
+
+- **Estado:** Aceptada el 2026-09-29. **Implementada en el esqueleto**:
+  [`editor/`](../../editor/) —las dos ventanas de un VI y la paleta de
+  funciones, calcadas de LabVIEW 2026Q3 ([DT-035](#dt-035))—, que sustituye al
+  esqueleto que se había empezado en egui, retirado el mismo día. Se arranca
+  con `npm run app` en `editor/`.
+- **Cómo se decidió:** en una conversación con quien desarrolla el proyecto. El
+  esqueleto se había empezado en egui, como decía el plan provisional; al
+  revisarlo se recordó que el estudio de agosto ya proponía un editor web, y se
+  fijó: la interfaz, con tecnologías web y en Electron, sin seguir comparando
+  toolkits.
+- **Sustituye:** la fila «GUI del editor: egui + eframe» de
+  [`00-plan-provisional.md`](00-plan-provisional.md) §1 y la de
+  [`00-indice-provisional.md`](00-indice-provisional.md) §8.
+
+### Contexto
+
+**1. Dos documentos decían cosas distintas.** El plan provisional (julio) eligió
+egui porque el render en Red ya recalculaba la escena en cada frame, que es el
+modelo de egui. El estudio posterior (agosto, rama `spike/wasm-migration`,
+`estudio-post-red.md`) propuso un núcleo en Rust con el editor en web, y lo
+probó con un spike de React Flow. El esqueleto se empezó siguiendo el primero.
+
+**2. DT-035 convierte el editor en un calco medido al píxel.** Las líneas de la
+cabecera miden 2/3 px a 150 %, un menú en cursiva no debe desplazar a los
+siguientes, la paleta tiene un bisel de un píxel y un realce de dos. En egui cada
+detalle así es código de pintado; en la web es CSS, y el resultado se compara con
+las capturas con las herramientas del propio navegador.
+
+**3. La familia ya trabaja así.** Anvil, el sustituto de TestStand de la misma
+familia, tiene su editor en Electron con los tests en `node:test`.
+
+**4. La web no ata.** La misma página puede acabar en un navegador, en Tauri o en
+otra envoltura si Electron no convence. Cambiar de toolkit nativo, en cambio,
+obliga a reescribir la interfaz.
+
+### Decisión
+
+El editor se escribe en HTML, CSS y JavaScript —módulos ES, sin framework y sin
+paso de compilación— y corre en Electron. Electron sólo abre las ventanas y sirve
+los ficheros: lo que se ve y cómo reacciona vive en la página, que no sabe que
+está en Electron.
+
+### Consecuencias
+
+a. **El núcleo sigue en Rust**: formato, grafo, compilador y runtime. Lo que se
+   verifica sin interfaz (DT-035 §6) no cambia.
+
+b. **El esqueleto en egui se retira**: `crates/tk-ui`, el binario
+   `crates/telekino` y el workspace de Cargo, que sólo existía para ellos. El
+   workspace vuelve con el primer crate del núcleo; mientras, `rust-toolchain.toml`
+   sigue fijando la versión de Rust del plan (§2.2).
+
+c. **Dependencias.** El editor añade `electron` y, sólo para los tests, `ajv`,
+   fijadas en `editor/package.json`. La norma que sustituye a DT-001 («todo en
+   Rust, sin dependencias fuera del ecosistema crates.io fijado»,
+   `00-plan-provisional.md` §5) queda para el núcleo; la interfaz es web.
+
+d. **Tests sin navegador.** `vista.mjs` devuelve HTML y `estado.mjs` son
+   funciones puras, así que `npm test` (`node:test`) comprueba qué se pinta,
+   dónde, en qué orden y cómo reacciona, contra el inventario.
+
+e. **Linux.** Chromium necesita su ayudante de sandbox con permisos de root.
+   `npm run app` lo comprueba y explica cómo arreglarlo, o arranca sin sandbox
+   con `TELEKINO_SIN_SANDBOX=1`, sólo para desarrollar.
+
+f. **Tipografía.** Segoe UI a 12 px si está, que es la de LabVIEW; si no, Noto
+   Sans a 11,3 px, que iguala sus anchos ([`06-visual.md`](../spec/06-visual.md)
+   §10). Lo decide la página al arrancar.
+
+g. **No se decide aquí** cómo habla el editor con el núcleo en Rust —compilado a
+   WASM dentro de la página, o como proceso aparte al que el editor llama—, ni
+   dónde se ejecuta el VI compilado: wasmtime en un proceso aparte o el motor
+   WASM de la propia página. Depende de las puertas de la fase R7.
+
+### Verificación
+
+| Qué | Mecanismo | Estado |
+|-----|-----------|--------|
+| El editor pinta y reacciona como dice el inventario, sin navegador | `npm test` en `editor/` | **Verificado**: 33 tests |
+| Se ve como LabVIEW | Electron en una pantalla virtual a escala 150 % (`--force-device-scale-factor=1.5`), comparado píxel a píxel con las capturas | **Comprobado** con medidas, no con un test: la cabecera, la barra de estado y la paleta caen a 1 px de LabVIEW |

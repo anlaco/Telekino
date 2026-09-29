@@ -75,7 +75,7 @@ lleno de intenciones.
 | [`spec/06-visual.md`](spec/06-visual.md) | Identidad visual | **Heredado** — limpio de parches, pero §1.3 promete teclado sin implementar (ver `05` regla 36). §6.2 sustituida por DT-035 |
 | [`spec/07-paridad.md`](spec/07-paridad.md) | Contrato de paridad, reparación del corpus y captura del oráculo | **Borrador** |
 
-**La especificación está completa en borrador: 65 reglas normativas repartidas en
+**La especificación está completa en borrador: 66 reglas normativas repartidas en
 siete documentos** (contadas como definiciones `Regla N`, subreglas como la 20b
 incluidas). Falta la revisión y el bloque `design/`.
 
@@ -87,7 +87,7 @@ incluidas). Falta la revisión y el bloque `design/`.
 | `design/02-ejecucion.md` | WasmGC, imports WIT, ticks, **I/O bloqueante** | Pendiente |
 | `design/03-seguridad.md` | Capacidades: las puertas | Pendiente |
 | `design/04-plan-migracion.md` | Fases y criterios de cierre | Pendiente |
-| [`design/05-decisiones.md`](design/05-decisiones.md) | Decisiones nuevas + derogación de las 34 antiguas | **Borrador** — DT-035 (interfaz calcada de LabVIEW 2026Q3, huecos declarados), en implementación en `crates/tk-ui`. Falta la derogación |
+| [`design/05-decisiones.md`](design/05-decisiones.md) | Decisiones nuevas + derogación de las 34 antiguas | **Borrador** — DT-035 (interfaz calcada de LabVIEW 2026Q3, huecos declarados), en implementación en `editor/`; DT-036 (asistente de IA externo); DT-037 (interfaz web en Electron). Falta la derogación |
 | `design/00-indice-provisional.md` | Índice previo a la auditoría | **A disolver** en los cinco de arriba |
 | `design/00-plan-provisional.md` | Plan previo a la auditoría. Contiene los resultados de spikes verificados | **A disolver** |
 

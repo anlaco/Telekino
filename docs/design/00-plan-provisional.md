@@ -8,12 +8,16 @@
 
 | Decisión | Elección | Alternativas descartadas |
 |----------|----------|--------------------------|
-| GUI del editor | **egui + eframe** | iced, gpui/winit+wgpu |
+| GUI del editor | **Web (HTML, CSS, JS) en Electron** — [DT-037](05-decisiones.md#dt-037) | egui + eframe (elegida aquí en julio, sustituida por DT-037), iced, gpui/winit+wgpu |
 | Motor de ejecución | **Solo WASM desde el día 1** | intérprete de grafo previo o permanente |
 | Backend del compilador | **Emitir WAT, ensamblar con el crate `wat`** | IR propio → `wasm-encoder`, generar Rust + cargo |
 | Formato en disco | **`.qvi` solo con `qvi-diagram`; WASM en memoria** | sidecar `.wasm`, bundle `.tkx` |
 
 ### Por qué egui
+
+> **Sustituida por [DT-037](05-decisiones.md#dt-037)**: la interfaz del editor se
+> hace con tecnologías web y corre en Electron. Se deja el razonamiento original
+> como registro.
 
 `canvas-render.red` + `panel-render.red` (1566 líneas) ya recalculan la escena completa cada frame, emiten primitivas de dibujo y resuelven el hit-test contra rectángulos a mano. Eso es el modelo de egui literalmente. `egui::Painter` ofrece `line_segment`, `rect_filled`, `circle_filled`, `text` y `Shape::CubicBezier`: el port del Draw dialect es una tabla de equivalencias, no un rediseño.
 
@@ -87,7 +91,7 @@ T7 es la que más tranquilidad da: un `.qvi` de un tercero no tiene forma de toc
 | rustc | 1.97.1 | edition 2024 |
 | wasmtime | 47.0.2 | GC, exception-handling, tail-call, memory64 y function-references activos por defecto |
 | wat / wasm-encoder / wasmparser | 1.254 / 0.254 | familia `wasm-tools` |
-| egui / eframe | 0.35 | |
+| Electron | 40 | la interfaz del editor, `editor/` (DT-037) |
 
 wasmtime publica una release al mes y marca LTS cada 12 (2 años de soporte). **Política: fijar la LTS vigente**, no seguir el canal mensual — Telekino no necesita features nuevas de wasm y sí necesita no romperse.
 
@@ -107,9 +111,8 @@ telekino/
 │   ├── tk-blocks/      Registro de bloques (equivalente a block-def) + reglas de emisión
 │   ├── tk-compile/     Topo-sort (Kahn) → árbol WAT → bytes wasm vía crate `wat`
 │   ├── tk-runtime/     Host: arena de valores, tabla de recursos, puertas, wasmtime Store
-│   ├── tk-ui/          egui: canvas BD, canvas FP, paleta, diálogos, toolbar
 │   └── tk-cli/         `telekino run|build|check` sin GUI
-└── telekino/           Binario: editor completo
+└── editor/             La interfaz, en web sobre Electron (DT-037): ventanas, paletas, diálogos
 ```
 
 Lo que sobrevive intacto del diseño actual: `qvi-diagram` como fuente de verdad (DT-011), el modelo de datos (DT-022/023/024) y el topo-sort de Kahn.
@@ -131,7 +134,7 @@ Lo que sobrevive intacto del diseño actual: `qvi-diagram` como fuente de verdad
 > el modelo bloqueante opuesto al que DT-027 describe. Esto no es un port, es un
 > diseño nuevo, y debe planificarse como tal.
 
-El modelo propuesto: el módulo generado exporta `init()` y `tick()`; el host llama a `tick()` desde el bucle de frames de egui. Varios While Loops = varias funciones tick, round-robin en el host.
+El modelo propuesto: el módulo generado exporta `init()` y `tick()`; el host llama a `tick()` desde el bucle de frames del editor. Varios While Loops = varias funciones tick, round-robin en el host.
 
 Dos cosas que hoy no se pueden hacer:
 - **Epoch interruption** de wasmtime: un While Loop infinito **en el guest** ya no cuelga la aplicación. No cubre I/O bloqueante del host (§2.1).
@@ -167,13 +170,13 @@ Estas normas de `CLAUDE.md` y `docs/decisiones.md` quedan obsoletas y hay que re
 
 | Norma | Qué le pasa |
 |-------|-------------|
-| Regla 3 / DT-001 «Todo en Red-Lang» | **Derogada.** Sustituida por «todo en Rust, sin dependencias fuera del ecosistema crates.io fijado». |
-| Regla 1 / DT-026 «Nunca faces nativas en el canvas» | **Derogada.** egui dibuja todo; deja de existir el conflicto de eventos. |
+| Regla 3 / DT-001 «Todo en Red-Lang» | **Derogada.** Sustituida por «todo en Rust, sin dependencias fuera del ecosistema crates.io fijado» para el núcleo; la interfaz es web, en Electron (DT-037). |
+| Regla 1 / DT-026 «Nunca faces nativas en el canvas» | **Derogada.** El editor dibuja todo en la web (DT-037); deja de existir el conflicto de eventos. |
 | Regla 11 «Consultar el skill de Red-Lang» | **Derogada.** |
 | DT-005 / DT-009 «El `.qvi` lleva código Red/View ejecutable» | **Reescrita.** El `.qvi` queda solo con `qvi-diagram`. El FP lo renderiza el host. `red mi-vi.qvi` deja de funcionar; pasa a ser `telekino run mi-vi.qvi`. |
 | DT-028 «Cero código dinámico, compilable con `red -c`» | **Reescrita** en el mismo espíritu: el WAT generado no tiene evaluación dinámica y el módulo es AOT-compilable con Cranelift. |
 | DT-008 «Nunca strings intermedios» | **Se conserva** vía árbol WAT tipado. |
-| Regla 10 «Ejecutar `red-cli tests/run-all.red`» | Pasa a `cargo test` + corpus dorado (§6). |
+| Regla 10 «Ejecutar `red-cli tests/run-all.red`» | Pasa a `cargo test` + corpus dorado (§6), y `npm test` en `editor/` para la interfaz. |
 | `docs/GTK_ISSUES.md`, fork `anlaco/red` | **Desaparecen.** Es una de las ganancias grandes de la migración. |
 
 ## 6. Cómo se garantiza «funciona exactamente igual»
@@ -201,7 +204,7 @@ Cada fase termina con algo demostrable. No se empieza una sin cerrar la anterior
 | Fase | Alcance | Criterio de cierre |
 |------|---------|--------------------|
 | **R0 — Spike** | ~~Cadena WAT → `wat` → wasmtime~~ ✅ (`spikes/wasm-probe/`, §2.1). Falta: `tk-format` parsea `suma-basica.qvi` y `tk-compile` emite ese WAT desde el grafo | `telekino run examples/suma-basica.qvi` imprime `8.0` |
-| **R1 — Esqueleto** | Ventana egui, canvas BD en solo lectura desde un `.qvi` cargado. **Empezado el 2026-09-29, antes de cerrar R0**: las ventanas del *Front Panel* y del *Block Diagram* calcadas de LabVIEW 2026Q3 (DT-035), aún sin leer ningún `.qvi` | Los 16 ejemplos se dibujan igual que hoy |
+| **R1 — Esqueleto** | Ventanas del editor (web en Electron, DT-037), canvas BD en solo lectura desde un `.qvi` cargado. **Empezado el 2026-09-29, antes de cerrar R0**: las ventanas del *Front Panel* y del *Block Diagram* calcadas de LabVIEW 2026Q3 (DT-035), aún sin leer ningún `.qvi` | Los 16 ejemplos se dibujan igual que hoy |
 | **R2 — Edición BD** | Hit-test, drag, wires, paleta, diálogos (`canvas.red` + `canvas-dialogs.red`) | Construir `suma-basica` desde cero y guardarlo con round-trip exacto |
 | **R3 — Front Panel** | Render FP, imports `panel_get`/`panel_set`, ciclo Run completo | Paridad con la beta de Fase 1 |
 | **R4 — Estructuras** | While/For/Case + shift registers en WAT | `while-loop-suma.qvi` da 45.0 |

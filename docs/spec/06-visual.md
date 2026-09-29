@@ -336,7 +336,7 @@ Si se confunden, quien usa el editor no sabe si algo no existe o sólo no aplica
 ahora, y los dos casos piden cosas distintas: uno, esperar o buscar otra vía; el
 otro, cambiar lo que tiene seleccionado.
 
-**Marca implementada** en el esqueleto del editor (`crates/tk-ui/src/estilo.rs`):
+**Marca implementada** en el esqueleto del editor (`editor/src/estilo.css`):
 un hueco va en gris —algo más oscuro que un desactivado, para que se lea cuando
 casi todo es hueco—, con la etiqueta en cursiva si es texto y con la **esquina
 superior derecha doblada** si es un botón de sólo icono. La esquina es la de
@@ -344,9 +344,11 @@ arriba porque LabVIEW ya usa la de abajo a la derecha: ahí pone el triangulito 
 los botones que abren un menú al mantenerlos pulsados. Los tres veredictos no
 necesitan aspectos distintos: la explicación dice cuál es.
 
-*Verificación: test `un_hueco_no_se_confunde_con_un_desactivado_por_contexto`
-(`crates/tk-ui/src/estilo.rs`). **Verificado** en el lado del estilo; que se vea
-a simple vista se ha comprobado a ojo, no con un test.*
+*Verificación: test «un hueco no se confunde con un desactivado por contexto»
+(`editor/test/estilo.test.mjs`): la cursiva y la esquina sólo se aplican a los
+huecos, y el gris de un hueco no es el de un desactivado. **Verificado** en el
+lado del estilo; que se vea a simple vista se ha comprobado a ojo, no con un
+test.*
 
 ---
 
@@ -356,33 +358,50 @@ El *Front Panel* y el *Block Diagram* calcan las capturas de LabVIEW 2026Q3
 (`capturas-labview/front-panel/vi-nuevo.png` y
 `capturas-labview/block-diagram/vi-nuevo.png`), tomadas a escala 150 %.
 
-**Medidas.** Viven en `crates/tk-ui/src/estilo.rs`, cada una con la fila o la
-columna de la captura de la que sale: altos de la barra de menús (19,3 pt), del
-surco (3,3), de la barra de herramientas (21,3), de su borde (2,7) y de la barra
-de estado (15,3); paso de los botones (23 pt, 36,5 con triángulo), anchos de Text
-Settings (146,7) y de la búsqueda (300), rejilla de 12 pt desde el borde del
-lienzo, canalón de 16 pt.
+**Medidas.** Viven en `editor/src/vista.mjs`, cada una con la fila o la columna
+de la captura de la que sale, en píxeles CSS (los de la captura entre 1,5): altos
+de la barra de menús (19,3 px, filas 0–28), del surco (3,3, filas 29–33), de la
+barra de herramientas (22, filas 34–66), de su borde (2, filas 67–69) y de la
+barra de estado (15,3); paso de los botones (23 px, 36,5 con triángulo), anchos
+de Text Settings (146,7) y de la búsqueda (300), rejilla de 12 px desde el borde
+del lienzo, canalón de 16 px. Las líneas finas —el surco, el borde de la barra,
+el separador de los iconos— se pintan fila a fila de la captura, a 2/3 px cada
+una, en `editor/src/estilo.css`.
 
 **Tipografía.** La de LabVIEW es Segoe UI a 12 px. El editor usa la primera
 que encuentre:
 
 | Fuente | Tamaño | Dónde |
 |--------|--------|-------|
-| Segoe UI | 12 pt | Windows: la misma de LabVIEW |
-| Noto Sans | 11,3 pt | Linux |
-| La que trae egui | 11,6 pt | Si no hay ninguna de las anteriores |
+| Segoe UI | 12 px | Windows: la misma de LabVIEW |
+| Noto Sans | 11,3 px | Linux |
+| La `sans-serif` del sistema | 11,3 px | Si no hay ninguna de las anteriores |
 
 Los tamaños no son estéticos: son los que igualan los anchos de texto de las
-capturas —los ocho menús, «15pt Application Font» y «26.0»—. Noto Sans a 11,3 pt
-queda a menos de 2 pt de LabVIEW en todos. Segoe UI no se distribuye con
-Telekino: se usa si el sistema la tiene.
+capturas —los ocho menús, «15pt Application Font» y «26.0»—. Noto Sans a 11,3 px
+queda a menos de 2 px de LabVIEW en todos. Segoe UI no se distribuye con
+Telekino: se usa si el sistema la tiene. Un hueco va en cursiva, que es más
+estrecha: el menú conserva el ancho del texto derecho para no desplazar a los
+siguientes.
 
-*Verificación:* los tests `la_barra_cae_donde_en_labview` (el centro de cada
-elemento de la barra, a 2 pt como mucho del de LabVIEW) y
-`la_cabecera_mide_lo_que_en_labview`. Además se ha comparado a ojo, píxel a
-píxel, arrancando el editor en una pantalla virtual a escala 150 %
-(`WINIT_X11_SCALE_FACTOR=1.5`) y superponiéndolo a las capturas; eso no es un
-test.
+**La paleta de funciones** calca `capturas-labview/paletas/functions-programming.png`
+y su versión con lo oculto a la vista: 212 px de ancho con un borde de 1 px de
+pantalla y un bisel dentro, más oscuro en el título; barra de título de 22 px con
+la chincheta, el nombre y la búsqueda, que es una franja clara pegada al
+separador; filas de categoría de 21 px con el texto **arriba**, no centrado, como
+en LabVIEW, y la flecha a su altura; la categoría desplegada, con cabecera de 16
+px y una rejilla de carpetas —pestaña, lomo y caja de 40 × 36 px— a 48 px de
+paso, sobre fondo claro; y un realce de 2 px dentro del bisel a los lados y al pie
+de la lista. Vive en `editor/src/vista.mjs` y `editor/src/estilo.css`.
+
+*Verificación:* los tests «la barra cae donde en LabVIEW» (el centro de cada
+elemento de la barra, a 2 px como mucho del de LabVIEW) y «la cabecera mide lo
+que en LabVIEW», en `editor/test/vista.test.mjs`. La cabecera, la barra de estado
+y la paleta no tienen test de píxeles: se han comparado píxel a píxel y caen a 1
+px de LabVIEW —las carpetas, las filas, el pie y los bordes de la paleta, en el
+mismo píxel—. Las comparaciones se hacen arrancando el editor en una pantalla
+virtual a escala 150 % (Electron con `--force-device-scale-factor=1.5`) y
+superponiéndolo a las capturas; eso no es un test.
 
 ---
 
@@ -390,6 +409,7 @@ test.
 
 | Fecha      | Cambio |
 |------------|--------|
+| 2026-09-29 | §9 y §10: el editor pasa a la web (DT-037); medidas en px CSS, la cabecera y la paleta recalibradas píxel a píxel. |
 | 2026-09-29 | §6.2 sustituida por DT-035. Añadida §9: huecos declarados (regla 57), con la marca ya implementada. §1.1 marcada: la referencia sí tiene zoom. Añadida §10: medidas y tipografía de las ventanas del VI. §1.1: el «sin zoom» se mantiene como diferencia con LabVIEW |
 | 2026-04-03 | Añadida sección 8: Waveform Chart y Graph |
 | 2026-03-22 | Creación inicial — reunión de planificación |

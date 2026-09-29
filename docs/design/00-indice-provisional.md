@@ -105,7 +105,7 @@ semántica y ninguna manda**.
 incluidos los dinámicos; `port_type()`; `can_connect()` — hogar único de las seis
 implementaciones actuales de esa regla; `topo_order()` devolviendo el ciclo **como
 dato, no como error fatal**; y `analyze()` como pliegue batch sobre esas mismas
-primitivas. Puro: sin wasm y sin egui.
+primitivas. Puro: sin wasm y sin interfaz.
 
 Tres clientes: el CLI `check`, el compilador y el editor. **No se diseña para un
 cuarto cliente hipotético.**
@@ -202,7 +202,7 @@ de la sesión. No es código de producción ni cuenta como inicio de la migraci�
 | Decisión | Elección | Nota |
 |----------|----------|------|
 | Lenguaje y runtime | Rust + WASM sobre wasmtime | Deroga DT-001 |
-| GUI | egui + eframe | Deroga DT-026; resuelve #65 y #68 |
+| GUI | Web en Electron ([DT-037](05-decisiones.md#dt-037)); antes egui + eframe | Deroga DT-026; resuelve #65 y #68 |
 | Motor de ejecución | Sólo WASM desde el día 1 | Una única semántica |
 | Backend del compilador | Árbol WAT tipado → crate `wat` | Conserva DT-008 |
 | **Formato del `.qvi`** | **Sólo el diagrama. Sin WAT guardado** | Modelo HTML puro: una única fuente de verdad, deriva imposible |

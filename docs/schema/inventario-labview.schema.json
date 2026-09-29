@@ -121,6 +121,10 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9._/-]+\\.(png|jpe?g|webp)$"
         },
+        "oculto": {
+          "description": "LabVIEW no lo enseña hasta que se piden las categorías ocultas (las flechas dobles del pie de una paleta).",
+          "const": true
+        },
         "separado": {
           "description": "LabVIEW separa esta entrada de la anterior: con una línea en unas barras (las del Project Explorer), con un espacio en otras (la de un VI). Los separadores agrupan órdenes: son parte de la arquitectura de información.",
           "const": true

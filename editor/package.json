@@ -1,0 +1,16 @@
+{
+  "name": "@telekino/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Editor de Telekino: las ventanas de un VI calcadas de LabVIEW 2026Q3, en Electron (DT-037).",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "app": "node scripts/app.mjs",
+    "test": "node --test 'test/*.test.mjs'"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "electron": "^40.10.6"
+  }
+}

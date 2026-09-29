@@ -228,6 +228,12 @@ el código del editor.
 atajo que no hace nada se lee como un fallo; uno que dice «esto aún no existe, y
 espera a tal cosa» se lee como lo que es.)*
 
+> **Regla 53b.** Un contenedor —un menú, una paleta, una categoría de paleta—
+> cuyo contenido está declarado en el inventario **DEBE** poder abrirse aunque
+> sea un hueco: abrirlo no hace nada, sólo enseña lo que contiene, que responde
+> según su propio veredicto. Si su contenido no está declarado, activarlo sólo
+> muestra su explicación, como pide la regla 53.
+
 > **Regla 54.** La explicación de un hueco **DEBE** decir qué hace LabVIEW ahí y
 > lo que su veredicto obliga a declarar: qué falta (`todo`), cómo se hace en
 > Telekino (`elsewhere`) o qué decisión lo excluye (`never`).
@@ -258,11 +264,12 @@ habría exigido nombrar un test que no existía.)*
 | 36, 37 teclado | Test de interacción | Pendiente |
 | 38–40 sincronización | Test: crear, borrar y retipar desde cada lienzo | Pendiente |
 | 42 deshacer | — | **Sin diseño** |
-| 52, 55 lo declarado se pinta, y lo pintado está declarado | Test de pintado sin pantalla contra el inventario: cada elemento pintado tiene su entrada, y cada entrada se pinta en su orden (`crates/tk-ui/src/ventanas.rs`) | **Verificado** para el *Front Panel* y el *Block Diagram* |
-| 52 donde LabVIEW lo pone | Test de posiciones: cada elemento de la barra, a 2 pt como mucho de su sitio en las capturas (`la_barra_cae_donde_en_labview`) | **Verificado** para el *Front Panel* y el *Block Diagram* |
-| 53 un hueco no actúa | Test de interacción: el clic, el clic derecho en el lienzo y un atajo sólo abren la explicación, y Esc la cierra (`crates/tk-ui/src/ventanas.rs`) | **Verificado**. Que no cambie el VI es trivial mientras no haya modelo |
-| 54 la explicación está completa | Esquema del inventario: cada veredicto exige su campo y sólo el suyo; test de la explicación (`crates/tk-ui/src/inventario.rs`) | **Verificado** |
-| 56 `built` exige prueba | Esquema: `built` exige `prueba`. Test: la prueba existe y el bloque está en `blocks.json` | **Verificado**; aún no hay nada `built` |
+| 52, 55 lo declarado se pinta, y lo pintado está declarado | Test de pintado sin pantalla contra el inventario: cada elemento pintado tiene su entrada, y cada entrada se pinta en su orden (`editor/test/vista.test.mjs`) | **Verificado** para el *Front Panel* y el *Block Diagram* |
+| 52 donde LabVIEW lo pone | Test de posiciones: cada elemento de la barra, a 2 px como mucho de su sitio en las capturas («la barra cae donde en LabVIEW») | **Verificado** para el *Front Panel* y el *Block Diagram* |
+| 53 un hueco no actúa | Test de interacción: el clic, el clic derecho en el lienzo y un atajo sólo abren la explicación, y Esc la cierra (`editor/test/estado.test.mjs`) | **Verificado**. Que no cambie el VI es trivial mientras no haya modelo |
+| 53b un contenedor declarado se abre | Tests de la paleta de funciones: el clic derecho en el diagrama la abre; una categoría con contenido se abre y se cierra; una sin contenido sólo se explica (`editor/test/estado.test.mjs`) | **Verificado** |
+| 54 la explicación está completa | Esquema del inventario: cada veredicto exige su campo y sólo el suyo; test de la explicación (`editor/test/inventario.test.mjs`) | **Verificado** |
+| 56 `built` exige prueba | Esquema: `built` exige `prueba`. Test: la prueba existe y el bloque está en `blocks.json` | **Verificado**. Lo único `built` son las flechas dobles de la paleta, con su test |
 
 ## 11. Pendientes
 
@@ -272,4 +279,4 @@ habría exigido nombrar un test que no existía.)*
 | 2 | Comando explícito de "mover al ámbito" (§3.3) | Nada; es refinamiento de la regla 26 |
 | 3 | Salto exacto de `Shift`+flecha: ¿8 px o 12 px? | Nada. Abierto en `06-visual.md` §1.3 desde el principio |
 | 4 | Selección por rectángulo de arrastre | Sin especificar; hoy no existe |
-| 5 | Desglosar el inventario área a área, con capturas de la referencia delante (DT-035 §5 y §8). **Empezado**: el *Project Explorer*, 38 entradas | Que las reglas 52–56 tengan algo que comprobar |
+| 5 | Desglosar el inventario área a área, con capturas de la referencia delante (DT-035 §5 y §8). **Empezado**: el *Project Explorer*, el *Front Panel*, el *Block Diagram* y la paleta de funciones, 127 entradas; el contenido de los menús, no | Que las reglas 52–56 tengan algo que comprobar |

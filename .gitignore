@@ -48,3 +48,6 @@ capturas-labview/
 
 # Compilación de Rust
 target/
+
+# Dependencias de Node del editor (DT-037)
+node_modules/

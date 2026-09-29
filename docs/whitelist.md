@@ -1,6 +1,10 @@
 # Whitelist — qué sobrevive del proyecto anterior
 
 > Estado: **COMPLETA** · Fecha: 2026-07-28
+>
+> Nota del 2026-09-29: la interfaz del editor pasa a la web, en Electron
+> ([DT-037](design/05-decisiones.md#dt-037)). Donde este documento dice egui,
+> léase «la interfaz del editor»: sus conclusiones no dependen del toolkit.
 
 ## Qué es este documento
 
