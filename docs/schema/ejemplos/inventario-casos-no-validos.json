@@ -1,0 +1,165 @@
+{
+  "_comentario": [
+    "Cada entrada de `casos` DEBE ser RECHAZADA por inventario-labview.schema.json.",
+    "Un esquema que acepte alguno tiene un agujero. Igual que casos-no-validos.json",
+    "para el .qvi, estos casos son la prueba de que el esquema verifica algo.",
+    "Cada uno parte de un documento válido y cambia una sola cosa.",
+    "Verificado el 2026-09-29: los 23 se rechazan, contra jsonschema 4.26",
+    "(Draft 2020-12). inventario-labview.json e inventario-ilustrativo.json validan."
+  ],
+  "casos": [
+    {
+      "nombre": "version futura",
+      "porque": "Un lector DEBE rechazar un formato más nuevo que el que entiende",
+      "doc": { "version": 2, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [] }
+    },
+    {
+      "nombre": "referencia sin version",
+      "porque": "Sin versión, «igual que LabVIEW» no nombra nada (DT-035 §2)",
+      "doc": { "version": 1, "referencia": "LabVIEW", "desbloqueos": {}, "entradas": [] }
+    },
+    {
+      "nombre": "falta la referencia",
+      "porque": "El inventario sólo tiene sentido contra una versión concreta",
+      "doc": { "version": 1, "desbloqueos": {}, "entradas": [] }
+    },
+    {
+      "nombre": "veredicto desconocido",
+      "porque": "Los veredictos son cuatro. Algo «a medias» es un área que hay que desglosar",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.edit.undo", "etiqueta": "Undo", "estado": "partial", "labview": "Deshace la última edición." }
+      ] }
+    },
+    {
+      "nombre": "todo sin necesita",
+      "porque": "Una deuda que no dice qué espera es un deseo",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.edit.undo", "etiqueta": "Undo", "estado": "todo", "labview": "Deshace la última edición." }
+      ] }
+    },
+    {
+      "nombre": "hueco sin explicar LabVIEW",
+      "porque": "Un hueco DEBE decir qué hace LabVIEW ahí (spec/05-editor.md, regla 54)",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": { "deshacer": { "desc": "Historial de operaciones" } }, "entradas": [
+        { "id": "window.block-diagram.menu.edit.undo", "etiqueta": "Undo", "estado": "todo", "necesita": "deshacer" }
+      ] }
+    },
+    {
+      "nombre": "todo que ademas trae un porque",
+      "porque": "Una deuda y una decisión a la vez es justo la confusión que los veredictos separan",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": { "deshacer": { "desc": "Historial de operaciones" } }, "entradas": [
+        { "id": "window.block-diagram.menu.edit.undo", "etiqueta": "Undo", "estado": "todo", "labview": "Deshace la última edición.", "necesita": "deshacer", "porque": "Ver regla 42" }
+      ] }
+    },
+    {
+      "nombre": "elsewhere sin decir como",
+      "porque": "Si Telekino lo resuelve de otra forma, DEBE decir cuál",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.tools.compare", "etiqueta": "Compare", "estado": "elsewhere", "labview": "Compara dos VIs." }
+      ] }
+    },
+    {
+      "nombre": "never sin porque",
+      "porque": "Lo que queda fuera a propósito DEBE decir por qué",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "palette.functions.connectivity.activex", "etiqueta": "ActiveX", "estado": "never", "labview": "Controla objetos ActiveX." }
+      ] }
+    },
+    {
+      "nombre": "never que no cita ninguna decision",
+      "porque": "La razón de un never DEBE ser una decisión ya escrita, no una inventada al rellenar la tabla",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "palette.functions.connectivity.activex", "etiqueta": "ActiveX", "estado": "never", "labview": "Controla objetos ActiveX.", "porque": "No hace falta." }
+      ] }
+    },
+    {
+      "nombre": "built sin prueba",
+      "porque": "El verde falso: waveform-chart figuraba como completado sin nada que lo demostrara (whitelist.md §6.2)",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "palette.functions.programming.numeric.add", "etiqueta": "Add", "estado": "built", "bloque": "add" }
+      ] }
+    },
+    {
+      "nombre": "built con prosa de LabVIEW",
+      "porque": "Lo que existe se explica solo; la prosa que queda en una entrada built deja de comprobarse",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "palette.functions.programming.numeric.add", "etiqueta": "Add", "estado": "built", "prueba": "tk_compile::corpus::suma_basica", "labview": "Suma dos números." }
+      ] }
+    },
+    {
+      "nombre": "built que aun necesita algo",
+      "porque": "Hecho y pendiente a la vez",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": { "deshacer": { "desc": "Historial de operaciones" } }, "entradas": [
+        { "id": "window.block-diagram.menu.edit.undo", "etiqueta": "Undo", "estado": "built", "prueba": "tk_model::historial::deshacer", "necesita": "deshacer" }
+      ] }
+    },
+    {
+      "nombre": "id con mayusculas",
+      "porque": "Un id tiene una sola forma escrita; si no, dos entradas pueden nombrar lo mismo",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "Window.Block-Diagram.Menu.Edit.Undo", "etiqueta": "Undo", "estado": "never", "labview": "Deshace la última edición.", "porque": "Ver DT-035" }
+      ] }
+    },
+    {
+      "nombre": "area desconocida",
+      "porque": "Una errata en el área (pallete) DEBE fallar, no crear un área nueva en silencio",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "pallete.functions.signal-processing", "etiqueta": "Signal Processing", "estado": "never", "labview": "Análisis de señal.", "porque": "Ver DT-035" }
+      ] }
+    },
+    {
+      "nombre": "necesita describe en vez de citar",
+      "porque": "necesita cita un desbloqueo por su id; describirlo en texto libre rompe el recuento",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.toolbar.pause", "etiqueta": "Pause", "estado": "todo", "labview": "Suspende la ejecución.", "necesita": "Parar el guest entre nodos" }
+      ] }
+    },
+    {
+      "nombre": "propiedad desconocida",
+      "porque": "Una errata como `estdo` DEBE fallar, no ignorarse en silencio",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.tools.compare", "etiqueta": "Compare", "estado": "elsewhere", "estdo": "todo", "labview": "Compara dos VIs.", "telekino": "git diff" }
+      ] }
+    },
+    {
+      "nombre": "texto en blanco",
+      "porque": "Un campo obligatorio relleno de espacios no dice nada",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.tools.compare", "etiqueta": "Compare", "estado": "elsewhere", "labview": "   ", "telekino": "git diff" }
+      ] }
+    },
+    {
+      "nombre": "entrada sin etiqueta",
+      "porque": "El nombre que muestra LabVIEW es lo que busca quien llega de LabVIEW",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.tools.compare", "estado": "elsewhere", "labview": "Compara dos VIs.", "telekino": "git diff" }
+      ] }
+    },
+    {
+      "nombre": "menu fuera de su ventana",
+      "porque": "Un menú cuelga de la ventana que lo muestra: window.<ventana>.menu.<menú>. No hay un área `menu` suelta",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "menu.edit.undo", "etiqueta": "Undo", "estado": "never", "labview": "Deshace la última edición.", "porque": "Ver DT-035" }
+      ] }
+    },
+    {
+      "nombre": "separado a false",
+      "porque": "Sin separador, el campo se omite: dos formas de decir lo mismo acaban desincronizadas",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.tools.compare", "etiqueta": "Compare", "estado": "elsewhere", "labview": "Compara dos VIs.", "telekino": "git diff", "separado": false }
+      ] }
+    },
+    {
+      "nombre": "muestra en blanco",
+      "porque": "Si LabVIEW enseña algo en el elemento, se escribe; un campo vacío no calca nada",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": {}, "entradas": [
+        { "id": "window.block-diagram.menu.tools.compare", "etiqueta": "Compare", "estado": "elsewhere", "labview": "Compara dos VIs.", "telekino": "git diff", "muestra": "" }
+      ] }
+    },
+    {
+      "nombre": "desbloqueo sin descripcion",
+      "porque": "Un desbloqueo que no dice en qué consiste no se puede planificar",
+      "doc": { "version": 1, "referencia": "LabVIEW 2026Q3", "desbloqueos": { "deshacer": {} }, "entradas": [] }
+    }
+  ]
+}

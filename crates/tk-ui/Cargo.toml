@@ -1,0 +1,15 @@
+[package]
+name = "tk-ui"
+version = "0.1.0"
+description = "Editor de Telekino: ventanas, barras y lienzos en egui"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+eframe.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+jsonschema = { version = "0.58", default-features = false }

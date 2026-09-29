@@ -1,0 +1,78 @@
+{
+  "_comentario": [
+    "EJEMPLO para comprobar inventario-labview.schema.json. NO es el inventario:",
+    "nada de lo que dice es una afirmación sobre Telekino ni sobre LabVIEW.",
+    "Cubre los cuatro veredictos, dos huecos que esperan el mismo desbloqueo, una",
+    "entrada que cubre un subárbol entero y los campos opcionales, separador incluido."
+  ],
+
+  "version": 1,
+
+  "referencia": "LabVIEW 2026Q3",
+
+  "desbloqueos": {
+    "detener-entre-nodos": {
+      "desc": "El host puede detener el guest entre dos nodos y reanudarlo"
+    },
+    "deshacer": {
+      "desc": "Historial de operaciones del modelo, con deshacer y rehacer",
+      "ref": "spec/05-editor.md, regla 42"
+    }
+  },
+
+  "entradas": [
+    {
+      "id": "window.block-diagram.toolbar.run",
+      "etiqueta": "Run",
+      "estado": "built",
+      "prueba": "tk_cli::run::suma_basica",
+      "atajo": "Ctrl+R",
+      "captura": "bd/toolbar.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.pause",
+      "etiqueta": "Pause",
+      "estado": "todo",
+      "labview": "Suspende la ejecución del VI, que después se puede reanudar o avanzar paso a paso.",
+      "necesita": "detener-entre-nodos"
+    },
+    {
+      "id": "window.block-diagram.toolbar.highlight-execution",
+      "etiqueta": "Highlight Execution",
+      "estado": "todo",
+      "labview": "Ejecuta despacio y anima el paso de los datos por los wires.",
+      "necesita": "detener-entre-nodos",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.undo",
+      "etiqueta": "Undo",
+      "estado": "todo",
+      "labview": "Deshace la última operación de edición.",
+      "necesita": "deshacer",
+      "atajo": "Ctrl+Z"
+    },
+    {
+      "id": "window.block-diagram.menu.tools.compare",
+      "etiqueta": "Compare",
+      "muestra": "Compare…",
+      "estado": "elsewhere",
+      "labview": "Compara dos VIs y lista sus diferencias.",
+      "telekino": "Un .qvi es JSON: se compara con git diff (spec/02-sintaxis.md)."
+    },
+    {
+      "id": "palette.functions.connectivity.activex",
+      "etiqueta": "ActiveX",
+      "estado": "never",
+      "labview": "Funciones para controlar objetos ActiveX de Windows desde el diagrama.",
+      "porque": "Ejecutaría código nativo fuera de las capacidades del host (spec/01-glosario.md §8)."
+    },
+    {
+      "id": "palette.functions.programming.numeric.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "bloque": "add",
+      "prueba": "tk_compile::corpus::suma_basica"
+    }
+  ]
+}

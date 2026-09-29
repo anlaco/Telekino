@@ -68,14 +68,16 @@ lleno de intenciones.
 | Doc | Contenido | Estado |
 |-----|-----------|--------|
 | [`spec/01-glosario.md`](spec/01-glosario.md) | Vocabulario y alcance | **Borrador** |
-
-**La especificación está completa en borrador: 54 reglas normativas repartidas en siete documentos.** Falta la revisión y el bloque `design/`.
 | [`spec/02-sintaxis.md`](spec/02-sintaxis.md) | Formato de fichero `.qvi` (JSON). El esquema en [`schema/`](schema/) es la parte normativa | **Borrador** — esquema verificado |
 | [`spec/03-semantica-estatica.md`](spec/03-semantica-estatica.md) | Tipos, resolución de puertos, reglas de conexión, ciclos | **Borrador** — las 3 decisiones bloqueantes, resueltas |
 | [`spec/04-semantica-dinamica.md`](spec/04-semantica-dinamica.md) | Orden de ejecución, estructuras, casos límite. Catálogo en [`schema/blocks.json`](schema/blocks.json) | **Borrador** — 1 decisión abierta |
-| [`spec/05-editor.md`](spec/05-editor.md) | Interacción: selección, arrastre, wires, paleta, teclado | **Borrador** — deshacer sin diseño |
-| [`spec/06-visual.md`](spec/06-visual.md) | Identidad visual | **Heredado** — limpio de parches, pero §1.3 promete teclado sin implementar (ver `05` regla 36) |
+| [`spec/05-editor.md`](spec/05-editor.md) | Interacción: selección, arrastre, wires, paleta, teclado. Huecos declarados (§9) | **Borrador** — deshacer sin diseño |
+| [`spec/06-visual.md`](spec/06-visual.md) | Identidad visual | **Heredado** — limpio de parches, pero §1.3 promete teclado sin implementar (ver `05` regla 36). §6.2 sustituida por DT-035 |
 | [`spec/07-paridad.md`](spec/07-paridad.md) | Contrato de paridad, reparación del corpus y captura del oráculo | **Borrador** |
+
+**La especificación está completa en borrador: 65 reglas normativas repartidas en
+siete documentos** (contadas como definiciones `Regla N`, subreglas como la 20b
+incluidas). Falta la revisión y el bloque `design/`.
 
 ### Diseño
 
@@ -85,7 +87,7 @@ lleno de intenciones.
 | `design/02-ejecucion.md` | WasmGC, imports WIT, ticks, **I/O bloqueante** | Pendiente |
 | `design/03-seguridad.md` | Capacidades: las puertas | Pendiente |
 | `design/04-plan-migracion.md` | Fases y criterios de cierre | Pendiente |
-| `design/05-decisiones.md` | Decisiones nuevas + derogación de las 34 antiguas | Pendiente |
+| [`design/05-decisiones.md`](design/05-decisiones.md) | Decisiones nuevas + derogación de las 34 antiguas | **Borrador** — DT-035 (interfaz calcada de LabVIEW 2026Q3, huecos declarados), en implementación en `crates/tk-ui`. Falta la derogación |
 | `design/00-indice-provisional.md` | Índice previo a la auditoría | **A disolver** en los cinco de arriba |
 | `design/00-plan-provisional.md` | Plan previo a la auditoría. Contiene los resultados de spikes verificados | **A disolver** |
 

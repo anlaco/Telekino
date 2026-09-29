@@ -1,0 +1,880 @@
+{
+  "_comentario": [
+    "INVENTARIO DE LABVIEW (design/05-decisiones.md, DT-035). Lo que muestra la",
+    "interfaz de la referencia y la situación de Telekino respecto a cada cosa.",
+    "El editor toma de aquí el veredicto de cada elemento (spec/05-editor.md,",
+    "regla 55), y la página docs/inventario-labview.md se generará a partir de",
+    "este fichero. Formato: inventario-labview.schema.json.",
+    "",
+    "Un área se desglosa al empezar a trabajar en ella, con las capturas de la",
+    "referencia delante (DT-035 §5 y §8). No se escribe nada de memoria.",
+    "",
+    "DESGLOSADO: el Front Panel y el Block Diagram de un VI nuevo (capturas",
+    "front-panel/vi-nuevo.png y block-diagram/vi-nuevo.png; nombres de la barra",
+    "según la página «VI Toolbar Buttons» de la ayuda de NI) y el Project Explorer",
+    "de un proyecto nuevo, contra la captura",
+    "project-explorer/proyecto-nuevo.png (2026-09-29). Lo que la captura muestra",
+    "—ventana, menús, barras, páginas y árbol— está verificado. Los nombres de los",
+    "botones no aparecen en la captura (son tooltips): salen de la ayuda de NI,",
+    "páginas «Standard/Project/Build/Source Control Toolbar Buttons», consultadas",
+    "el mismo día. El contenido de los menús no se ha capturado todavía.",
+    "",
+    "FUERA, según DT-035 §3: la barra del toolkit Unit Test Framework (entre",
+    "Project y Build en la captura del Project Explorer). SIN DECLARAR hasta",
+    "confirmarlos: el cuadrado verde tras Build en el Project Explorer (¿Package",
+    "Dependencies?), su rombo verde (¿Nigel?) y el «26.0» de la barra del VI.",
+    "",
+    "`necesita` nombra la pieza más concreta que se puede nombrar hoy. Que exista",
+    "el editor (R1) se da por supuesto, salvo en lo que no espera nada más.",
+    "",
+    "No confundir con spec/07-paridad.md, que compara Telekino en Rust con",
+    "Telekino en Red."
+  ],
+
+  "version": 1,
+
+  "referencia": "LabVIEW 2026Q3",
+
+  "desbloqueos": {
+    "editor-escritorio": {
+      "desc": "La aplicación de escritorio en egui con sus menús completos. Existe el esqueleto de las ventanas del VI; el contenido de los menús, no",
+      "ref": "design/00-plan-provisional.md §7, fase R1"
+    },
+    "leer-escribir-qvi": {
+      "desc": "Leer y escribir un .qvi conforme a su esquema (crate tk-format)",
+      "ref": "spec/02-sintaxis.md; design/00-plan-provisional.md §7, fase R0"
+    },
+    "formato-qproj": {
+      "desc": "Formato del fichero de proyecto .qproj, su esquema y su lectura y escritura. Sin él no hay proyecto que mostrar",
+      "ref": "spec/02-sintaxis.md §8: pendiente del modelo de dependencias"
+    },
+    "modelo-de-dependencias": {
+      "desc": "Modelo de dependencias entre VIs, librerías y proyectos",
+      "ref": "spec/02-sintaxis.md §8: lo fija spec/03, todavía sin escribir"
+    },
+    "construir-distribuible": {
+      "desc": "Construir un distribuible a partir de un VI o de un proyecto (telekino build)",
+      "ref": "design/00-plan-provisional.md §9: sin decidir"
+    },
+    "panel-frontal": {
+      "desc": "Pintar y editar el panel de un VI: sus controles e indicadores",
+      "ref": "design/00-plan-provisional.md §7, fase R3"
+    },
+    "diagrama": {
+      "desc": "Pintar y editar el diagrama de un VI: nodos, wires y estructuras",
+      "ref": "design/00-plan-provisional.md §7, fases R1 y R2"
+    },
+    "ejecutar-vi": {
+      "desc": "Compilar un VI a WebAssembly y ejecutarlo desde el editor",
+      "ref": "design/00-plan-provisional.md §7, fases R0 y R3"
+    },
+    "detener-vi": {
+      "desc": "Detener un VI en ejecución, también dentro de una operación bloqueante",
+      "ref": "spec/04-semantica-dinamica.md, reglas 20 y 20b"
+    },
+    "detener-entre-nodos": {
+      "desc": "Detener la ejecución entre dos nodos, mostrar dónde se ha detenido y reanudarla"
+    },
+    "sondas": {
+      "desc": "Guardar y leer el último valor que pasó por cada wire"
+    },
+    "formato-de-texto": {
+      "desc": "Fuente, tamaño y estilo del texto, guardados en la capa de presentación del .qvi"
+    },
+    "busqueda-en-paletas": {
+      "desc": "Buscar funciones, controles y ejemplos por su nombre o por lo que hacen"
+    },
+    "ayuda-contextual": {
+      "desc": "Describir lo que hay bajo el ratón, a partir del campo desc del catálogo de bloques"
+    },
+    "icono-del-vi": {
+      "desc": "El icono del VI: cómo se guarda en el .qvi y cómo se edita"
+    },
+    "asistente-externo": {
+      "desc": "Lanzar desde el editor un asistente de IA externo que trabaje sobre el .qvi",
+      "ref": "design/05-decisiones.md, DT-036"
+    },
+    "sub-vis": {
+      "desc": "Usar un VI como subVI: su connector pane y su llamada compilada",
+      "ref": "design/00-plan-provisional.md §7, fase R6"
+    }
+  },
+
+  "entradas": [
+    {
+      "id": "window.project-explorer",
+      "etiqueta": "Project Explorer",
+      "estado": "todo",
+      "labview": "Organiza un proyecto: sus VIs y demás ficheros, los destinos donde se ejecutan, sus dependencias y cómo se construye.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+
+    {
+      "id": "window.project-explorer.menu.file",
+      "etiqueta": "File",
+      "estado": "todo",
+      "labview": "Operaciones con ficheros: VIs y proyectos. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.edit",
+      "etiqueta": "Edit",
+      "estado": "todo",
+      "labview": "Edición: deshacer, portapapeles y búsqueda. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.view",
+      "etiqueta": "View",
+      "estado": "todo",
+      "labview": "Qué se muestra: ventanas auxiliares y barras de herramientas. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "labview": "Operaciones sobre el proyecto. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.operate",
+      "etiqueta": "Operate",
+      "estado": "todo",
+      "labview": "Ejecución de VIs. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.tools",
+      "etiqueta": "Tools",
+      "estado": "todo",
+      "labview": "Utilidades del entorno. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.window",
+      "etiqueta": "Window",
+      "estado": "todo",
+      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Ayuda de LabVIEW. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+
+    {
+      "id": "window.project-explorer.toolbar.standard",
+      "etiqueta": "Standard",
+      "estado": "todo",
+      "labview": "Barra estándar: nuevo, abrir, guardar y portapapeles.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.new",
+      "etiqueta": "New",
+      "estado": "todo",
+      "labview": "Abre el diálogo para crear un documento nuevo: un VI, un proyecto u otros.",
+      "necesita": "editor-escritorio",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.open",
+      "etiqueta": "Open",
+      "estado": "todo",
+      "labview": "Abre un fichero de LabVIEW existente.",
+      "necesita": "leer-escribir-qvi",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.save-all",
+      "etiqueta": "Save All (this Project)",
+      "estado": "todo",
+      "labview": "Guarda todos los documentos abiertos del proyecto, y el propio proyecto.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.cut",
+      "etiqueta": "Cut",
+      "estado": "todo",
+      "labview": "Corta la selección al portapapeles.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.copy",
+      "etiqueta": "Copy",
+      "estado": "todo",
+      "labview": "Copia la selección al portapapeles.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.paste",
+      "etiqueta": "Paste",
+      "estado": "todo",
+      "labview": "Pega el contenido del portapapeles en el documento activo.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.standard.remove-from-project",
+      "etiqueta": "Remove From Project",
+      "estado": "todo",
+      "labview": "Quita la selección del proyecto sin pasarla por el portapapeles. No borra los ficheros del disco.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+
+    {
+      "id": "window.project-explorer.toolbar.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "labview": "Barra del proyecto: abrirlo, guardarlo, filtrar su vista, sus propiedades y sus conflictos.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.project.open-project",
+      "etiqueta": "Open Project",
+      "estado": "todo",
+      "labview": "Abre un proyecto existente.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.project.save-project",
+      "etiqueta": "Save Project",
+      "estado": "todo",
+      "labview": "Guarda el proyecto.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.project.filter-project-view",
+      "etiqueta": "Filter Project View",
+      "estado": "todo",
+      "labview": "Elige qué tipos de nodo muestra el árbol del proyecto.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.toolbar.project.project-properties",
+      "etiqueta": "Project Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del proyecto.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.project.resolve-conflicts",
+      "etiqueta": "Resolve Conflicts",
+      "estado": "todo",
+      "labview": "Abre el diálogo para resolver los conflictos del proyecto: elementos con el mismo nombre cualificado que apuntan a ficheros distintos.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+
+    {
+      "id": "window.project-explorer.toolbar.build",
+      "etiqueta": "Build",
+      "estado": "todo",
+      "labview": "Barra de construcción: construir y ejecutar lo construido.",
+      "necesita": "construir-distribuible",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.build.build-all",
+      "etiqueta": "Build All",
+      "estado": "todo",
+      "labview": "Construye todas las especificaciones de construcción del proyecto.",
+      "necesita": "construir-distribuible",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.build.build-selected",
+      "etiqueta": "Build Selected",
+      "estado": "todo",
+      "labview": "Construye las especificaciones seleccionadas.",
+      "necesita": "construir-distribuible",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.build.run-from-build",
+      "etiqueta": "Run from Build",
+      "estado": "todo",
+      "labview": "Ejecuta lo ya construido a partir de la especificación seleccionada.",
+      "necesita": "construir-distribuible",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+
+    {
+      "id": "window.project-explorer.toolbar.source-control",
+      "etiqueta": "Source Control",
+      "estado": "elsewhere",
+      "labview": "Control de versiones integrado, con extracción y entrega de ficheros.",
+      "telekino": "Un .qvi es JSON: se versiona con git, u otra herramienta, fuera del editor, sin extraer ni bloquear ficheros.",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.source-control.check-out",
+      "etiqueta": "Check Out",
+      "estado": "elsewhere",
+      "labview": "Extrae el fichero del control de versiones para poder editarlo.",
+      "telekino": "Un .qvi es JSON y se puede fusionar: no hace falta extraerlo para editarlo.",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.source-control.undo-check-out",
+      "etiqueta": "Undo Check Out",
+      "estado": "elsewhere",
+      "labview": "Cancela la extracción y devuelve el fichero a la versión anterior; los cambios se pierden.",
+      "telekino": "Se descartan los cambios con git, fuera del editor.",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.source-control.check-in",
+      "etiqueta": "Check In",
+      "estado": "elsewhere",
+      "labview": "Entrega el fichero al control de versiones con sus cambios.",
+      "telekino": "Se confirman los cambios con git, fuera del editor.",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.source-control.add-to-source-control",
+      "etiqueta": "Add to Source Control",
+      "estado": "elsewhere",
+      "labview": "Pone el fichero bajo control de versiones y ofrece añadir también sus dependencias.",
+      "telekino": "Se añade el fichero con git, fuera del editor.",
+      "captura": "project-explorer/proyecto-nuevo.png",
+      "separado": true
+    },
+
+    {
+      "id": "window.project-explorer.items",
+      "etiqueta": "Items",
+      "estado": "todo",
+      "labview": "Página con el árbol lógico del proyecto: destinos, carpetas y elementos, tal como se organizan en el proyecto.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.items.project",
+      "etiqueta": "Project: <nombre>",
+      "estado": "todo",
+      "labview": "Raíz del árbol: el proyecto.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.items.project.my-computer",
+      "etiqueta": "My Computer",
+      "estado": "todo",
+      "labview": "El ordenador local como destino: lo que cuelga de él se ejecuta aquí.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.items.project.my-computer.dependencies",
+      "etiqueta": "Dependencies",
+      "estado": "todo",
+      "labview": "Lo que necesitan los elementos del destino —subVIs, librerías— y que LabVIEW añade solo.",
+      "necesita": "modelo-de-dependencias",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.items.project.my-computer.build-specifications",
+      "etiqueta": "Build Specifications",
+      "estado": "todo",
+      "labview": "Configuraciones para construir aplicaciones, instaladores y otros distribuibles.",
+      "necesita": "construir-distribuible",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.files",
+      "etiqueta": "Files",
+      "estado": "todo",
+      "labview": "Página con los ficheros del proyecto tal como están en el disco.",
+      "necesita": "formato-qproj",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+
+    {
+      "id": "window.front-panel",
+      "etiqueta": "Front Panel",
+      "estado": "todo",
+      "labview": "El panel de un VI: sus controles e indicadores. Es la interfaz de quien lo usa.",
+      "necesita": "panel-frontal",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.file",
+      "etiqueta": "File",
+      "estado": "todo",
+      "labview": "Operaciones con ficheros: VIs y proyectos. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit",
+      "etiqueta": "Edit",
+      "estado": "todo",
+      "labview": "Edición: deshacer, portapapeles y búsqueda. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.view",
+      "etiqueta": "View",
+      "estado": "todo",
+      "labview": "Qué se muestra: paletas, ventanas auxiliares y barras de herramientas. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "labview": "Operaciones sobre el proyecto. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.operate",
+      "etiqueta": "Operate",
+      "estado": "todo",
+      "labview": "Ejecución de VIs. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.tools",
+      "etiqueta": "Tools",
+      "estado": "todo",
+      "labview": "Utilidades del entorno. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.window",
+      "etiqueta": "Window",
+      "estado": "todo",
+      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Ayuda de LabVIEW. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.run",
+      "etiqueta": "Run",
+      "estado": "todo",
+      "labview": "Ejecuta el VI, compilándolo si hace falta. La flecha se rompe cuando el VI tiene errores, y al pulsarla se abre la lista de errores.",
+      "necesita": "ejecutar-vi",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.run-continuously",
+      "etiqueta": "Run Continuously",
+      "estado": "todo",
+      "labview": "Ejecuta el VI una y otra vez hasta que se detiene o se pausa.",
+      "necesita": "ejecutar-vi",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.abort-execution",
+      "etiqueta": "Abort Execution",
+      "estado": "todo",
+      "labview": "Detiene en el acto el VI de nivel superior, sin terminar la iteración en curso.",
+      "necesita": "detener-vi",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.pause",
+      "etiqueta": "Pause",
+      "estado": "todo",
+      "labview": "Pausa o reanuda la ejecución, y marca en el diagrama dónde se ha detenido.",
+      "necesita": "detener-entre-nodos",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.text-settings",
+      "etiqueta": "Text Settings",
+      "estado": "todo",
+      "labview": "Cambia la fuente, el tamaño y el estilo del texto seleccionado.",
+      "necesita": "formato-de-texto",
+      "captura": "front-panel/vi-nuevo.png",
+      "muestra": "15pt Application Font",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.toolbar.align-objects",
+      "etiqueta": "Align Objects",
+      "estado": "todo",
+      "labview": "Alinea los objetos seleccionados a lo largo de un eje.",
+      "necesita": "panel-frontal",
+      "captura": "front-panel/vi-nuevo.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.toolbar.distribute-objects",
+      "etiqueta": "Distribute Objects",
+      "estado": "todo",
+      "labview": "Reparte los objetos seleccionados a intervalos iguales.",
+      "necesita": "panel-frontal",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.resize-objects",
+      "etiqueta": "Resize Objects",
+      "estado": "todo",
+      "labview": "Da el mismo tamaño a varios objetos del panel.",
+      "necesita": "panel-frontal",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.reorder",
+      "etiqueta": "Reorder",
+      "estado": "todo",
+      "labview": "Cambia qué objeto queda delante o detrás cuando se superponen.",
+      "necesita": "panel-frontal",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.save-version",
+      "etiqueta": "Save Version",
+      "estado": "todo",
+      "labview": "Indica la versión de LabVIEW para la que se guarda el VI, en forma corta: 26.0 es LabVIEW 2026 Q1. Aparece cuando no es la del editor; en rojo y con un aviso si el código no cabe en esa versión, y al pulsarlo abre la lista de errores.",
+      "necesita": "leer-escribir-qvi",
+      "captura": "front-panel/vi-nuevo.png",
+      "muestra": "26.0"
+    },
+    {
+      "id": "window.front-panel.toolbar.search",
+      "etiqueta": "Search",
+      "estado": "todo",
+      "labview": "Búsqueda global: se describe una tarea y devuelve funciones de la paleta y ejemplos. En 2026Q3 se rotula «Search with Nigel» porque la resuelve Nigel.",
+      "necesita": "busqueda-en-paletas",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.nigel",
+      "etiqueta": "Nigel",
+      "estado": "todo",
+      "labview": "Abre el chat de Nigel, el asistente de IA de NI: responde preguntas y, desde 2026Q3, genera VIs a partir de una descripción.",
+      "necesita": "asistente-externo",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.show-context-help-window",
+      "etiqueta": "Show Context Help Window",
+      "estado": "todo",
+      "labview": "Abre la ventana de ayuda contextual, que describe lo que hay bajo el ratón.",
+      "necesita": "ayuda-contextual",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.connector-pane",
+      "etiqueta": "Connector Pane",
+      "estado": "todo",
+      "labview": "Asigna controles e indicadores a los terminales con que el VI se usa como subVI.",
+      "necesita": "sub-vis",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.icon",
+      "etiqueta": "Icon",
+      "estado": "todo",
+      "labview": "El icono del VI, que lo representa cuando se usa como subVI. Se edita con un doble clic.",
+      "necesita": "icono-del-vi",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.application-instance",
+      "etiqueta": "Application Instance",
+      "estado": "todo",
+      "labview": "Muestra en qué proyecto y destino (application instance) está abierto el VI, y permite cambiarlo desde su menú.",
+      "necesita": "formato-qproj",
+      "captura": "front-panel/vi-nuevo.png",
+      "muestra": "Untitled Project 1/My Computer"
+    },
+    {
+      "id": "window.front-panel.workspace",
+      "etiqueta": "Workspace",
+      "estado": "todo",
+      "labview": "Lienzo del panel, con rejilla. El clic derecho abre la paleta de controles.",
+      "necesita": "panel-frontal",
+      "captura": "front-panel/vi-nuevo.png"
+    },
+
+    {
+      "id": "window.block-diagram",
+      "etiqueta": "Block Diagram",
+      "estado": "todo",
+      "labview": "El diagrama de un VI: el código, como nodos unidos por wires.",
+      "necesita": "diagrama",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.file",
+      "etiqueta": "File",
+      "estado": "todo",
+      "labview": "Operaciones con ficheros: VIs y proyectos. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit",
+      "etiqueta": "Edit",
+      "estado": "todo",
+      "labview": "Edición: deshacer, portapapeles y búsqueda. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view",
+      "etiqueta": "View",
+      "estado": "todo",
+      "labview": "Qué se muestra: paletas, ventanas auxiliares y barras de herramientas. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "labview": "Operaciones sobre el proyecto. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.operate",
+      "etiqueta": "Operate",
+      "estado": "todo",
+      "labview": "Ejecución de VIs. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.tools",
+      "etiqueta": "Tools",
+      "estado": "todo",
+      "labview": "Utilidades del entorno. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.window",
+      "etiqueta": "Window",
+      "estado": "todo",
+      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Ayuda de LabVIEW. Contenido sin capturar.",
+      "necesita": "editor-escritorio",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.run",
+      "etiqueta": "Run",
+      "estado": "todo",
+      "labview": "Ejecuta el VI, compilándolo si hace falta. La flecha se rompe cuando el VI tiene errores, y al pulsarla se abre la lista de errores.",
+      "necesita": "ejecutar-vi",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.run-continuously",
+      "etiqueta": "Run Continuously",
+      "estado": "todo",
+      "labview": "Ejecuta el VI una y otra vez hasta que se detiene o se pausa.",
+      "necesita": "ejecutar-vi",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.abort-execution",
+      "etiqueta": "Abort Execution",
+      "estado": "todo",
+      "labview": "Detiene en el acto el VI de nivel superior, sin terminar la iteración en curso.",
+      "necesita": "detener-vi",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.pause",
+      "etiqueta": "Pause",
+      "estado": "todo",
+      "labview": "Pausa o reanuda la ejecución, y marca en el diagrama dónde se ha detenido.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.highlight-execution",
+      "etiqueta": "Highlight Execution",
+      "estado": "todo",
+      "labview": "Anima en el diagrama el recorrido de los datos mientras el VI se ejecuta.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/vi-nuevo.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.toolbar.retain-wire-values",
+      "etiqueta": "Retain Wire Values",
+      "estado": "todo",
+      "labview": "Guarda el último valor que pasó por cada wire, para verlo con una sonda aunque el VI ya no se ejecute.",
+      "necesita": "sondas",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.step-into",
+      "etiqueta": "Step Into",
+      "estado": "todo",
+      "labview": "Entra en el nodo siguiente y se detiene en su primera acción.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.step-over",
+      "etiqueta": "Step Over",
+      "estado": "todo",
+      "labview": "Ejecuta el nodo siguiente y se detiene en el que viene después.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.step-out",
+      "etiqueta": "Step Out",
+      "estado": "todo",
+      "labview": "Termina de ejecutar el nodo en curso y se detiene.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.text-settings",
+      "etiqueta": "Text Settings",
+      "estado": "todo",
+      "labview": "Cambia la fuente, el tamaño y el estilo del texto seleccionado.",
+      "necesita": "formato-de-texto",
+      "captura": "block-diagram/vi-nuevo.png",
+      "muestra": "15pt Application Font",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.toolbar.align-objects",
+      "etiqueta": "Align Objects",
+      "estado": "todo",
+      "labview": "Alinea los objetos seleccionados a lo largo de un eje.",
+      "necesita": "diagrama",
+      "captura": "block-diagram/vi-nuevo.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.toolbar.distribute-objects",
+      "etiqueta": "Distribute Objects",
+      "estado": "todo",
+      "labview": "Reparte los objetos seleccionados a intervalos iguales.",
+      "necesita": "diagrama",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.reorder",
+      "etiqueta": "Reorder",
+      "estado": "todo",
+      "labview": "Cambia qué objeto queda delante o detrás cuando se superponen.",
+      "necesita": "diagrama",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.clean-up-diagram",
+      "etiqueta": "Clean Up Diagram",
+      "estado": "todo",
+      "labview": "Recoloca los objetos y redibuja todos los wires del diagrama automáticamente.",
+      "necesita": "diagrama",
+      "captura": "block-diagram/vi-nuevo.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.toolbar.save-version",
+      "etiqueta": "Save Version",
+      "estado": "todo",
+      "labview": "Indica la versión de LabVIEW para la que se guarda el VI, en forma corta: 26.0 es LabVIEW 2026 Q1. Aparece cuando no es la del editor; en rojo y con un aviso si el código no cabe en esa versión, y al pulsarlo abre la lista de errores.",
+      "necesita": "leer-escribir-qvi",
+      "captura": "block-diagram/vi-nuevo.png",
+      "muestra": "26.0"
+    },
+    {
+      "id": "window.block-diagram.toolbar.search",
+      "etiqueta": "Search",
+      "estado": "todo",
+      "labview": "Búsqueda global: se describe una tarea y devuelve funciones de la paleta y ejemplos. En 2026Q3 se rotula «Search with Nigel» porque la resuelve Nigel.",
+      "necesita": "busqueda-en-paletas",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.nigel",
+      "etiqueta": "Nigel",
+      "estado": "todo",
+      "labview": "Abre el chat de Nigel, el asistente de IA de NI: responde preguntas y, desde 2026Q3, genera VIs a partir de una descripción.",
+      "necesita": "asistente-externo",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.show-context-help-window",
+      "etiqueta": "Show Context Help Window",
+      "estado": "todo",
+      "labview": "Abre la ventana de ayuda contextual, que describe lo que hay bajo el ratón.",
+      "necesita": "ayuda-contextual",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.icon",
+      "etiqueta": "Icon",
+      "estado": "todo",
+      "labview": "El icono del VI, que lo representa cuando se usa como subVI. Se edita con un doble clic.",
+      "necesita": "icono-del-vi",
+      "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.application-instance",
+      "etiqueta": "Application Instance",
+      "estado": "todo",
+      "labview": "Muestra en qué proyecto y destino (application instance) está abierto el VI, y permite cambiarlo desde su menú.",
+      "necesita": "formato-qproj",
+      "captura": "block-diagram/vi-nuevo.png",
+      "muestra": "Untitled Project 1/My Computer"
+    },
+    {
+      "id": "window.block-diagram.workspace",
+      "etiqueta": "Workspace",
+      "estado": "todo",
+      "labview": "Lienzo del diagrama. El clic derecho abre la paleta de funciones.",
+      "necesita": "diagrama",
+      "captura": "block-diagram/vi-nuevo.png"
+    }
+  ]
+}

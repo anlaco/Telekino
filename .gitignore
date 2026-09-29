@@ -41,3 +41,10 @@ libRedRT-include.red
 findings.md
 progress.md
 task_plan.md
+
+# Capturas de LabVIEW 2026Q3 (DT-035 §8): evidencia local para el inventario.
+# Son la interfaz de NI, no la nuestra: no se publican.
+capturas-labview/
+
+# Compilación de Rust
+target/

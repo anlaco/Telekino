@@ -8,6 +8,8 @@
 
 Cubre los dos lienzos —*Block Diagram* y *Front Panel*— en modo edición. La
 ejecución la define [`04-semantica-dinamica.md`](04-semantica-dinamica.md).
+§9 cubre además lo que rodea a los lienzos —menús, barras de herramientas,
+paletas y ventanas— en lo que el editor muestra de la *referencia* sin hacerlo.
 
 Este documento se apoya en el comportamiento actual del editor en Red, pero
 **no lo replica sin filtrar**: §2 lista lo que expresamente no se porta.
@@ -153,7 +155,13 @@ importante es que sea **una sola** regla, no tres.)*
 > horizontal. El área desplazable **DEBE** ajustarse al contenido real.
 
 > **Regla 35.** No hay zoom. *(Decisión de producto explícita, heredada de
-> `06-visual.md` §1.1 y de LabVIEW.)*
+> `06-visual.md` §1.1.)*
+
+*(Es una diferencia con LabVIEW, no una coincidencia: LabVIEW tiene zoom en el
+diagrama desde la 2023 Q3 —View ▸ Zoom In, Zoom Out, Actual Size, Toggle Zoom, y
+`Ctrl`+rueda—, según la ayuda de NI. Se decidió el 2026-09-29 mantenerla, para no
+complicar el editor; cambiarla exige una decisión nueva. Cuando se desglose el
+menú View, sus entradas de zoom irán como `never` citando esta regla.)*
 
 > **Regla 36.** Las flechas del teclado mueven la selección un píxel; con
 > `Shift`, un salto mayor.
@@ -196,7 +204,49 @@ notificación.)*
 > (DT-031, ver [`../whitelist.md`](../whitelist.md) §3). Es la deuda más grande
 > de este documento y **necesita una decisión de diseño propia**.
 
-## 9. Verificación
+## 9. Lo que el editor no hace
+
+*(informativo)* El editor calca la arquitectura de información de LabVIEW
+—menús, barras de herramientas, paletas y ventanas, con sus nombres y su orden—
+y declara en su sitio lo que Telekino no hace, para que la propia interfaz sea
+la guía de lo que falta. La decisión, su alcance y su porqué están en
+[DT-035](../design/05-decisiones.md#dt-035). El veredicto de cada elemento vive
+en el *inventario de LabVIEW*,
+[`../schema/inventario-labview.json`](../schema/inventario-labview.json), y no en
+el código del editor.
+
+> **Regla 52.** Todo lo que la *referencia* muestra dentro del alcance de DT-035
+> **DEBE** aparecer en el editor donde LabVIEW lo pone y con su nombre, al nivel
+> de detalle que declare el inventario, **aunque Telekino no lo haga**. Un
+> *hueco* se muestra desactivado; **NO DEBE** omitirse.
+
+> **Regla 53.** Un elemento cuyo *veredicto* no es `built` **NO DEBE** modificar
+> el VI ni iniciar ninguna acción. Activarlo —con el ratón, desde un menú o con
+> su atajo de teclado— sólo muestra su explicación.
+
+*(El atajo importa. Quien viene de LabVIEW pulsará `Ctrl+Z` sin mirar el menú. Un
+atajo que no hace nada se lee como un fallo; uno que dice «esto aún no existe, y
+espera a tal cosa» se lee como lo que es.)*
+
+> **Regla 54.** La explicación de un hueco **DEBE** decir qué hace LabVIEW ahí y
+> lo que su veredicto obliga a declarar: qué falta (`todo`), cómo se hace en
+> Telekino (`elsewhere`) o qué decisión lo excluye (`never`).
+
+> **Regla 55.** El editor **DEBE** tomar el veredicto de cada elemento del
+> inventario, y **NO DEBE** decidir en su propio código si algo está hecho.
+
+> **Regla 56.** Una entrada del inventario sólo **PUEDE** pasar a `built` cuando
+> lo que tiene detrás está implementado y verificado **sin interfaz**, y **DEBE**
+> nombrar el test que lo demuestra. Si es una función o un control de las
+> paletas, su bloque **DEBE** existir en
+> [`../schema/blocks.json`](../schema/blocks.json).
+
+*(Es la regla que cierra el paso al verde falso: `waveform-chart` y
+`waveform-graph` figuraban como completados sin hacer nada —ver
+[`../whitelist.md`](../whitelist.md) §6.2—. Con esta regla, declararlos hechos
+habría exigido nombrar un test que no existía.)*
+
+## 10. Verificación
 
 | Regla | Mecanismo | Estado |
 |-------|-----------|--------|
@@ -208,8 +258,13 @@ notificación.)*
 | 36, 37 teclado | Test de interacción | Pendiente |
 | 38–40 sincronización | Test: crear, borrar y retipar desde cada lienzo | Pendiente |
 | 42 deshacer | — | **Sin diseño** |
+| 52, 55 lo declarado se pinta, y lo pintado está declarado | Test de pintado sin pantalla contra el inventario: cada elemento pintado tiene su entrada, y cada entrada se pinta en su orden (`crates/tk-ui/src/ventanas.rs`) | **Verificado** para el *Front Panel* y el *Block Diagram* |
+| 52 donde LabVIEW lo pone | Test de posiciones: cada elemento de la barra, a 2 pt como mucho de su sitio en las capturas (`la_barra_cae_donde_en_labview`) | **Verificado** para el *Front Panel* y el *Block Diagram* |
+| 53 un hueco no actúa | Test de interacción: el clic, el clic derecho en el lienzo y un atajo sólo abren la explicación, y Esc la cierra (`crates/tk-ui/src/ventanas.rs`) | **Verificado**. Que no cambie el VI es trivial mientras no haya modelo |
+| 54 la explicación está completa | Esquema del inventario: cada veredicto exige su campo y sólo el suyo; test de la explicación (`crates/tk-ui/src/inventario.rs`) | **Verificado** |
+| 56 `built` exige prueba | Esquema: `built` exige `prueba`. Test: la prueba existe y el bloque está en `blocks.json` | **Verificado**; aún no hay nada `built` |
 
-## 10. Pendientes
+## 11. Pendientes
 
 | # | Cuestión | Bloquea |
 |---|----------|---------|
@@ -217,3 +272,4 @@ notificación.)*
 | 2 | Comando explícito de "mover al ámbito" (§3.3) | Nada; es refinamiento de la regla 26 |
 | 3 | Salto exacto de `Shift`+flecha: ¿8 px o 12 px? | Nada. Abierto en `06-visual.md` §1.3 desde el principio |
 | 4 | Selección por rectángulo de arrastre | Sin especificar; hoy no existe |
+| 5 | Desglosar el inventario área a área, con capturas de la referencia delante (DT-035 §5 y §8). **Empezado**: el *Project Explorer*, 38 entradas | Que las reglas 52–56 tengan algo que comprobar |

@@ -227,7 +227,40 @@ capacidades declaradas **NO DEBE** poder abrir ningún recurso.
 que varias *estructuras* de bucle progresen de forma intercalada sin bloquear la
 interfaz.
 
-## 9. Términos que este glosario deja pendientes
+## 9. La referencia y el inventario
+
+**Referencia** — La versión de LabVIEW contra la que se comparan la interfaz del
+editor y el *inventario de LabVIEW*: **LabVIEW 2026Q3**
+([DT-035](../design/05-decisiones.md#dt-035)). En esta especificación, «LabVIEW»
+significa la referencia, y una afirmación sobre lo que hace LabVIEW se comprueba
+contra ella. Vive en un solo sitio: el campo `referencia` del inventario.
+
+**Inventario de LabVIEW** — La lista, en forma de datos, de lo que muestra la
+interfaz de la *referencia* y de la situación de Telekino respecto a cada cosa.
+Vive en [`../schema/inventario-labview.json`](../schema/inventario-labview.json), y
+el editor toma de ahí el estado de cada elemento. **No confundir** con el
+contrato de paridad de [`07-paridad.md`](07-paridad.md), que compara Telekino en
+Rust con Telekino en Red.
+
+**Hueco** — Algo que la *referencia* tiene y Telekino no hace, todavía o nunca.
+Se declara en su sitio de la interfaz, desactivado y con su explicación, en vez
+de omitirse ([`05-editor.md`](05-editor.md), regla 52).
+
+**Veredicto** — La situación de una entrada del *inventario de LabVIEW*:
+
+| Veredicto | Significa |
+|-----------|-----------|
+| `built` | Existe, y un test sin interfaz lo demuestra |
+| `todo` | Telekino lo quiere y aún no lo tiene. Nombra el *desbloqueo* que espera |
+| `elsewhere` | Telekino lo resuelve de otra forma, y dice cuál |
+| `never` | Queda fuera a propósito, y cita la decisión que lo excluye |
+
+**Desbloqueo** — La pieza de implementación, verificable sin interfaz, que espera
+un *hueco* `todo`. Varios huecos que esperan el mismo desbloqueo señalan una
+prioridad. *(No se llama «capacidad» para no confundirlo con la capacidad de §8,
+que es un permiso.)*
+
+## 10. Términos que este glosario deja pendientes
 
 *(informativo — se resuelven en los documentos indicados)*
 

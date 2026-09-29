@@ -201,7 +201,7 @@ Cada fase termina con algo demostrable. No se empieza una sin cerrar la anterior
 | Fase | Alcance | Criterio de cierre |
 |------|---------|--------------------|
 | **R0 — Spike** | ~~Cadena WAT → `wat` → wasmtime~~ ✅ (`spikes/wasm-probe/`, §2.1). Falta: `tk-format` parsea `suma-basica.qvi` y `tk-compile` emite ese WAT desde el grafo | `telekino run examples/suma-basica.qvi` imprime `8.0` |
-| **R1 — Esqueleto** | Ventana egui, canvas BD en solo lectura desde un `.qvi` cargado | Los 16 ejemplos se dibujan igual que hoy |
+| **R1 — Esqueleto** | Ventana egui, canvas BD en solo lectura desde un `.qvi` cargado. **Empezado el 2026-09-29, antes de cerrar R0**: las ventanas del *Front Panel* y del *Block Diagram* calcadas de LabVIEW 2026Q3 (DT-035), aún sin leer ningún `.qvi` | Los 16 ejemplos se dibujan igual que hoy |
 | **R2 — Edición BD** | Hit-test, drag, wires, paleta, diálogos (`canvas.red` + `canvas-dialogs.red`) | Construir `suma-basica` desde cero y guardarlo con round-trip exacto |
 | **R3 — Front Panel** | Render FP, imports `panel_get`/`panel_set`, ciclo Run completo | Paridad con la beta de Fase 1 |
 | **R4 — Estructuras** | While/For/Case + shift registers en WAT | `while-loop-suma.qvi` da 45.0 |

@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://telekino.dev/schema/inventario-labview-1.json",
+  "title": "Inventario de LabVIEW",
+  "description": "Lo que muestra la interfaz de la referencia y la situación de Telekino respecto a cada cosa (design/05-decisiones.md, DT-035). Normativo: el editor toma de aquí el veredicto de cada elemento (spec/05-editor.md, regla 55).",
+  "type": "object",
+  "required": ["version", "referencia", "desbloqueos", "entradas"],
+  "additionalProperties": false,
+
+  "properties": {
+    "_comentario": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "version": {
+      "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
+      "type": "integer",
+      "const": 1
+    },
+
+    "referencia": {
+      "description": "La versión de LabVIEW contra la que se declara todo. Vive sólo aquí: cambiarla es una decisión nueva (DT-035 §2).",
+      "type": "string",
+      "pattern": "^LabVIEW [0-9]{4}Q[1-4]$"
+    },
+
+    "desbloqueos": {
+      "description": "Las piezas de implementación que esperan los huecos `todo`. Se declaran una sola vez y se citan por su id, para que el recuento de cuántos huecos espera cada una sea exacto (DT-035 §4).",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/idDesbloqueo" },
+      "additionalProperties": { "$ref": "#/$defs/desbloqueo" }
+    },
+
+    "entradas": {
+      "description": "Dentro de cada área, en el orden de LabVIEW: es el orden que pinta el editor (DT-035 §7).",
+      "type": "array",
+      "items": { "$ref": "#/$defs/entrada" }
+    }
+  },
+
+  "$defs": {
+    "texto": {
+      "description": "Texto con contenido: un campo obligatorio relleno de espacios no dice nada.",
+      "type": "string",
+      "pattern": "\\S"
+    },
+
+    "idDesbloqueo": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+
+    "idEntrada": {
+      "description": "Ruta derivada de los nombres de LabVIEW, en minúsculas y con guiones, en el orden en que LabVIEW anida las cosas. El primer segmento es el área: `window` (una ventana y todo lo suyo: menús, barras, páginas; p. ej. window.project-explorer.toolbar.standard.new), `palette`, `context` (menús de clic derecho por objeto) o `dialog`. Una entrada cubre todo lo que cuelga de su id mientras no se declare algo más concreto (DT-035 §5).",
+      "type": "string",
+      "pattern": "^(window|palette|context|dialog)(\\.[a-z0-9]+(-[a-z0-9]+)*)*$"
+    },
+
+    "desbloqueo": {
+      "type": "object",
+      "required": ["desc"],
+      "additionalProperties": false,
+      "properties": {
+        "desc": { "$ref": "#/$defs/texto" },
+        "ref": {
+          "description": "Dónde está especificado: regla, documento o issue. Su ausencia dice que aún no lo está.",
+          "$ref": "#/$defs/texto"
+        }
+      }
+    },
+
+    "entrada": {
+      "type": "object",
+      "required": ["id", "etiqueta", "estado"],
+      "additionalProperties": false,
+
+      "properties": {
+        "id": { "$ref": "#/$defs/idEntrada" },
+        "etiqueta": {
+          "description": "El nombre tal como lo muestra LabVIEW.",
+          "$ref": "#/$defs/texto"
+        },
+        "estado": { "enum": ["built", "todo", "elsewhere", "never"] },
+        "labview": {
+          "description": "Qué hace LabVIEW ahí, con palabras propias. Lo lleva todo lo que no es `built`.",
+          "$ref": "#/$defs/texto"
+        },
+        "necesita": {
+          "description": "Sólo `todo`: el id del desbloqueo que espera.",
+          "$ref": "#/$defs/idDesbloqueo"
+        },
+        "telekino": {
+          "description": "Sólo `elsewhere`: cómo lo resuelve Telekino y dónde encontrarlo.",
+          "$ref": "#/$defs/texto"
+        },
+        "porque": {
+          "description": "Sólo `never`: la decisión ya escrita que lo excluye. DEBE citarla —DT-nnn, una regla o un documento—, no argumentarla aquí.",
+          "type": "string",
+          "pattern": "(DT-[0-9]{3}|[Rr]egla [0-9]+[a-z]?|\\.md)"
+        },
+        "prueba": {
+          "description": "Sólo `built`: el test que demuestra, sin interfaz, que existe (DT-035 §6).",
+          "$ref": "#/$defs/texto"
+        },
+        "bloque": {
+          "description": "Tipo de bloque de blocks.json, si la entrada es una función o un control de las paletas.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "muestra": {
+          "description": "Lo que LabVIEW enseña en el elemento cuando no es su nombre: el valor de un desplegable, un número de versión. El editor lo pinta, como hueco, en lugar de la etiqueta.",
+          "$ref": "#/$defs/texto"
+        },
+        "atajo": {
+          "description": "Atajo de teclado de LabVIEW. Pulsarlo sobre un hueco muestra su explicación (spec/05-editor.md, regla 53).",
+          "$ref": "#/$defs/texto"
+        },
+        "captura": {
+          "description": "Captura de la referencia, dentro de capturas-labview/, contra la que se comprobó la entrada. Sin ella, la entrada está NO VERIFICADA (DT-035 §8).",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+\\.(png|jpe?g|webp)$"
+        },
+        "separado": {
+          "description": "LabVIEW separa esta entrada de la anterior: con una línea en unas barras (las del Project Explorer), con un espacio en otras (la de un VI). Los separadores agrupan órdenes: son parte de la arquitectura de información.",
+          "const": true
+        }
+      },
+
+      "allOf": [
+        {
+          "if": { "required": ["estado"], "properties": { "estado": { "const": "built" } } },
+          "then": {
+            "required": ["prueba"],
+            "not": { "anyOf": [
+              { "required": ["labview"] },
+              { "required": ["necesita"] },
+              { "required": ["telekino"] },
+              { "required": ["porque"] }
+            ] }
+          }
+        },
+        {
+          "if": { "required": ["estado"], "properties": { "estado": { "const": "todo" } } },
+          "then": {
+            "required": ["labview", "necesita"],
+            "not": { "anyOf": [
+              { "required": ["telekino"] },
+              { "required": ["porque"] },
+              { "required": ["prueba"] }
+            ] }
+          }
+        },
+        {
+          "if": { "required": ["estado"], "properties": { "estado": { "const": "elsewhere" } } },
+          "then": {
+            "required": ["labview", "telekino"],
+            "not": { "anyOf": [
+              { "required": ["necesita"] },
+              { "required": ["porque"] },
+              { "required": ["prueba"] }
+            ] }
+          }
+        },
+        {
+          "if": { "required": ["estado"], "properties": { "estado": { "const": "never" } } },
+          "then": {
+            "required": ["labview", "porque"],
+            "not": { "anyOf": [
+              { "required": ["necesita"] },
+              { "required": ["telekino"] },
+              { "required": ["prueba"] }
+            ] }
+          }
+        }
+      ]
+    }
+  }
+}

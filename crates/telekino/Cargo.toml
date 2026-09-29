@@ -1,0 +1,10 @@
+[package]
+name = "telekino"
+version = "0.1.0"
+description = "Telekino: el editor completo"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+tk-ui = { path = "../tk-ui" }

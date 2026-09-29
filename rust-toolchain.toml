@@ -1,0 +1,3 @@
+# Versión fijada en design/00-plan-provisional.md §2.2.
+[toolchain]
+channel = "1.97.1"
