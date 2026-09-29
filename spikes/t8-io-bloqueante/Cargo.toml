@@ -1,0 +1,8 @@
+[package]
+name = "tk-t8-io"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wasmtime = "47.0.2"
+wat = "1.254.0"

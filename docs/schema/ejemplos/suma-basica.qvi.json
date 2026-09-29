@@ -1,0 +1,39 @@
+{
+  "telekino": 1,
+  "meta": {
+    "title": "Suma básica",
+    "description": "Dos controles numéricos sumados en un indicador",
+    "tags": ["ejemplo", "math"]
+  },
+  "front-panel": [
+    { "name": "ctrl_1", "role": "control",   "type": "number", "default": 5.0 },
+    { "name": "ctrl_2", "role": "control",   "type": "number", "default": 3.0 },
+    { "name": "ind_1",  "role": "indicator", "type": "number" }
+  ],
+  "block-diagram": {
+    "nodes": [
+      { "name": "ctrl_1", "type": "control" },
+      { "name": "ctrl_2", "type": "control" },
+      { "name": "add_1",  "type": "add" },
+      { "name": "ind_1",  "type": "indicator" }
+    ],
+    "wires": [
+      { "from": "ctrl_1.result", "to": "add_1.a" },
+      { "from": "ctrl_2.result", "to": "add_1.b" },
+      { "from": "add_1.result",  "to": "ind_1.value" }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "ctrl_1": { "x":  40, "y":  80, "label": { "text": "A" } },
+      "ctrl_2": { "x":  40, "y": 160, "label": { "text": "B" } },
+      "add_1":  { "x": 200, "y": 120, "label": { "text": "Add", "visible": false } },
+      "ind_1":  { "x": 360, "y": 120, "label": { "text": "Resultado" } }
+    },
+    "panel": {
+      "ctrl_1": { "x": 20, "y": 20, "label": { "text": "A" } },
+      "ctrl_2": { "x": 20, "y": 60, "label": { "text": "B" } },
+      "ind_1":  { "x": 20, "y": 110, "label": { "text": "Resultado" } }
+    }
+  }
+}

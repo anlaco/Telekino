@@ -1,0 +1,105 @@
+{
+  "telekino": 1,
+  "meta": {
+    "title": "escalar-array",
+    "description": "Recorre un array escalándolo por un factor y acumula el total en un cluster. Ejercita tipos compuestos y túneles.",
+    "tags": ["array", "cluster", "for-loop", "tunel"]
+  },
+  "front-panel": [
+    { "name": "factor", "role": "control", "type": "number", "default": 2.0 },
+    {
+      "name": "datos",
+      "role": "control",
+      "type": { "array": "number" },
+      "default": [1.0, 2.0, 3.0]
+    },
+    {
+      "name": "resumen",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          { "name": "total", "type": "number" },
+          { "name": "ok", "type": "boolean" }
+        ]
+      }
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      { "name": "factor", "type": "control" },
+      { "name": "datos", "type": "control" },
+      { "name": "n", "type": "array-size" },
+      { "name": "cierto", "type": "bool-const", "config": { "default": true } },
+      {
+        "name": "pack",
+        "type": "bundle",
+        "config": {
+          "type": {
+            "cluster": [
+              { "name": "total", "type": "number" },
+              { "name": "ok", "type": "boolean" }
+            ]
+          }
+        }
+      },
+      { "name": "resumen", "type": "cluster-indicator" }
+    ],
+    "wires": [
+      { "from": "datos.result", "to": "n.arr" },
+      { "from": "factor.result", "to": "for_1.factor" },
+      { "from": "datos.result", "to": "for_1.datos" },
+      { "from": "for_1.acc", "to": "pack.total" },
+      { "from": "cierto.result", "to": "pack.ok" },
+      { "from": "pack.result", "to": "resumen.in" }
+    ],
+    "structures": [
+      {
+        "name": "for_1",
+        "kind": "for-loop",
+        "count": "n.result",
+        "tunnels": [
+          { "name": "factor", "type": "number", "dir": "in" },
+          { "name": "datos", "type": { "array": "number" }, "dir": "in" }
+        ],
+        "shift-registers": [
+          { "name": "acc", "type": "number", "init": 0.0 }
+        ],
+        "body": {
+          "nodes": [
+            { "name": "elem", "type": "index-array" },
+            { "name": "esc", "type": "mul" },
+            { "name": "sum", "type": "add" }
+          ],
+          "wires": [
+            { "from": "for_1.datos", "to": "elem.arr" },
+            { "from": "for_1.i", "to": "elem.index" },
+            { "from": "elem.result", "to": "esc.a" },
+            { "from": "for_1.factor", "to": "esc.b" },
+            { "from": "acc.left", "to": "sum.a" },
+            { "from": "esc.result", "to": "sum.b" },
+            { "from": "sum.result", "to": "acc.right" }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "factor": { "x": 40, "y": 40, "label": { "text": "Factor" } },
+      "datos": { "x": 40, "y": 100, "label": { "text": "Datos" } },
+      "n": { "x": 160, "y": 100, "label": { "text": "N", "visible": false } },
+      "for_1": { "x": 260, "y": 40, "w": 320, "h": 200, "label": { "text": "For Loop" } },
+      "elem": { "x": 40, "y": 60, "label": { "text": "", "visible": false } },
+      "esc": { "x": 140, "y": 60, "label": { "text": "", "visible": false } },
+      "sum": { "x": 220, "y": 120, "label": { "text": "", "visible": false } },
+      "cierto": { "x": 620, "y": 160, "label": { "text": "", "visible": false } },
+      "pack": { "x": 700, "y": 100, "label": { "text": "Bundle" } },
+      "resumen": { "x": 800, "y": 100, "label": { "text": "Resumen" } }
+    },
+    "panel": {
+      "factor": { "x": 20, "y": 20, "label": { "text": "Factor" } },
+      "datos": { "x": 20, "y": 60, "label": { "text": "Datos" } },
+      "resumen": { "x": 20, "y": 120, "label": { "text": "Resumen" } }
+    }
+  }
+}

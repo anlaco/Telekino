@@ -1,0 +1,397 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://telekino.dev/schema/qvi-1.json",
+  "title": "Telekino VI",
+  "description": "Un programa de Telekino. Normativo: un fichero .qvi que no valide contra este esquema no es conforme.",
+  "type": "object",
+  "required": ["telekino", "block-diagram"],
+  "additionalProperties": false,
+
+  "properties": {
+    "telekino": {
+      "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
+      "type": "integer",
+      "const": 1
+    },
+
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "author": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "capabilities": {
+      "description": "Permisos de acceso a recursos externos. Su ausencia significa: ninguno.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tcp": { "$ref": "#/$defs/allowList" },
+        "serial": { "$ref": "#/$defs/allowList" },
+        "usbtmc": { "$ref": "#/$defs/allowList" },
+        "file": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "read": { "type": "array", "items": { "type": "string" } },
+            "write": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+
+    "front-panel": {
+      "description": "Controles e indicadores. El orden no es significativo.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/fpItem" }
+    },
+
+    "connector": {
+      "description": "Parámetros del VI cuando se usa como sub-VI. Su presencia habilita ese uso.",
+      "type": "object",
+      "required": ["inputs", "outputs"],
+      "additionalProperties": false,
+      "properties": {
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/name" } },
+        "outputs": { "type": "array", "items": { "$ref": "#/$defs/name" } }
+      }
+    },
+
+    "block-diagram": { "$ref": "#/$defs/scope" },
+
+    "layout": {
+      "description": "CAPA DE PRESENTACIÓN. El compilador NO DEBE leerla. Cambiarla NO DEBE alterar el módulo compilado. Se separa por lienzo porque un control existe a la vez en el panel y en el diagrama, con una posición distinta en cada uno.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "diagram": { "$ref": "#/$defs/placements" },
+        "panel": { "$ref": "#/$defs/placements" }
+      }
+    }
+  },
+
+  "$defs": {
+
+    "name": {
+      "description": "Identificador inmutable y único dentro del VI. No admite puntos: el punto separa nombre de puerto.",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$",
+      "maxLength": 64
+    },
+
+    "structureMemberName": {
+      "description": "Nombre de un shift register o un túnel. NO DEBE ser `i`: ese nombre lo reserva el terminal de iteración de la estructura (`estructura.i`), y reutilizarlo haría ambigua la referencia `estructura.i`.",
+      "allOf": [
+        { "$ref": "#/$defs/name" },
+        { "not": { "const": "i" } }
+      ]
+    },
+
+    "endpoint": {
+      "description": "Referencia a un puerto concreto, en la forma nombre.puerto",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]*\\.[A-Za-z_][A-Za-z0-9_-]*$"
+    },
+
+    "dataType": {
+      "description": "Un tipo de dato. Escalar (cadena) o compuesto (objeto). Recursivo: un array de arrays y un array de clusters son expresables. Semántica en spec/03-semantica-estatica.md.",
+      "oneOf": [
+        { "$ref": "#/$defs/scalarType" },
+        { "$ref": "#/$defs/arrayType" },
+        { "$ref": "#/$defs/clusterType" }
+      ]
+    },
+
+    "scalarType": {
+      "description": "Catálogo cerrado de tipos escalares. `array` y `cluster` NO están aquí: siempre llevan su parámetro.",
+      "type": "string",
+      "enum": [
+        "number", "boolean", "string", "waveform",
+        "error", "tcp-connection", "serial-connection"
+      ]
+    },
+
+    "arrayType": {
+      "description": "Array del tipo indicado. El elemento DEBE conocerse: el compilador necesita saber si emite (array (mut f64)) o (array (mut i8)).",
+      "type": "object",
+      "required": ["array"],
+      "additionalProperties": false,
+      "properties": { "array": { "$ref": "#/$defs/dataType" } }
+    },
+
+    "clusterType": {
+      "description": "Registro de campos con nombre y tipo. El orden es significativo: el compilador emite un struct posicional.",
+      "type": "object",
+      "required": ["cluster"],
+      "additionalProperties": false,
+      "properties": {
+        "cluster": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/field" }
+        }
+      }
+    },
+
+    "allowList": {
+      "type": "object",
+      "required": ["allow"],
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "description": "Destinos concedidos. Una lista vacía concede nada.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "label": {
+      "description": "Texto visible, libre y editable. Puede repetirse y puede estar vacío.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string" },
+        "visible": { "type": "boolean", "default": true }
+      }
+    },
+
+    "placements": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/name" },
+      "additionalProperties": { "$ref": "#/$defs/placement" }
+    },
+
+    "placement": {
+      "description": "Posición y tamaño en el lienzo. Presentación pura.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "exclusiveMinimum": 0 },
+        "h": { "type": "number", "exclusiveMinimum": 0 },
+        "label": { "$ref": "#/$defs/label" },
+        "label-offset": {
+          "type": "array", "items": { "type": "number" },
+          "minItems": 2, "maxItems": 2
+        },
+        "active-frame": {
+          "description": "Sólo para case-structure: qué marco muestra el editor. No afecta a la ejecución.",
+          "type": "integer", "minimum": 0
+        }
+      }
+    },
+
+    "fpItem": {
+      "description": "Un control o indicador. Su forma completa está en `type`: un cluster ya lleva sus campos dentro.",
+      "type": "object",
+      "required": ["name", "role", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "role": { "type": "string", "enum": ["control", "indicator"] },
+        "type": { "$ref": "#/$defs/dataType" },
+        "default": {
+          "description": "Valor inicial. SEMÁNTICO: forma parte del programa, no de la presentación."
+        }
+      }
+    },
+
+    "field": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "type": { "$ref": "#/$defs/dataType" }
+      }
+    },
+
+    "scope": {
+      "description": "Un grafo: nodos, wires y estructuras. El cuerpo de un VI y el de cada estructura tienen la misma forma.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+        "wires": { "type": "array", "items": { "$ref": "#/$defs/wire" } },
+        "structures": { "type": "array", "items": { "$ref": "#/$defs/structure" } }
+      }
+    },
+
+    "node": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "type": {
+          "description": "Tipo de bloque. El catálogo cerrado está en schema/blocks.json.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "config": {
+          "description": "Configuración específica del tipo de bloque.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": { "description": "Para bloques constante: su valor." },
+            "type": {
+              "description": "Para bundle/unbundle: el tipo de cluster que construye o descompone.",
+              "$ref": "#/$defs/dataType"
+            },
+            "vi": {
+              "description": "Para subvi: ruta relativa al .qvi invocado.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+
+    "wire": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "$ref": "#/$defs/endpoint" },
+        "to": { "$ref": "#/$defs/endpoint" },
+        "label": { "$ref": "#/$defs/label" }
+      }
+    },
+
+    "structure": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "kind": { "type": "string", "enum": ["while-loop", "for-loop", "case-structure"] },
+
+        "condition": {
+          "description": "while-loop: puerto booleano que detiene el bucle cuando vale cierto.",
+          "$ref": "#/$defs/endpoint"
+        },
+        "count": {
+          "description": "for-loop: puerto numérico con el número de iteraciones.",
+          "$ref": "#/$defs/endpoint"
+        },
+        "selector": {
+          "description": "case-structure: puerto que elige el marco.",
+          "$ref": "#/$defs/endpoint"
+        },
+
+        "shift-registers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "$ref": "#/$defs/structureMemberName" },
+              "type": { "$ref": "#/$defs/dataType" },
+              "init": { "description": "Valor en la primera iteración." }
+            }
+          }
+        },
+
+        "tunnels": {
+          "description": "Puertos por los que un valor cruza la frontera de la estructura. Se direccionan como `estructura.tunel` desde ambos lados.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "dir"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "$ref": "#/$defs/structureMemberName" },
+              "type": { "$ref": "#/$defs/dataType" },
+              "dir": {
+                "description": "`in`: entra un valor de fuera. `out`: sale un valor del cuerpo.",
+                "type": "string",
+                "enum": ["in", "out"]
+              }
+            }
+          }
+        },
+
+        "body": {
+          "description": "Cuerpo de while-loop y for-loop.",
+          "$ref": "#/$defs/scope"
+        },
+        "frames": {
+          "description": "Marcos de case-structure. Exactamente uno DEBE ser el marco por defecto (default: true).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["body"],
+            "additionalProperties": false,
+            "properties": {
+              "match": {
+                "description": "Valores del selector que activan este marco.",
+                "type": "array", "minItems": 1
+              },
+              "default": {
+                "description": "Marca este marco como el por defecto. DEBE ser true; no es un conmutador que se pueda poner a false (para eso se usa `match`).",
+                "type": "boolean",
+                "const": true
+              },
+              "label": { "type": "string" },
+              "body": { "$ref": "#/$defs/scope" }
+            },
+            "oneOf": [
+              { "required": ["match"] },
+              { "required": ["default"] }
+            ]
+          },
+          "contains": {
+            "required": ["default"],
+            "properties": { "default": { "const": true } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      },
+
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "case-structure" } }, "required": ["kind"] },
+          "then": {
+            "required": ["selector", "frames"],
+            "not": { "anyOf": [
+              { "required": ["condition"] },
+              { "required": ["count"] },
+              { "required": ["body"] }
+            ] }
+          },
+          "else": {
+            "if": { "properties": { "kind": { "const": "while-loop" } }, "required": ["kind"] },
+            "then": {
+              "required": ["body", "condition"],
+              "not": { "anyOf": [
+                { "required": ["frames"] },
+                { "required": ["selector"] },
+                { "required": ["count"] }
+              ] }
+            },
+            "else": {
+              "if": { "properties": { "kind": { "const": "for-loop" } }, "required": ["kind"] },
+              "then": {
+                "required": ["body", "count"],
+                "not": { "anyOf": [
+                  { "required": ["frames"] },
+                  { "required": ["selector"] },
+                  { "required": ["condition"] }
+                ] }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

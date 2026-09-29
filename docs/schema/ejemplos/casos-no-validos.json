@@ -1,0 +1,286 @@
+{
+  "_comentario": [
+    "Cada entrada de `casos` DEBE ser RECHAZADA por qvi.schema.json.",
+    "Un esquema que los acepte tiene un agujero. Estos casos son la prueba de que",
+    "el esquema verifica algo: sin ellos, un esquema vacío pasaría igual de bien.",
+    "Verificado el 2026-07-29: los 29 se rechazan, contra jsonschema 4.26",
+    "(Draft 2020-12). Los 3 ejemplos positivos de ejemplos/*.qvi.json validan."
+  ],
+  "casos": [
+    {
+      "nombre": "version futura",
+      "porque": "Un lector DEBE rechazar un formato más nuevo que el que entiende",
+      "doc": { "telekino": 2, "block-diagram": { "nodes": [], "wires": [] } }
+    },
+    {
+      "nombre": "wire sin puerto",
+      "porque": "Un extremo de wire DEBE nombrar el puerto, no sólo el nodo",
+      "doc": { "telekino": 1, "block-diagram": { "wires": [{ "from": "ctrl_1.result", "to": "add_1" }] } }
+    },
+    {
+      "nombre": "wire con puerto vacio",
+      "porque": "`nodo.` no identifica ningún puerto",
+      "doc": { "telekino": 1, "block-diagram": { "wires": [{ "from": "ctrl_1.", "to": "add_1.a" }] } }
+    },
+    {
+      "nombre": "nombre con punto",
+      "porque": "El punto separa nombre de puerto; permitirlo en el nombre haría ambiguo todo wire",
+      "doc": { "telekino": 1, "block-diagram": { "nodes": [{ "name": "a.b", "type": "add" }] } }
+    },
+    {
+      "nombre": "propiedad desconocida",
+      "porque": "Un typo como `nodez` DEBE fallar, no ignorarse en silencio",
+      "doc": { "telekino": 1, "block-diagram": { "nodez": [] } }
+    },
+    {
+      "nombre": "tipo de dato inexistente",
+      "porque": "El catálogo de tipos es cerrado",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [{ "name": "x", "role": "control", "type": "float64" }],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "cluster sin fields",
+      "porque": "Un cluster sin campos declarados no tiene forma conocida",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [{ "name": "c", "role": "control", "type": "cluster" }],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "fields en algo que no es cluster",
+      "porque": "`fields` sólo tiene sentido en un cluster",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [
+          { "name": "n", "role": "control", "type": "number", "fields": [{ "name": "a", "type": "number" }] }
+        ],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "case-structure sin selector",
+      "porque": "Sin selector no se puede elegir marco",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "cs", "kind": "case-structure", "frames": [{ "default": true, "body": {} }] }]
+        }
+      }
+    },
+    {
+      "nombre": "while-loop sin condition",
+      "porque": "Sin condición de parada el bucle no termina nunca",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": { "structures": [{ "name": "w", "kind": "while-loop", "body": {} }] }
+      }
+    },
+    {
+      "nombre": "for-loop sin count",
+      "porque": "Sin número de iteraciones el bucle no está definido",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": { "structures": [{ "name": "f", "kind": "for-loop", "body": {} }] }
+      }
+    },
+    {
+      "nombre": "frame sin match ni default",
+      "porque": "Un marco al que no se puede llegar es código muerto declarado",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [
+            { "name": "cs", "kind": "case-structure", "selector": "ctrl_1.result", "frames": [{ "body": {} }] }
+          ]
+        }
+      }
+    },
+    {
+      "nombre": "capacidad no reconocida",
+      "porque": "Una puerta que el host no conoce nunca se abriría; declararla es un error, no un permiso",
+      "doc": {
+        "telekino": 1,
+        "capabilities": { "bluetooth": { "allow": ["*"] } },
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "layout sin separar lienzo",
+      "porque": "Un control tiene una posición en el panel y otra en el diagrama: hay que decir cuál",
+      "doc": {
+        "telekino": 1,
+        "layout": { "add_1": { "x": 1, "y": 2 } },
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "falta block-diagram",
+      "porque": "Un VI sin diagrama no es un programa",
+      "doc": { "telekino": 1 }
+    },
+    {
+      "nombre": "array sin parametrizar",
+      "porque": "El compilador necesita saber el tipo de elemento para emitir (array (mut f64)) o (array (mut i8))",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [{ "name": "a", "role": "control", "type": "array" }],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "array de un tipo inexistente",
+      "porque": "La recursión del tipo se valida hasta el fondo, no sólo en el primer nivel",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [{ "name": "a", "role": "control", "type": { "array": "patata" } }],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "cluster sin campos",
+      "porque": "Un cluster vacío no tiene forma y no se puede emitir como struct",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [{ "name": "c", "role": "control", "type": { "cluster": [] } }],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "tipo que es array y cluster a la vez",
+      "porque": "Un tipo compuesto DEBE ser de una sola clase",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [
+          {
+            "name": "x", "role": "control",
+            "type": { "array": "number", "cluster": [{ "name": "a", "type": "number" }] }
+          }
+        ],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "campo `fields` del formato antiguo",
+      "porque": "La forma del cluster va dentro de `type`; `fields` suelto ya no existe",
+      "doc": {
+        "telekino": 1,
+        "front-panel": [
+          { "name": "c", "role": "control", "type": "number", "fields": [{ "name": "a", "type": "number" }] }
+        ],
+        "block-diagram": {}
+      }
+    },
+    {
+      "nombre": "tunel sin direccion",
+      "porque": "Sin `dir` no se sabe si el valor entra o sale de la estructura",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{
+            "name": "f", "kind": "for-loop", "count": "n.result",
+            "tunnels": [{ "name": "t", "type": "number" }],
+            "body": {}
+          }]
+        }
+      }
+    },
+    {
+      "nombre": "tunel con direccion inventada",
+      "porque": "Sólo hay dos direcciones posibles",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{
+            "name": "f", "kind": "for-loop", "count": "n.result",
+            "tunnels": [{ "name": "t", "type": "number", "dir": "inout" }],
+            "body": {}
+          }]
+        }
+      }
+    },
+    {
+      "nombre": "marco con default false",
+      "porque": "`default` marca el marco por defecto; `false` no es un valor válido, es ausencia de decisión — para excluir un marco se omite `default`, no se pone a false",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "cs", "kind": "case-structure", "selector": "c.result",
+            "frames": [{ "default": false, "body": {} }] }]
+        }
+      }
+    },
+    {
+      "nombre": "dos marcos por defecto",
+      "porque": "Exactamente un marco DEBE ser el por defecto; dos lo hacen ambiguo",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "cs", "kind": "case-structure", "selector": "c.result",
+            "frames": [{ "default": true, "body": {} }, { "default": true, "body": {} }] }]
+        }
+      }
+    },
+    {
+      "nombre": "case sin marco por defecto",
+      "porque": "Sin un marco por defecto, un selector fuera de todos los `match` deja el caso sin ejecutar",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "cs", "kind": "case-structure", "selector": "c.result",
+            "frames": [{ "match": [0], "body": {} }, { "match": [1], "body": {} }] }]
+        }
+      }
+    },
+    {
+      "nombre": "while-loop con frames de case",
+      "porque": "`frames` es campo de case-structure, no de bucles; mezclar los campos de cada tipo de estructura es un error",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "w", "kind": "while-loop", "condition": "c.result",
+            "body": {}, "frames": [{ "default": true, "body": {} }] }]
+        }
+      }
+    },
+    {
+      "nombre": "case-structure con campos de bucle",
+      "porque": "`condition` y `count` son terminales de bucles, no de case",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "cs", "kind": "case-structure", "selector": "c.result",
+            "condition": "x.result", "count": "y.result",
+            "frames": [{ "default": true, "body": {} }] }]
+        }
+      }
+    },
+    {
+      "nombre": "shift-register llamado i",
+      "porque": "`i` lo reserva el terminal de iteración (`estructura.i`); un shift register con ese nombre haría ambigua la referencia",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "w", "kind": "while-loop", "condition": "c.result",
+            "shift-registers": [{ "name": "i", "type": "number", "init": 0 }],
+            "body": {} }]
+        }
+      }
+    },
+    {
+      "nombre": "tunel llamado i",
+      "porque": "Mismo motivo que el shift register: `estructura.i` es el contador de iteración",
+      "doc": {
+        "telekino": 1,
+        "block-diagram": {
+          "structures": [{ "name": "f", "kind": "for-loop", "count": "n.result",
+            "tunnels": [{ "name": "i", "type": "number", "dir": "in" }],
+            "body": {} }]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "telekino": 1,
+  "meta": {
+    "title": "while-loop-suma",
+    "description": "Suma 0+1+...+9 = 45 con shift register",
+    "tags": ["while-loop", "shift-register"]
+  },
+  "front-panel": [
+    { "name": "ind_1", "role": "indicator", "type": "number" }
+  ],
+  "block-diagram": {
+    "nodes": [
+      { "name": "ind_1", "type": "indicator" }
+    ],
+    "wires": [
+      { "from": "while_1.sr_acc", "to": "ind_1.value" }
+    ],
+    "structures": [
+      {
+        "name": "while_1",
+        "kind": "while-loop",
+        "condition": "icond.result",
+        "shift-registers": [
+          { "name": "sr_acc", "type": "number", "init": 0.0 }
+        ],
+        "body": {
+          "nodes": [
+            { "name": "ilim",  "type": "const", "config": { "default": 9.0 } },
+            { "name": "iadd",  "type": "add" },
+            { "name": "icond", "type": "eq-op" }
+          ],
+          "wires": [
+            { "from": "sr_acc.left",  "to": "iadd.a" },
+            { "from": "while_1.i",    "to": "iadd.b" },
+            { "from": "iadd.result",  "to": "sr_acc.right" },
+            { "from": "ilim.result",  "to": "icond.a" },
+            { "from": "while_1.i",    "to": "icond.b" }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "while_1": { "x": 80, "y": 60, "w": 360, "h": 180, "label": { "text": "While Loop" } },
+      "ilim":    { "x": 120, "y": 160, "label": { "text": "9", "visible": false } },
+      "iadd":    { "x": 230, "y": 100, "label": { "text": "Add", "visible": false } },
+      "icond":   { "x": 300, "y": 160, "label": { "text": "Cond", "visible": false } },
+      "ind_1":   { "x": 520, "y": 150, "label": { "text": "Resultado" } }
+    },
+    "panel": {
+      "ind_1": { "x": 20, "y": 20, "label": { "text": "Resultado" } }
+    }
+  }
+}
