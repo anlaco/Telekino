@@ -109,7 +109,9 @@ Telekino/
 
 Sin dependencias externas. Un solo binario.
 
-> **Estado de Red-Lang:** Red está actualmente en alpha stage y es 32-bit. El backend GTK de Linux tiene bugs conocidos que afectan al canvas visual. Ver [`docs/GTK_ISSUES.md`](docs/GTK_ISSUES.md) para el detalle. La estrategia es contribuir los fixes directamente al repo `red/red`, no workarounds locales.
+> **Estado de Red-Lang:** Red está actualmente en alpha stage y es 32-bit. El backend GTK de Linux tiene bugs conocidos que afectan al canvas visual. Ver [`docs-old/GTK_ISSUES.md`](docs-old/GTK_ISSUES.md) para el detalle.
+>
+> **Actualización 2026-07-28:** la estrategia de contribuir los fixes upstream no funcionó —0 de 17 bugs reportados a `red/red`— y el proyecto se está reescribiendo en Rust + WebAssembly. Ver [`docs/README.md`](docs/README.md).
 
 ## Nombre
 

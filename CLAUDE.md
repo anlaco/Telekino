@@ -1,6 +1,26 @@
 # Telekino — Contexto para Claude Code
 
-> Última actualización: 2026-05-11
+> ⚠️ **ESTE FICHERO ESTÁ OBSOLETO. NO LO SIGAS SIN LEER PRIMERO
+> [`docs/whitelist.md`](docs/whitelist.md).**
+>
+> El proyecto se está reescribiendo de Red-Lang a Rust + WebAssembly. En
+> consecuencia:
+>
+> - **Todas las rutas `docs/...` de este fichero apuntan ahora a `docs-old/...`.**
+>   La carpeta `docs/` contiene la documentación **nueva**, del proyecto en Rust.
+> - **Varias de las reglas absolutas y decisiones técnicas de más abajo están
+>   derogadas** (DT-001 "todo en Red", DT-005/009 formato del `.qvi`, DT-026
+>   widgets Draw…). La clasificación completa —qué sigue vigente, qué se reescribe
+>   y qué murió— está en [`docs/whitelist.md`](docs/whitelist.md).
+> - Una auditoría encontró que este fichero **se contradice a sí mismo** en los
+>   tamaños de varios ficheros, y que tres decisiones que da por implementadas no
+>   existen en el código.
+>
+> Este fichero se reescribirá cuando la especificación nueva (`docs/spec/`) esté
+> cerrada, no antes. Hasta entonces, sirve como descripción del proyecto **en
+> Red**, no como instrucciones vigentes.
+
+> Última actualización: 2026-05-11 (contenido de la etapa Red)
 
 ## Reglas absolutas — NUNCA violar
 
