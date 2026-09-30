@@ -33,6 +33,9 @@ export function glifosPorBloque(inv) {
  */
 export const contexto = (cat, glifos, separador = ".", medir = Et.medirAproximado) => ({ cat, glifos, separador, medir });
 
+/** El glifo de un nodo: el de su elemento de la paleta; el de una constante booleana, según su valor. */
+const glifoDe = (n, ctx) => (n.tipo === "bool-const" ? (n.config?.value ? "true-constant" : "false-constant") : ctx.glifos.get(n.tipo));
+
 const tipoConfig = (n, ctx) => n.config?.type ?? ctx.cat.bloque(n.tipo).config?.default?.type ?? "number";
 
 /**
@@ -57,7 +60,7 @@ export const anchoTexto = (t) => [...t].reduce((s, c) => s + (ANCHOS[c] ?? (/\d/
 
 /** Glifos con forma de triángulo: su vista de terminales se recorta así. */
 const TRIANGULOS = new Set([
-  "add", "subtract", "multiply", "divide", "increment", "decrement", "add-array-elements", "multiply-array-elements",
+  "add", "subtract", "multiply", "divide", "increment", "decrement", "add-array-elements", "multiply-array-elements", "and-array-elements", "or-array-elements",
   "absolute-value", "round-to-nearest", "round-toward-negative-infinity", "round-toward-positive-infinity",
   "scale-by-power-of-2", "square-root", "square", "negate", "reciprocal", "sign",
 ]);
@@ -128,7 +131,7 @@ export function caja(n, ctx, edicion) {
     const ancho = Math.max(M.minimo, anchoTexto(textoConstante(n, ctx, edicion)) + M.relleno) + (c.selector ? 9 : 0);
     return { x: n.x, y: n.y, ancho, alto: M.alto };
   }
-  const [x0, y0, x1, y1] = G.CAJAS[ctx.glifos.get(n.tipo)] ?? [8, 8, 41, 41];
+  const [x0, y0, x1, y1] = G.CAJAS[glifoDe(n, ctx)] ?? [8, 8, 41, 41];
   return { x: n.x, y: n.y, ancho: (x1 - x0) / 1.5, alto: (y1 - y0) / 1.5, dx: x0 / 1.5, dy: y0 / 1.5 };
 }
 
@@ -350,7 +353,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   } else if (n.vista?.terminales && resueltos) {
     cuerpo = vistaTerminales(n, k, d.g, ctx, resueltos);
   } else {
-    const glifo = G.FUNCIONES[ctx.glifos.get(n.tipo)] ?? "";
+    const glifo = G.FUNCIONES[glifoDe(n, ctx)] ?? "";
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}">${glifo}</div>`;
   }
   const zonas = terminales(n, ctx, d.edicion)
@@ -434,6 +437,8 @@ export function dentroDe(g, ctx, r) {
 /** El menú de clic derecho de cada clase de nodo, en el inventario. */
 export function menuDe(n, puerto) {
   if (n.tipo === "control") return "context.numeric-control";
+  // El menú de la constante booleana no está capturado.
+  if (n.tipo === "bool-const") return null;
   if (n.tipo === "indicator") return "context.numeric-indicator";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
   return CONSTANTES[n.tipo]?.editable ? "context.numeric-constant" : CONSTANTES[n.tipo] ? null : "context.function";

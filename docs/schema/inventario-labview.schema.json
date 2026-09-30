@@ -103,6 +103,10 @@
           "description": "Sólo `built`: el test que demuestra, sin interfaz, que existe (DT-035 §6).",
           "$ref": "#/$defs/texto"
         },
+        "config": {
+          "description": "Con qué configuración pone su bloque el elemento de la paleta, si no es la del catálogo: el modo AND de Compound Arithmetic en la paleta Boolean, el valor TRUE de True Constant.",
+          "type": "object"
+        },
         "bloque": {
           "description": "Tipo de bloque de blocks.json, si la entrada es una función o un control de las paletas.",
           "type": "string",

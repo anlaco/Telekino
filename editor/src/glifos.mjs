@@ -600,7 +600,7 @@ export const CARPETAS_CONTROLES = {
       `<circle cx="11.5" cy="10" r="3.6" fill="#3cc83c" stroke="#1e6e1e" stroke-width="0.7"/>`,
   ),
   "string-and-path": svg(caja(1.5, 1.5, 14.5, 7, "#fff", 0.8) + texto(8, 4.35, "abc", 4.2) + caja(1.5, 9, 14.5, 14.5, "#fff", 0.8) + texto(8, 11.85, "Path", 4)),
-  "array-matrix-and-cluster": svg(
+  "data-containers": svg(
     caja(1, 1, 9, 7.5, "#fff", 0.7) + texto(3, 2.8, "1", 2.8) + texto(7, 2.8, "2", 2.8) + texto(3, 5.8, "3", 2.8) + texto(7, 5.8, "4", 2.8) +
       caja(10, 1, 15, 7.5, "#fff", 0.7) +
       caja(1, 9, 7, 15, "#fff", 0.7) + texto(4, 12, "x", 3.5) +
@@ -620,7 +620,7 @@ export const CARPETAS_CONTROLES = {
     caja(1, 1.5, 15, 6.5, "#fff", 0.7) + texto(6, 4.1, "Ring", 3.4) + poligono([[11.5, 3.3], [14, 3.3], [12.75, 5]], TINTA) +
       caja(1, 9, 15, 14, "#fff", 0.7) + texto(9.5, 11.6, "Enum", 3.4) + flechitasEnum(2, 9.5, 4),
   ),
-  containers: svg(
+  layout: svg(
     poligono([[1, 3], [6, 3], [7.5, 4.8], [15, 4.8], [15, 14], [1, 14]], "#f0f0f0", TINTA, 0.8) +
       caja(6, 8, 12, 12.5, "#fff", 0.7) + flecha(9, 11, 0, 1, 3),
   ),
@@ -712,3 +712,76 @@ export function terminalPanelCompacto(control, color, tipo) {
   const flechita = control ? poligono([[25.5, 5.5], [28.5, 8.5], [25.5, 11.5]], "#4a4a3a") : poligono([[4.5, 5.5], [7.5, 8.5], [4.5, 11.5]], "#4a4a3a");
   return svg(borde + interior + texto48(control ? 15 : 18, 8.7, tipo, 7.5, color, 700) + flechita, "0 0 33 17");
 }
+
+// ——— La subpaleta Boolean ———
+//
+// Medidas de capturas-labview/block-diagram/boolean-funciones.png, tomadas en
+// LabVIEW 2026 Q3 a escala 1:1 (un píxel de la pantalla es un píxel CSS) y
+// pasadas a la rejilla de 48 × 48, que es 1,5 veces la caja de 32 px.
+
+const VERDE = "#007f00"; // el de las constantes booleanas
+
+/** Una puerta con el frente redondeado, como And: `x0`–`x1` de ancho, `y0`–`y1` de alto. */
+const puertaY = (x0, y0, x1, y1) => {
+  const r = (y1 - y0) / 2;
+  return `<path d="M${x0} ${y0}H${f(x1 - r * 0.8)}A${f(r * 0.8)} ${r} 0 0 1 ${f(x1 - r * 0.8)} ${y1}H${x0}Z" fill="${PRIM}" stroke="${BORDE}" stroke-width="1.5"/>`;
+};
+
+/** Una puerta con la espalda curva y el frente en punta, como Or; `doble` añade la curva de Xor. */
+const puertaO = (x0, y0, x1, y1, doble = false) => {
+  const ym = (y0 + y1) / 2;
+  const hueco = doble ? 4 : 0;
+  const a = x0 + hueco;
+  let s = `<path d="M${a} ${y0}Q${f(a + 5)} ${ym} ${a} ${y1}Q${f(x1 - 9)} ${y1} ${x1} ${ym}Q${f(x1 - 9)} ${y0} ${a} ${y0}Z" fill="${PRIM}" stroke="${BORDE}" stroke-width="1.5"/>`;
+  if (doble) s += `<path d="M${x0} ${y0}Q${x0 + 5} ${ym} ${x0} ${y1}" fill="none" stroke="${BORDE}" stroke-width="1.5"/>`;
+  return s;
+};
+
+/** El circulito de una negación, centrado en (x, y). */
+const burbuja = (x, y) => `<circle cx="${x}" cy="${y}" r="2.4" fill="${PRIM}" stroke="${BORDE}" stroke-width="1.3"/>`;
+
+/** Una caja plana de conversión, con su rótulo. */
+const conversionBooleana = (t) => svg48(poligono([[4.5, 16], [42, 16], [44, 20], [44, 28.5], [42, 32.5], [4.5, 32.5], [6.5, 24.25]], PRIM, BORDE, 1.3) + texto48(25, 24.6, t, 10.5));
+
+/** La constante booleana: TRUE, una T blanca sobre verde; FALSE, una F verde sobre blanco. */
+const constanteBooleana = (letra) =>
+  svg48(
+    caja(13.5, 14.5, 34.5, 33.5, "#fff", 3, VERDE) +
+      (letra === "T" ? lleno(17.5, 18.5, 30.5, 29.5, VERDE) + texto48(24, 24.3, letra, 10.5, "#fff") : texto48(24, 24.3, letra, 10.5, VERDE)),
+  );
+
+Object.assign(FUNCIONES, {
+  and: svg48(puertaY(6, 12, 42, 36) + texto48(21, 24.3, "∧", 15, TINTA, 700)),
+  or: svg48(puertaO(7.5, 12, 40.5, 36) + texto48(21, 24.3, "∨", 15, TINTA, 700)),
+  "exclusive-or": svg48(puertaO(5, 12, 42.5, 36, true) + texto48(23, 24.3, "⊻", 14, TINTA, 700)),
+  not: svg48(burbuja(10, 24) + poligono([[12.5, 12], [39.5, 24], [12.5, 37]], PRIM, BORDE, 1.5) + texto48(22, 24.3, "¬", 14, TINTA, 700)),
+  "not-and": svg48(puertaY(5, 11.5, 38, 36.5) + burbuja(40.5, 24) + texto48(19, 24.3, "∧", 15, TINTA, 700)),
+  "not-or": svg48(puertaO(5, 12, 37.5, 36) + burbuja(40, 24) + texto48(18.5, 24.3, "∨", 15, TINTA, 700)),
+  "not-exclusive-or": svg48(puertaO(5, 12, 37.5, 36, true) + burbuja(40, 24) + texto48(20.5, 24.3, "⊻", 14, TINTA, 700)),
+  implies: svg48(poligono([[8, 13], [32, 13], [39.5, 24.25], [32, 35.5], [8, 35.5]], PRIM, BORDE, 1.5) + texto48(21.5, 24.5, "⇒", 15, TINTA, 700)),
+  "and-array-elements": triangulo(5.25, 4.5, 42.75, 43.5, texto48(16, 25, "∀", 21)),
+  "or-array-elements": triangulo(5.25, 4.5, 42.75, 43.5, texto48(16, 25, "∃", 21)),
+  "number-to-boolean-array": conversionBooleana("#[···]"),
+  "boolean-array-to-number": conversionBooleana("[···]#"),
+  "boolean-to-0-1": conversionBooleana("?1:0"),
+  "true-constant": constanteBooleana("T"),
+  "false-constant": constanteBooleana("F"),
+});
+
+Object.assign(CAJAS, {
+  and: [6, 12, 42, 36],
+  or: [7.5, 12, 40.5, 36],
+  "exclusive-or": [5, 12, 42.5, 36],
+  not: [7.5, 11.5, 39.5, 37],
+  "not-and": [5, 11.5, 43, 36.5],
+  "not-or": [5, 12, 42.5, 36],
+  "not-exclusive-or": [5, 12, 42.5, 36],
+  implies: [8, 13, 39.5, 35.5],
+  "and-array-elements": [5.25, 4.5, 42.75, 43.5],
+  "or-array-elements": [5.25, 4.5, 42.75, 43.5],
+  "number-to-boolean-array": [4.5, 16, 44, 32.5],
+  "boolean-array-to-number": [4.5, 16, 44, 32.5],
+  "boolean-to-0-1": [4.5, 16, 44, 32.5],
+  "true-constant": [12, 13.5, 36, 34.5],
+  "false-constant": [12, 13.5, 36, 34.5],
+});

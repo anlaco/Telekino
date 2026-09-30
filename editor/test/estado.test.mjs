@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { abrirSubpaleta, cerrarSubpaletas, clic, clicDerecho, clicFuera, escape, inicial, paletaNueva, tecla } from "../src/estado.mjs";
 import { cargarInventario } from "../src/inventario.mjs";
-import { idsPintados, paleta, subpaletas } from "../src/vista.mjs";
+import { celdasSubpaleta, idsPintados, paleta, subpaletas } from "../src/vista.mjs";
 import { INV } from "./comun.mjs";
 
 const AQUI = { x: 10, y: 20 };
@@ -79,7 +79,7 @@ test("una categoría con contenido se abre y se cierra", () => {
 
 test("una categoría sin contenido explica lo que falta", () => {
   assert.equal(clic(conPaleta(), INV, "palette.functions.measurement-io", AQUI).abierta.id, "palette.functions.measurement-io");
-  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.boolean", AQUI).abierta.id, "palette.functions.programming.boolean");
+  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.comparison", AQUI).abierta.id, "palette.functions.programming.comparison");
 });
 
 // Regla 53b en una rejilla: la carpeta con contenido abre su subpaleta al lado,
@@ -132,4 +132,20 @@ test("el atajo de un hueco muestra su explicación", () => {
   assert.deepEqual(e.abierta, { id: "window.block-diagram.menu.edit.undo", x: 5, y: 6, ancla: "window.block-diagram.menu.edit" }, "se ancla en su menú");
   assert.deepEqual(tecla(inicial(), inv, "window.block-diagram", { ...ctrlZ, shift: true }, anclaDe), inicial(), "otra combinación no abre nada");
   assert.deepEqual(tecla(inicial(), inv, "window.front-panel", ctrlZ, anclaDe), inicial(), "el atajo es de su ventana");
+});
+
+// paletas/functions-boolean.png, capturada en LabVIEW 2026 Q3: cinco columnas,
+// con la segunda fila corta tras Implies y las constantes en la cuarta.
+test("la carpeta boolean abre su subpaleta", () => {
+  const id = "palette.functions.programming.boolean";
+  const abierta = clic(conPaleta(), INV, id, AQUI);
+  assert.deepEqual(abierta.paleta.cascada, [{ id, x: 10, y: 20 }]);
+  const { columnas, sitios } = celdasSubpaleta(INV, id);
+  assert.equal(columnas, 5);
+  const donde = Object.fromEntries(sitios.map((s) => [s.e.id.slice(id.length + 1), [s.fila, s.columna]]));
+  assert.deepEqual(donde["compound-arithmetic"], [0, 4]);
+  assert.deepEqual(donde.implies, [1, 3]);
+  assert.deepEqual(donde["and-array-elements"], [2, 0]);
+  assert.deepEqual(donde["false-constant"], [3, 1]);
+  assert.ok(!subpaletas(INV, abierta.paleta).includes("icono-funcion hueco"), "todas sus funciones están hechas");
 });

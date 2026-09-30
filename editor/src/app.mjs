@@ -231,7 +231,7 @@ addEventListener("mousedown", (ev) => {
     ev.preventDefault();
     estado = { ...estado, paleta: null, abierta: null };
     if (conDiagrama) {
-      dia = ED.moverA(ED.coger(dia, e.bloque), ctx, punto(ev));
+      dia = ED.moverA(ED.coger(dia, e.bloque, e.config), ctx, punto(ev));
       dia = { ...dia, accion: { ...dia.accion, arrastrado: false } };
     } else {
       pan = P.moverA(P.coger(pan, e.bloque), ctx, punto(ev));

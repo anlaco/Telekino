@@ -52,6 +52,14 @@
     "mueve en cada lienzo. El menú de clic derecho de un control en el panel no",
     "está capturado.",
     "",
+    "SUBPALETA BOOLEAN: capturada por Telekino en LabVIEW 2026 Q3 Community,",
+    "instalado en la máquina virtual de Windows, a escala 1:1 (2026-09-30):",
+    "paletas/functions-boolean.png, con la paleta en vista Category (Standard), y",
+    "block-diagram/boolean-funciones.png, con las funciones puestas en el diagrama.",
+    "Los nombres, los que enseña la subpaleta al pasar el ratón; los terminales, los",
+    "de la ventana de ayuda contextual. En la paleta Boolean, Compound Arithmetic",
+    "sale en modo AND (lo dice su ayuda).",
+    "",
     "COMPOUND ARITHMETIC: vídeo block-diagram/compound-arithmetic.mp4, sus fotogramas",
     "block-diagram/compound-*.png y la captura compound-menu.png (2026-09-30): el",
     "menú del nodo y el de una entrada. Los submenús salen cortados por la ventana:",
@@ -1345,14 +1353,158 @@
       "bloque": "expression-node",
       "captura": "paletas/functions-numeric.png"
     },
-    {
-      "id": "palette.functions.programming.boolean",
-      "etiqueta": "Boolean",
-      "estado": "todo",
-      "labview": "Operaciones lógicas sobre booleanos o arrays de booleanos.",
-      "necesita": "bloques",
-      "captura": "paletas/functions-programming.png"
-    },
+      {
+        "id": "palette.functions.programming.boolean",
+        "etiqueta": "Boolean",
+        "estado": "built",
+        "prueba": "editor/test/estado.test.mjs::la_carpeta_boolean_abre_su_subpaleta",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.thumbtack",
+        "etiqueta": "Thumbtack",
+        "estado": "todo",
+        "labview": "Fija la subpaleta: deja de ser temporal y pasa a ser una ventana que recuerda su posición y su tamaño.",
+        "necesita": "paletas-fijas",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.and",
+        "etiqueta": "And",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "and-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.or",
+        "etiqueta": "Or",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "or-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.exclusive-or",
+        "etiqueta": "Exclusive Or",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "xor-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.not",
+        "etiqueta": "Not",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "not-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.compound-arithmetic",
+        "etiqueta": "Compound Arithmetic",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "compound-arithmetic",
+        "config": {
+          "mode": "and"
+        },
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.not-and",
+        "etiqueta": "Not And",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "nand-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.not-or",
+        "etiqueta": "Not Or",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "nor-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.not-exclusive-or",
+        "etiqueta": "Not Exclusive Or",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "nxor-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.implies",
+        "etiqueta": "Implies",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "implies-op",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.and-array-elements",
+        "etiqueta": "And Array Elements",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "and-array-elements",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.or-array-elements",
+        "etiqueta": "Or Array Elements",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "or-array-elements",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.number-to-boolean-array",
+        "etiqueta": "Number To Boolean Array",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "number-to-boolean-array",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.boolean-array-to-number",
+        "etiqueta": "Boolean Array To Number",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "boolean-array-to-number",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.boolean-to-0-1",
+        "etiqueta": "Boolean To (0,1)",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "boolean-to-0-1",
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.true-constant",
+        "etiqueta": "True Constant",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "bool-const",
+        "config": {
+          "value": true
+        },
+        "captura": "paletas/functions-boolean.png"
+      },
+      {
+        "id": "palette.functions.programming.boolean.false-constant",
+        "etiqueta": "False Constant",
+        "estado": "built",
+        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "bloque": "bool-const",
+        "config": {
+          "value": false
+        },
+        "captura": "paletas/functions-boolean.png"
+      },
     {
       "id": "palette.functions.programming.string",
       "etiqueta": "String",
@@ -1778,8 +1930,8 @@
       "captura": "paletas/controls.png"
     },
     {
-      "id": "palette.controls.modern.array-matrix-and-cluster",
-      "etiqueta": "Array, Matrix & Cluster",
+      "id": "palette.controls.modern.data-containers",
+      "etiqueta": "Data Containers",
       "estado": "todo",
       "labview": "Arrays, matrices y clusters de controles.",
       "necesita": "panel-frontal",
@@ -1810,8 +1962,8 @@
       "captura": "paletas/controls.png"
     },
     {
-      "id": "palette.controls.modern.containers",
-      "etiqueta": "Containers",
+      "id": "palette.controls.modern.layout",
+      "etiqueta": "Layout",
       "estado": "todo",
       "labview": "Pestañas, paneles divididos y subpaneles para agrupar controles.",
       "necesita": "panel-frontal",

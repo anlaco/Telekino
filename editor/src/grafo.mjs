@@ -276,6 +276,11 @@ function sustituir(t, vars) {
       const v = vars[t.num] ?? DBL;
       return t.flotante && esEntero(v) ? DBL : v;
     }
+    if ("logico" in t) {
+      // Sin nada cableado, booleano; con coma flotante, el entero de sus mismos bits.
+      const v = vars[t.logico] ?? "boolean";
+      return esNumerico(v) && !esEntero(v) ? (v === "sgl" ? "i32" : "i64") : v;
+    }
     if ("var" in t) return vars[t.var];
     if ("array" in t) {
       const e = sustituir(t.array, vars);
@@ -291,6 +296,11 @@ function ligar(declarado, llega, vars) {
   if ("num" in declarado) {
     if (!esNumerico(llega)) return;
     vars[declarado.num] = vars[declarado.num] === undefined ? llega : comun(vars[declarado.num], llega);
+  } else if ("logico" in declarado) {
+    // Booleano o numérico: lo que llega primero decide; lo otro, después, rompe el cable.
+    if (llega !== "boolean" && !esNumerico(llega)) return;
+    const v = vars[declarado.logico];
+    vars[declarado.logico] = v === undefined ? llega : v === "boolean" || llega === "boolean" ? v : comun(v, llega);
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
   } else if ("array" in declarado && esArray(llega)) ligar(declarado.array, llega.array, vars);
@@ -324,7 +334,13 @@ export function tipos(g, cat) {
     }
     // En los modos bit a bit (AND, OR, XOR de Compound Arithmetic) la operación
     // es entera: la coma flotante pasa al entero de sus mismos bits.
+    // Con booleanos (como sale de la paleta Boolean) opera sobre booleanos.
     if (b["modos-bit-a-bit"]?.includes(n.config?.mode ?? b.config?.mode?.value)) {
+      const llegaBooleano = ins.some((p) => {
+        const c = llegaA.get(`${n.id}.${p.name}`);
+        return c && salidas.get(`${c.de.nodo}.${c.de.puerto}`) === "boolean";
+      });
+      if (llegaBooleano) for (const p of [...ins, ...outs]) if (p.type?.num && !vars[p.type.num]) vars[p.type.num] = "boolean";
       for (const p of [...ins, ...outs]) if (p.type?.num && !vars[p.type.num]) vars[p.type.num] = DBL;
       for (const [k, v] of Object.entries(vars)) if (esNumerico(v) && !esEntero(v)) vars[k] = v === "sgl" ? "i32" : "i64";
     }

@@ -143,3 +143,48 @@ test("un vi con entradas sin cablear no se puede ejecutar", () => {
   g = conectar(g, CAT, sal(ids[1]), ent(ids[2], "b")).g;
   assert.equal(ejecutable(g, CAT, tipos(g, CAT)), true);
 });
+
+// Lo mismo para Boolean, capturada en LabVIEW 2026 Q3: los terminales, con los
+// nombres de la ayuda contextual (x, y; Boolean array; number).
+test("cada función de boolean se pone en el diagrama con sus terminales", () => {
+  const BOOLEAN = "palette.functions.programming.boolean";
+  const hechas = INV.hijos(BOOLEAN).filter((e) => !esHueco(e));
+  assert.equal(hechas.length, 16);
+  for (const e of hechas) {
+    assert.ok(CAT.tiene(e.bloque), `${e.id}: su bloque ${e.bloque} no está en el catálogo`);
+    assert.ok(G.FUNCIONES[ultimo(e.id)] && G.CAJAS[ultimo(e.id)], `${e.id}: sin glifo o sin caja`);
+    const { g, ids } = con(e.bloque);
+    const ts = terminales(g.nodos.find((n) => n.id === ids[0]), CTX);
+    const { in: ins, out: outs } = CAT.puertos(g.nodos[0]);
+    assert.deepEqual(ts.map((t) => t.puerto), [...ins, ...outs].map((p) => p.name), e.id);
+    tipos(g, CAT);
+  }
+  const and = CAT.puertos({ tipo: "and-op" });
+  assert.deepEqual([...and.in, ...and.out].map((p) => p.label), ["x", "y", "x .and. y?"]);
+});
+
+// Comprobado en LabVIEW: sin cablear, And es booleano; con un DBL, la entrada
+// lleva punto de coerción y la salida es entera; booleano y número no se mezclan.
+test("las funciones lógicas operan con booleanos o bit a bit con enteros", () => {
+  const verde = con("and-op");
+  assert.equal(tipos(verde.g, CAT).salidas.get(`${verde.ids[0]}.result`), "boolean");
+
+  let { g, ids } = con("const", "and-op");
+  g = conectar(g, CAT, sal(ids[0]), ent(ids[1], "x")).g;
+  let r = tipos(g, CAT);
+  assert.equal(r.salidas.get(`${ids[1]}.result`), "i64");
+  assert.equal([...r.cables.values()][0].coercion, true);
+
+  ({ g, ids } = con("bool-const", "const", "or-op"));
+  g = conectar(g, CAT, sal(ids[0]), ent(ids[2], "x")).g;
+  g = conectar(g, CAT, sal(ids[1]), ent(ids[2], "y")).g;
+  r = tipos(g, CAT);
+  assert.equal(r.salidas.get(`${ids[2]}.result`), "boolean");
+  assert.match([...r.cables.values()][1].roto, /incompatibles/);
+
+  // Compound Arithmetic en AND con booleanos opera sobre booleanos.
+  ({ g, ids } = con("bool-const", "compound-arithmetic"));
+  g = conectar(g, CAT, sal(ids[0]), ent(ids[1], "value-0")).g;
+  g = { ...g, nodos: g.nodos.map((n) => (n.id === ids[1] ? { ...n, config: { ...n.config, mode: "and" } } : n)) };
+  assert.equal(tipos(g, CAT).salidas.get(`${ids[1]}.result`), "boolean");
+});

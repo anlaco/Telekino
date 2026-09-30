@@ -248,7 +248,9 @@ para que la interfaz no crezca sin programa detrás.
    - [ ] Controls ▸ Numeric (controles e indicadores). *(Hechos el control y
      el indicador numéricos; faltan los otros 19 de la subpaleta.)*
    - [ ] Structures: While Loop y For Loop.
-   - [ ] Comparison y Boolean.
+   - [ ] Comparison y Boolean. *(2026-09-30: Boolean hecha, la primera paleta
+     capturada por Telekino en LabVIEW 2026 Q3 Community, instalado en la VM de
+     Windows.)*
    - [ ] Timing: Wait (ms).
    - [ ] Instrument I/O: serie y VISA.
 5. [ ] **Capturas**: la ventana de LabVIEW más grande, para que los menús no

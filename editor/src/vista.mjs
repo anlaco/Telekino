@@ -94,6 +94,7 @@ export const MEDIDAS_SUBPALETA = {
 const REJILLAS = {
   "palette.functions.programming.numeric": { columnas: 6, celdas: { "expression-node": [6, 5] } },
   "palette.controls.modern.numeric": { columnas: 4, celdas: {} },
+  "palette.functions.programming.boolean": { columnas: 5, celdas: { "and-array-elements": [2, 0] } },
 };
 const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
 

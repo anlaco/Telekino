@@ -39,11 +39,16 @@ const lejos = (a, p) => Math.abs(p.x - a.x) > UMBRAL || Math.abs(p.y - a.y) > UM
 const cableDe = (id) => id.split("#")[0];
 const esEtiqueta = (id) => id.endsWith("#etiqueta");
 
-/** Coger un bloque de la paleta: queda colgando del cursor hasta soltarlo en el diagrama. */
-export const coger = (d, bloque) => ({ ...d, accion: { tipo: "colocar", bloque }, aviso: null, menu: null });
+/**
+ * Coger un bloque de la paleta: queda colgando del cursor hasta soltarlo en el
+ * diagrama. `config`, la del elemento de la paleta si no es la del catálogo:
+ * Compound Arithmetic sale en AND de la paleta Boolean, True Constant vale TRUE.
+ */
+export const coger = (d, bloque, config) => ({ ...d, accion: { tipo: "colocar", bloque, config }, aviso: null, menu: null });
 
 function colocar(d, ctx, p) {
-  const { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - AGARRE.x), Math.round(p.y - AGARRE.y));
+  let { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - AGARRE.x), Math.round(p.y - AGARRE.y));
+  if (d.accion.config) g = Gr.fijarConfig(g, id, d.accion.config);
   return { ...d, g, seleccion: [id], accion: null, aviso: null };
 }
 
@@ -75,7 +80,11 @@ export function pulsar(d, ctx, sobre, p, shift = false) {
     // Regla 22: el clic selecciona sólo ese; con Shift, se suma o se quita.
     return shift ? (ya ? d.seleccion.filter((s) => s !== id) : [...d.seleccion, id]) : ya ? d.seleccion : [id];
   };
-  if (sobre.tipo === "nodo") return { ...d0, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: p.x, y: p.y } };
+  if (sobre.tipo === "nodo") {
+    // Una constante booleana cambia con un clic, como en LabVIEW; si se arrastra, se mueve.
+    const alternar = d.g.nodos.find((n) => n.id === sobre.id)?.tipo === "bool-const" ? sobre.id : null;
+    return { ...d0, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: p.x, y: p.y, alternar, movido: false } };
+  }
   // Una etiqueta se agarra sola: moverla no mueve su terminal.
   if (sobre.tipo === "etiqueta") return { ...d0, seleccion: elegir(`${sobre.id}#etiqueta`), accion: { tipo: "etiqueta", nodo: sobre.id, x: p.x, y: p.y } };
   if (sobre.tipo === "tramo") {
@@ -97,7 +106,7 @@ export function moverA(d, ctx, p) {
       if (!dx && !dy) return d;
       // Regla 23: se mueve todo lo seleccionado. Mover sólo cambia la presentación (regla 25).
       const nodos = d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id));
-      return { ...d, g: Gr.mover(d.g, nodos, dx, dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy } };
+      return { ...d, g: Gr.mover(d.g, nodos, dx, dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true } };
     }
     case "cablear":
       return { ...d, accion: { ...accion, x: p.x, y: p.y, arrastrado: accion.arrastrado || lejos({ x: accion.x0, y: accion.y0 }, p) } };
@@ -165,6 +174,11 @@ export function soltar(d, ctx, sobre, p) {
       // sólo se pulsó, sigue colgando del cursor hasta el siguiente clic.
       return accion.arrastrado && sobre ? colocar(d, ctx, p) : d;
     case "mover":
+      if (accion.alternar && !accion.movido) {
+        const n = d.g.nodos.find((k) => k.id === accion.alternar);
+        return { ...d, g: Gr.fijarValor(d.g, n.id, !n.config?.value), accion: null };
+      }
+      return { ...d, accion: null };
     case "tramo":
     case "estirar":
     case "etiqueta":

@@ -334,3 +334,26 @@ test("compound arithmetic es un pixel mas ancho que add", () => {
   const [add, ca] = d.g.nodos.map((n) => caja(n, CTX).ancho);
   assert.ok(Math.abs(ca - add - 1) < 0.01, `Add ${add}, Compound Arithmetic ${ca}`);
 });
+
+// En LabVIEW, un clic en la constante booleana la cambia de TRUE a FALSE; y de
+// la paleta Boolean, True Constant sale en TRUE y Compound Arithmetic en AND.
+test("la constante booleana cambia con un clic y se mueve arrastrándola", () => {
+  let d = ED.coger(ED.inicial(), "bool-const", { value: true });
+  d = ED.moverA(d, CTX, { x: 100, y: 100 });
+  d = ED.pulsar(d, CTX, FONDO, { x: 100, y: 100 });
+  const id = d.g.nodos[0].id;
+  assert.equal(d.g.nodos[0].config.value, true);
+  const k = caja(d.g.nodos[0], CTX);
+  const cuerpo = { x: k.x + 2, y: k.y + k.alto / 2 };
+  d = ED.soltar(ED.pulsar(d, CTX, { tipo: "nodo", id }, cuerpo), CTX, { tipo: "nodo", id }, cuerpo);
+  assert.equal(d.g.nodos[0].config.value, false, "un clic la cambia");
+  d = ED.pulsar(d, CTX, { tipo: "nodo", id }, cuerpo);
+  d = ED.moverA(d, CTX, { x: cuerpo.x + 30, y: cuerpo.y });
+  d = ED.soltar(d, CTX, FONDO, { x: cuerpo.x + 30, y: cuerpo.y });
+  assert.equal(d.g.nodos[0].config.value, false, "arrastrarla no la cambia");
+  assert.equal(d.g.nodos[0].x, k.x + 30);
+
+  let e = ED.coger(ED.inicial(), "compound-arithmetic", { mode: "and" });
+  e = ED.pulsar(ED.moverA(e, CTX, { x: 50, y: 50 }), CTX, FONDO, { x: 50, y: 50 });
+  assert.equal(e.g.nodos[0].config.mode, "and");
+});
