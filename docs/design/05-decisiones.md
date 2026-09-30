@@ -19,6 +19,7 @@ toda la historia del proyecto, sin tener que aclarar de qué etapa es.
 | [035](#dt-035) | El editor calca la arquitectura de información de LabVIEW y declara lo que no hace | Aceptada · en implementación |
 | [036](#dt-036) | El asistente de IA es externo, y se lanza desde el botón que en LabVIEW abre Nigel | Aceptada · sin implementar |
 | [037](#dt-037) | La interfaz del editor se hace con tecnologías web y corre en Electron | Aceptada · implementada en el esqueleto |
+| [038](#dt-038) | Los tipos numéricos son las representaciones de LabVIEW, con su conversión | Aceptada · implementada en el editor |
 
 ## Las 34 decisiones de Red
 
@@ -418,3 +419,97 @@ g. **No se decide aquí** cómo habla el editor con el núcleo en Rust —compil
 |-----|-----------|--------|
 | El editor pinta y reacciona como dice el inventario, sin navegador | `npm test` en `editor/` | **Verificado**: 33 tests |
 | Se ve como LabVIEW | Electron en una pantalla virtual a escala 150 % (`--force-device-scale-factor=1.5`), comparado píxel a píxel con las capturas | **Comprobado** con medidas, no con un test: la cabecera, la barra de estado y la paleta caen a 1 px de LabVIEW |
+
+---
+
+## DT-038
+
+**Los tipos numéricos son las representaciones de LabVIEW, y se convierten
+como en LabVIEW: con un punto de coerción, no con un cable roto.**
+
+- **Estado:** Aceptada el 2026-09-29. **Implementada en el editor**
+  ([`editor/src/tipos.mjs`](../../editor/src/tipos.mjs) y
+  [`editor/src/grafo.mjs`](../../editor/src/grafo.mjs)); el compilador y el
+  runtime, que aún no existen, la heredan.
+- **Cómo se decidió:** al pedir quien desarrolla el proyecto que los bloques de
+  Numeric se pudieran poner en el diagrama y cablear con el color de su tipo, se
+  planteó que eso exigía cerrar antes la cuestión 5 de
+  [`03-semantica-estatica.md`](../spec/03-semantica-estatica.md) §9 —«no añadir
+  tipos numéricos sin definir antes su conversión»—, y se eligió calcar LabVIEW
+  frente a quedarse sólo con f64.
+- **Sustituye:** la regla 2 de `03` (igualdad estricta, sin conversión
+  implícita) para los numéricos, y cierra su §3.7.
+
+### Contexto
+
+**1. La paleta es de LabVIEW.** DT-035 calca Numeric uno a uno, y en ella hay una
+constante que es I32, otra que es DBL, un enum, un anillo U16 y funciones cuyo
+resultado depende de lo que se les cablea. Con un solo tipo numérico, la mitad
+de esos iconos mentiría: todos darían DBL.
+
+**2. El color del cable es información.** Quien viene de LabVIEW lee azul como
+entero y naranja como coma flotante. Un editor donde todo es naranja le quita esa
+lectura.
+
+**3. La conversión estaba sin decidir, no prohibida.** `03` §3.7 pedía decidirla
+antes de añadir enteros. La de LabVIEW está escrita en su ayuda («Numeric
+Conversion») y es la que su público espera.
+
+### Decisión
+
+1. **Tipos.** Se añaden `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64` y
+   `sgl`. `number` sigue siendo el DBL (f64): se conserva el nombre que ya usan
+   el esquema y el corpus. Se añade el tipo compuesto `{ "enum": [etiquetas] }`,
+   que para convertir cuenta como U16.
+2. **Tipo común.** Una función que espera sus entradas del mismo tipo toma el
+   común, con la regla de NI: gana la representación con más bits y, con los
+   mismos, la sin signo. Además, la coma flotante gana al entero: I64 + DBL da
+   DBL e I32 + SGL da SGL.
+3. **Conversión en el cable.** Entre dos numéricos distintos, también de array a
+   array, el cable es **válido** y el terminal que convierte lleva un **punto de
+   coerción**. Entre tipos que no convierten, el cable se dibuja **roto** y dice
+   por qué (`05-editor.md` regla 31, `06-visual.md` §5.1).
+4. **Polimorfismo en el catálogo.** `blocks.json` declara `{ "num": "N" }`: una
+   variable de tipo numérica, que liga el tipo común de lo que llega a las
+   entradas que la comparten. Con `"flotante": true`, un resultado entero pasa a
+   DBL: es lo que hacen Divide, Square Root y Reciprocal con enteros. Sin nada
+   cableado, la variable vale DBL, que es lo que enseña LabVIEW.
+5. **Fuera:** EXT (80 bits: WebAssembly no lo tiene), los complejos (CSG, CDB,
+   CXT) y el punto fijo (FXP). Sus subpaletas siguen siendo huecos.
+
+### Consecuencias
+
+a. **La regla 2 de `03` cambia**: igualdad estricta para todo lo que no es
+   numérico; conversión con punto de coerción entre numéricos. `03` §3.1 y §3.7
+   y el esquema del `.qvi` recogen los tipos nuevos.
+
+b. **Una función de la paleta está hecha cuando se pone en el diagrama con sus
+   terminales del catálogo** y se cablea. Compilarla es otra pieza, la de
+   ejecutar un VI (`ejecutar-vi` en el inventario). Las 32 funciones de Numeric
+   pasan a `built`.
+
+c. **El modelo del grafo vive, por ahora, en el editor**, en JavaScript: los
+   puertos salen de `blocks.json`, y `can_connect`, la resolución de tipos y los
+   ciclos están en `grafo.mjs`. Contradice de momento la regla 4 de `03` —una
+   sola función del núcleo para editor, compilador y `check`—, porque el núcleo
+   no existe. Cuando exista, el editor lo llamará y `grafo.mjs` desaparecerá.
+   Está abierto si el núcleo acaba siendo JavaScript también: no cambia nada de
+   esta decisión.
+
+d. **Los puertos llevan `label`**, el nombre del terminal en LabVIEW («x+y»,
+   «floor(x/y)»), que el editor enseña en el tip strip. `name` sigue siendo el
+   identificador del `.qvi`.
+
+e. **Pendiente, sin capturas todavía:** cómo pinta LabVIEW un nodo, una constante
+   y un cable en el diagrama. El editor usa los glifos de la paleta, cajas con el
+   valor para las constantes y los colores de sus bordes para los cables; falta
+   compararlo con capturas del diagrama.
+
+### Verificación
+
+| Qué | Mecanismo | Estado |
+|-----|-----------|--------|
+| La regla del tipo común | Test «el tipo común sigue la regla de LabVIEW» (`editor/test/tipos.test.mjs`) | **Verificado** |
+| Coerción y cable roto | Tests «una función toma el tipo común y marca la coerción» y «un cable entre tipos incompatibles queda roto y explica por qué» (`editor/test/grafo.test.mjs`) | **Verificado** |
+| Las 32 funciones se ponen con sus terminales | Test «cada función de numeric se pone en el diagrama con sus terminales» | **Verificado** |
+| Se ve como LabVIEW en el diagrama | Capturas de un diagrama de LabVIEW con estos bloques | **Pendiente**: no hay capturas |

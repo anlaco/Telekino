@@ -102,15 +102,25 @@
       "oneOf": [
         { "$ref": "#/$defs/scalarType" },
         { "$ref": "#/$defs/arrayType" },
-        { "$ref": "#/$defs/clusterType" }
+        { "$ref": "#/$defs/clusterType" },
+        { "$ref": "#/$defs/enumType" }
       ]
     },
 
+    "enumType": {
+      "description": "Enumerado: etiquetas con los valores 0 a n-1. Para convertir cuenta como U16 (DT-038).",
+      "type": "object",
+      "required": ["enum"],
+      "additionalProperties": false,
+      "properties": { "enum": { "type": "array", "items": { "type": "string" } } }
+    },
+
     "scalarType": {
-      "description": "Catálogo cerrado de tipos escalares. `array` y `cluster` NO están aquí: siempre llevan su parámetro.",
+      "description": "Catálogo cerrado de tipos escalares. `number` es el DBL (f64); los enteros y `sgl`, los de LabVIEW (DT-038). `array` y `cluster` NO están aquí: siempre llevan su parámetro.",
       "type": "string",
       "enum": [
-        "number", "boolean", "string", "waveform",
+        "number", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "sgl",
+        "boolean", "string", "waveform",
         "error", "tcp-connection", "serial-connection"
       ]
     },

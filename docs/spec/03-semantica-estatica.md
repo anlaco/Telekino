@@ -56,7 +56,11 @@ Los tipos de dato son un conjunto cerrado. El esquema los enumera en
 
 | Tipo | Descripción | Estado |
 |------|-------------|--------|
-| `number` | Numérico de doble precisión | Implementado |
+| `number` | Numérico de doble precisión: el DBL de LabVIEW | Implementado |
+| `i8` `i16` `i32` `i64` | Enteros con signo | [DT-038](../design/05-decisiones.md#dt-038): en el editor |
+| `u8` `u16` `u32` `u64` | Enteros sin signo | DT-038: en el editor |
+| `sgl` | Coma flotante de simple precisión | DT-038: en el editor |
+| `{ "enum": [...] }` | Enumerado: etiquetas con los valores 0 a n-1; convierte como U16 | DT-038: en el editor |
 | `boolean` | Cierto o falso | Implementado |
 | `string` | Cadena de texto | Implementado |
 | `array` | Secuencia de elementos | **Ver §3.3: incompleto** |
@@ -66,22 +70,27 @@ Los tipos de dato son un conjunto cerrado. El esquema los enumera en
 | `tcp-connection` | *Refnum* de conexión TCP | Implementado |
 | `serial-connection` | *Refnum* de puerto serie | Reservado, Fase 4 |
 
-*(No hay tipos enteros. `06-visual.md` §2.3 menciona abreviaturas `I32`/`I16`,
-pero el registro de bloques no los define y ningún bloque los produce. Añadirlos
-obliga a definir reglas de coerción — ver §3.6.)*
+*(Los enteros, SGL y el enum los añade DT-038, con la conversión de LabVIEW:
+§3.2 y §3.7. EXT, los complejos y el punto fijo quedan fuera.)*
 
 ### 3.2 Compatibilidad: igualdad estricta
 
-> **Regla 2.** Un *wire* es válido si y sólo si el tipo de su puerto de origen es
-> **idéntico** al de su puerto de destino. **No hay conversión implícita.**
+> **Regla 2.** Un *wire* es válido si el tipo de su puerto de origen es
+> **idéntico** al de su puerto de destino, o si **los dos son numéricos** —también
+> dos arrays de numéricos—. Entre numéricos distintos el valor se convierte, y el
+> terminal de destino **DEBE** llevar un *punto de coerción*. Fuera de los
+> numéricos **no hay conversión implícita**.
 
-Es lo que hace hoy la implementación en Red (`_out-t = port-in-type ...`), y se
-conserva a propósito: con un solo tipo numérico no hay nada que convertir, y una
-regla sin excepciones es verificable de una línea.
+*(Cambiada por [DT-038](../design/05-decisiones.md#dt-038) el 2026-09-29. Antes
+era igualdad estricta en todo, que es lo que hacía la implementación en Red con
+un solo tipo numérico. La conversión es la de LabVIEW —su ayuda, «Numeric
+Conversion»—: de entero a coma flotante, al valor más cercano; de coma flotante a
+entero, saturando; entre enteros, extendiendo o truncando los bits.)*
 
-*(LabVIEW sí convierte, y marca la conversión con un punto en el terminal —
-`06-visual.md` §5.3 lo tiene previsto como futuro. Esa función depende de que
-existan varios tipos numéricos, que hoy no existen.)*
+> **Regla 2f — tipo común.** Las entradas de una función que comparten una
+> variable numérica `{ "num": "N" }` toman el tipo común de lo que les llega: gana
+> la coma flotante al entero; luego, la representación con más bits; con los
+> mismos bits, la sin signo. Sin nada cableado, `N` es DBL.
 
 ### 3.3 Los tipos compuestos llevan su forma dentro
 
@@ -207,6 +216,9 @@ informa de los tipos resueltos. El fichero no necesita cargar con ellos.
 Añadir `i32`/`i16` obliga a decidir a la vez las reglas de coerción, porque en
 cuanto hay dos tipos numéricos la regla 2 empieza a rechazar programas
 razonables. **No añadir tipos numéricos sin definir antes su conversión.**
+
+> **Cerrada por [DT-038](../design/05-decisiones.md#dt-038)** (2026-09-29): los
+> enteros llegan con la conversión de LabVIEW, en las reglas 2 y 2f.
 
 ## 4. Puertos
 
@@ -412,8 +424,9 @@ cuando se incumpla.)*
 
 | Regla | Mecanismo | Estado |
 |-------|-----------|--------|
-| 1 puerto desconocido = error | Test unitario + caso negativo de `check` | Pendiente |
-| 2 igualdad estricta de tipos | Test unitario | Pendiente |
+| 1 puerto desconocido = error | Test «un puerto que no existe es un error»; falta el caso de `check` | **Verificada en el editor** |
+| 2 igualdad estricta, conversión entre numéricos | Tests `editor/test/tipos.test.mjs` y `grafo.test.mjs` (coerción, cable roto) | **Verificada en el editor** |
+| 2f tipo común | Test «el tipo común sigue la regla de LabVIEW» | **Verificada en el editor** |
 | 2b `array`/`cluster` sin parámetro | **Casos negativos del esquema** | ✅ **Verificada** |
 | 2c propagación hacia delante | Test: `index-array` sobre `array<string>` devuelve `string` | Pendiente |
 | 2d misma variable, mismo tipo | Test: `build-array(number, string)` es error | Pendiente |
@@ -421,13 +434,14 @@ cuando se incumpla.)*
 | 5b sin cruces directos de frontera | Test por fila de la tabla §5.1 | Pendiente |
 | 5c túnel con exactamente un wire en su lado | Test | Pendiente |
 | 5 `can_connect` | Tabla de casos: un test por fila de §5.1 | Pendiente |
-| 7 fan-in | Test + validación al cargar | Pendiente |
-| 8, 9 ciclos | Test con ciclo conocido, comprobando que devuelve **qué** nodos | Pendiente |
+| 7 fan-in | Test «un cable a una entrada ocupada sustituye al anterior»; falta la validación al cargar | **Verificada en el editor** |
+| 8, 9 ciclos | Test «un ciclo se devuelve con sus nodos y rompe sus cables» | **Verificada en el editor** |
 | 10 entradas sin conectar | Caso negativo de `check` | Pendiente |
 | Todas | Los 14 ficheros del corpus reparado **DEBEN** pasar `check` | Pendiente |
 
-**Ninguna está verificada todavía**: este documento describe reglas cuya
-implementación no existe. Es la diferencia entre una especificación y una
+Las marcadas «en el editor» lo están en `editor/src/grafo.mjs`, que es
+provisional (DT-038 c): el núcleo, que debe implementarlas todas, no existe.
+**El resto no está verificado**: describe reglas cuya implementación no existe. Es la diferencia entre una especificación y una
 intención, y está marcada como tal.
 
 ## 9. Decisiones pendientes
@@ -438,7 +452,7 @@ intención, y está marcada como tal.
 | 4 | Cómo se declaran los túneles (§5.1.1) | ✅ **Resuelta** — explícitos, con nombre, tipo y dirección |
 | 2 | Semántica de `waveform` (§3.5) | Abierta. Sólo bloquea si se decide implementarlo |
 | 3 | ¿Espacio de nombres plano o por ámbito? (§6.1) | Abierta. Plano es la propuesta; nada urgente |
-| 5 | Tipos enteros y sus coerciones (§3.6) | Abierta. No añadirlos sin decidirla |
+| 5 | Tipos enteros y sus coerciones (§3.6) | ✅ **Resuelta** — [DT-038](../design/05-decisiones.md#dt-038): los de LabVIEW, con su conversión |
 | 6 | Propagación de tipos (§3.6) | ✅ **Resuelta** — variables de tipo, resolución hacia delante en orden topológico. Afecta a 5 bloques |
 | 7 | Auto-indexado de los túneles de `for-loop` (§5.1.1) | Abierta a propósito. El formato deja sitio |
 
