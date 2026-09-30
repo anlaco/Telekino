@@ -222,6 +222,9 @@ Tras R7 se retoma la Fase 4 de hardware (#20 USBTMC, #21 Serie, #22 Modbus, #23 
 
 ### 7.1 Hoja de ruta de los próximos días
 
+> **Cerrada el 2026-09-30.** Lo que sigue está en
+> [`plan-labview.md`](plan-labview.md): calcar LabVIEW módulo a módulo.
+
 *(Acordada el 2026-09-30. Se marca cada paso al cerrarlo, con la fecha.)* Hasta
 aquí el editor calca LabVIEW —ventanas, paleta de funciones, subpaleta Numeric,
 edición del diagrama (R2 en su mayor parte)—, pero un VI no se guarda, no se
