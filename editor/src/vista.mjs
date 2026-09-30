@@ -93,6 +93,7 @@ export const MEDIDAS_SUBPALETA = {
  */
 const REJILLAS = {
   "palette.functions.programming.numeric": { columnas: 6, celdas: { "expression-node": [6, 5] } },
+  "palette.controls.modern.numeric": { columnas: 4, celdas: {} },
 };
 const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
 
@@ -104,7 +105,7 @@ const AL_ESCRIBIR = ["enter-text"];
 const EN_TITULO = ["thumbtack", "search"];
 const EN_PIE = ["double-arrows", "change-visible-palettes"];
 /** Filas que son órdenes y no llevan a una subpaleta: sin flecha. */
-const ORDENES = ["select-a-vi"];
+const ORDENES = ["select-a-vi", "select-a-control"];
 
 export const TITULOS = {
   "front-panel": "Untitled 1 Front Panel",
@@ -271,9 +272,18 @@ export function paleta(inv, estado) {
   return `${html}</div>`;
 }
 
+/**
+ * El glifo de una carpeta: las de Controls tienen los suyos, porque sus nombres
+ * se repiten en Functions (Numeric, Boolean) con otro contenido.
+ */
+const glifoCarpeta = (id) => (id.startsWith("palette.controls.") ? G.CARPETAS_CONTROLES : G.SUBPALETAS)[ultimo(id)];
+
+/** El glifo de un elemento de una subpaleta: una función o un control. */
+const glifoIcono = (id) => (id.startsWith("palette.controls.") ? G.CONTROLES : G.FUNCIONES)[ultimo(id)];
+
 /** Una carpeta de una rejilla; la abierta lleva el marco de LabVIEW. */
 function carpeta(inv, e, left, top, abierta) {
-  const glifo = G.SUBPALETAS[ultimo(e.id)] ?? "";
+  const glifo = glifoCarpeta(e.id) ?? "";
   const P = MEDIDAS_PALETA;
   const marco = abierta ? `<div class="marco"></div>` : "";
   return `<div class="${clases(inv, e.id, `carpeta${abierta ? " abierta" : ""}`)}" data-id="${esc(e.id)}" style="left:${px(left)};top:${px(top)};width:${px(P.anchoCarpeta)};height:${px(P.altoCarpeta)}">${marco}<div class="pestana"></div><div class="lomo"></div><div class="caja-carpeta">${glifo}</div></div>`;
@@ -345,14 +355,13 @@ export function subpaletas(inv, estado) {
         html += `<div class="nombre-sobre" style="top:${px(S.nombreArriba)}">${esc(sobre.etiqueta)}</div>`;
       }
       for (const { e: hijo, fila, columna } of celdasSubpaleta(inv, c.id).sitios) {
-        const n = ultimo(hijo.id);
         const cx = S.margenIzquierdo + columna * S.paso + S.lado / 2;
         const cy = S.sobreRejilla + fila * S.paso + S.lado / 2;
-        if (G.SUBPALETAS[n]) {
+        if (glifoCarpeta(hijo.id)) {
           const P = MEDIDAS_PALETA;
           html += carpeta(inv, hijo, cx - P.anchoCarpeta / 2, cy - P.altoCarpeta / 2 - S.subeCarpeta, hijo.id === abierta || hijo.id === estado.sobre);
         } else {
-          html += `<div class="${clases(inv, hijo.id, "icono-funcion")}" data-id="${esc(hijo.id)}" style="left:${px(cx - S.lado / 2)};top:${px(cy - S.lado / 2)};width:${px(S.lado)};height:${px(S.lado)}">${hijo.id === estado.sobre ? `<div class="marco marco-funcion"></div>` : ""}${G.FUNCIONES[n] ?? ""}</div>`;
+          html += `<div class="${clases(inv, hijo.id, "icono-funcion")}" data-id="${esc(hijo.id)}" style="left:${px(cx - S.lado / 2)};top:${px(cy - S.lado / 2)};width:${px(S.lado)};height:${px(S.lado)}">${hijo.id === estado.sobre ? `<div class="marco marco-funcion"></div>` : ""}${glifoIcono(hijo.id) ?? ""}</div>`;
         }
       }
       return `${html}</div></div>`;

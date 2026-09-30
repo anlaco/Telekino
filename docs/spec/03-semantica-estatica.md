@@ -395,7 +395,9 @@ un mismo ámbito.
 ### 6.4 Entradas sin conectar
 
 > **Regla 10.** Un puerto de entrada sin wire y sin valor por defecto declarado
-> hace que el VI **NO DEBA** compilar.
+> hace que el VI **NO DEBA** compilar. El terminal de un indicador (un bloque
+> con `panel` en el catálogo) es la excepción: sin wire, el indicador conserva
+> su valor, y el VI compila, como en LabVIEW.
 
 *(Es el "nodo roto" de LabVIEW. En Red no existía comprobación alguna: `grep -rn
 "check-\|validate" src/` no encuentra **ninguna** función de validación en todo

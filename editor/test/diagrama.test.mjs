@@ -103,3 +103,32 @@ test("un menú se ajusta a su texto más largo", () => {
   assert.ok(Math.abs(funcion - 246 / 1.5) <= 8, `el de Add mide ${funcion}; en el vídeo, 164`);
   assert.ok(Math.abs(constante - 334 / 1.5) <= 10, `el de la constante mide ${constante}; en el vídeo, 223`);
 });
+
+// numeric-terminales-icono.png y numeric-terminales.png: con View As Icon, el
+// terminal enseña el control en pequeño; sin ella, una caja compacta con DBL.
+// El cable entra o sale por la flecha. numeric-menu-control.png y
+// numeric-menu-indicador.png: sus menús, con View As Icon marcada.
+test("los terminales del panel se ven como icono o compactos", () => {
+  const { g, ids } = con("control", "indicator");
+  const [control, indicador] = g.nodos;
+  assert.deepEqual([D.caja(control, CTX).ancho, D.caja(control, CTX).alto], [36, 36]);
+  const t = D.terminales(control, CTX).find((k) => k.puerto === "result");
+  assert.deepEqual([t.dir, t.x, t.y], ["out", control.x + 36, control.y + 15.5]);
+  assert.equal(D.terminales(indicador, CTX).find((k) => k.puerto === "value").x, indicador.x, "el indicador recibe por la izquierda");
+  assert.match(D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT)), />DBL</);
+
+  assert.equal(D.menuDe(control), "context.numeric-control");
+  assert.equal(D.menuDe(indicador), "context.numeric-indicator");
+  let d = ED.abrirMenu({ ...ED.inicial(), g }, "context.numeric-control", ids[0], 0, 0);
+  assert.ok(ED.marcados(d).has("context.numeric-control.view-as-icon"));
+  const html = D.menuContextual(INV, d.menu, ED.marcados(d));
+  assert.match(html, /class="item-menu marcado" data-id="context\.numeric-control\.view-as-icon"/, "View As Icon está hecha y marcada");
+  assert.match(html, /class="item-menu hueco" data-id="context\.numeric-control\.change-to-indicator"/);
+  assert.equal((html.match(/separador-menu/g) ?? []).length, 6, "los separadores de numeric-menu-control.png");
+
+  d = ED.orden(d, "context.numeric-control.view-as-icon", CTX);
+  const compacto = d.g.nodos[0];
+  assert.deepEqual([D.caja(compacto, CTX).ancho, D.caja(compacto, CTX).alto], [33, 17]);
+  assert.equal(D.terminales(compacto, CTX)[0].y, compacto.y + 8.5);
+  assert.ok(!ED.marcados(ED.abrirMenu(d, "context.numeric-control", ids[0], 0, 0)).has("context.numeric-control.view-as-icon"));
+});

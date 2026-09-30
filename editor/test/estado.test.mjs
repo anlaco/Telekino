@@ -27,12 +27,33 @@ test("el clic derecho en el diagrama abre la paleta de funciones", () => {
   assert.equal(e.abierta, null);
 });
 
-// La paleta de controles aún no está declarada: el clic derecho en el panel
-// explica por qué no se abre (regla 53).
-test("el clic derecho en el panel explica por qué no hay paleta", () => {
+// Como en paletas/controls.png: Modern desplegada, con sus doce carpetas, y las
+// categorías de los otros estilos debajo.
+test("el clic derecho en el panel abre la paleta de controles con modern desplegada", () => {
   const e = clicDerecho(inicial(), INV, "front-panel", AQUI);
-  assert.equal(e.paleta, null);
-  assert.equal(e.abierta.id, "window.front-panel.workspace");
+  assert.equal(e.paleta.raiz, "palette.controls");
+  assert.deepEqual(e.paleta.desplegadas, ["palette.controls.modern"]);
+  assert.equal(e.abierta, null);
+  const ids = idsPintados(paleta(INV, e.paleta));
+  assert.equal(ids.filter((id) => id.startsWith("palette.controls.modern.")).length, 12);
+  assert.ok(ids.indexOf("palette.controls.silver") > ids.indexOf("palette.controls.modern.refnum"));
+  assert.ok(!ids.includes("palette.controls.user-controls"), "las categorías ocultas no salen hasta pedirlas");
+});
+
+// paletas/controls-numeric.png: la subpaleta, en una rejilla de cuatro columnas,
+// con el control y el indicador numéricos hechos y el resto como huecos.
+test("la carpeta numeric de controls abre su subpaleta", () => {
+  const id = "palette.controls.modern.numeric";
+  const conControles = { ...inicial(), paleta: paletaNueva("palette.controls", 40, 30) };
+  const abierta = clic(conControles, INV, id, AQUI);
+  assert.deepEqual(abierta.paleta.cascada, [{ id, x: 10, y: 20 }]);
+  const html = subpaletas(INV, abierta.paleta);
+  const ids = idsPintados(html).filter((i) => i.startsWith(`${id}.`) && !i.endsWith("thumbtack"));
+  assert.equal(ids.length, 21);
+  assert.deepEqual(ids.slice(0, 2), [`${id}.numeric-control`, `${id}.numeric-indicator`]);
+  assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.numeric-control"`), "el control está hecho");
+  assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.knob"`), "un mando es un hueco");
+  assert.equal(clic(abierta, INV, `${id}.numeric-indicator`, AQUI, 1).abierta, null, "un control hecho no se explica: se coge");
 });
 
 // El único elemento hecho del inventario: las flechas dobles enseñan y

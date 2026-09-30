@@ -523,3 +523,192 @@ export const CURSORES = {
     punto: [1, 22],
   },
 };
+
+// ——— La paleta Controls ———
+
+const AZUL_CONTROL = "#2e64d8"; // el relleno de los deslizadores y las barras
+const GRIS_MARCO = "#9a9a9a";
+
+/** Un termómetro: el bulbo abajo y la columna, en rojo hasta `nivel` (0–1). */
+function termometro(x, y0, y1, ancho, nivel, color = "#d22828") {
+  const r = ancho * 0.9;
+  const alto = y1 - y0 - r;
+  const hasta = y0 + alto * (1 - nivel);
+  return (
+    `<rect x="${f(x - ancho / 2)}" y="${y0}" width="${ancho}" height="${f(alto + r)}" rx="${f(ancho / 2)}" fill="#fff" stroke="${TINTA}" stroke-width="0.8"/>` +
+    lleno(x - ancho / 2 + 0.8, hasta, x + ancho / 2 - 0.8, y1 - r, color) +
+    `<circle cx="${x}" cy="${f(y1 - r)}" r="${f(r)}" fill="${color}" stroke="${TINTA}" stroke-width="0.8"/>`
+  );
+}
+
+/** Las marcas de una escala vertical, con sus números a la izquierda. */
+function escalaVertical(x, y0, y1, numeros, tam = 6) {
+  let s = linea(x, y0, x, y1, 0.8);
+  numeros.forEach((t, i) => {
+    const y = y1 - ((y1 - y0) * i) / (numeros.length - 1);
+    s += linea(x, y, x + 2, y, 0.8) + texto48(x - 4, y, t, tam, TINTA, 400);
+  });
+  return s;
+}
+
+/** El incrementador de un control numérico: dos flechitas en una cápsula. */
+const incrementador = (x, y, alto) =>
+  `<rect x="${x}" y="${y}" width="6" height="${alto}" rx="3" fill="#dcdcdc" stroke="${GRIS_MARCO}" stroke-width="0.8"/>` +
+  poligono([[x + 3, y + alto * 0.18], [x + 1.4, y + alto * 0.38], [x + 4.6, y + alto * 0.38]], "#6e6e6e") +
+  poligono([[x + 3, y + alto * 0.82], [x + 1.4, y + alto * 0.62], [x + 4.6, y + alto * 0.62]], "#6e6e6e");
+
+/** La casilla hundida de un control o indicador, con su texto. */
+const casilla = (x0, y0, x1, y1, t, fondo = "#fff", tam = 9) =>
+  caja(x0, y0, x1, y1, fondo, 1.2, "#7a7a7a") + texto48(x0 + 2 + (t.length * tam) / 4.2, (y0 + y1) / 2 + 0.3, t, tam, TINTA, 400);
+
+/** Un carril con relleno azul: el de un deslizador o una barra. */
+function carril(x0, y0, x1, y1, nivel, vertical) {
+  let s = caja(x0, y0, x1, y1, "#c8c8c8", 1.4, "#5a5a5a");
+  if (vertical) s += lleno(x0 + 1, y1 - (y1 - y0 - 2) * nivel - 1, x1 - 1, y1 - 1, AZUL_CONTROL);
+  else s += lleno(x0 + 1, y0 + 1, x0 + 1 + (x1 - x0 - 2) * nivel, y1 - 1, AZUL_CONTROL);
+  return s;
+}
+
+/** Un arco con marcas: la escala de un mando, un dial o un medidor. */
+function escalaCircular(cx, cy, r, desde, hasta, marcas = 7) {
+  const [x0, y0] = [cx + r * Math.cos(desde), cy + r * Math.sin(desde)];
+  const [x1, y1] = [cx + r * Math.cos(hasta), cy + r * Math.sin(hasta)];
+  let s = `<path d="M${f(x0)} ${f(y0)} A${r} ${r} 0 ${hasta - desde > Math.PI ? 1 : 0} 1 ${f(x1)} ${f(y1)}" fill="none" stroke="${TINTA}" stroke-width="0.8"/>`;
+  for (let i = 0; i < marcas; i++) {
+    const a = desde + ((hasta - desde) * i) / (marcas - 1);
+    s += linea(cx + r * Math.cos(a), cy + r * Math.sin(a), cx + (r + 2.5) * Math.cos(a), cy + (r + 2.5) * Math.sin(a), 0.8);
+  }
+  return s;
+}
+
+const aguja = (cx, cy, largo, a, color = TINTA) => linea(cx, cy, cx + largo * Math.cos(a), cy + largo * Math.sin(a), 1.4, color);
+
+const flechitasEnum = (x, y, alto) =>
+  poligono([[x + 1, y + 0.5], [x, y + alto * 0.4], [x + 2, y + alto * 0.4]], TINTA) +
+  poligono([[x + 1, y + alto - 0.5], [x, y + alto * 0.6], [x + 2, y + alto * 0.6]], TINTA);
+
+/** Carpetas de Controls ▸ Modern, en la rejilla de 16 × 16 de las subpaletas. */
+export const CARPETAS_CONTROLES = {
+  numeric: svg(
+    `<rect x="1.5" y="1" width="3" height="11" rx="1.5" fill="#fff" stroke="${TINTA}" stroke-width="0.6"/>` +
+      lleno(2.3, 5, 3.7, 12, "#d22828") + `<circle cx="3" cy="13" r="2.2" fill="#d22828" stroke="${TINTA}" stroke-width="0.6"/>` +
+      caja(6.5, 8.5, 15, 14, "#fff", 0.7, "#7a7a7a") + texto(10.8, 11.35, "1.23", 3.6),
+  ),
+  boolean: svg(
+    `<rect x="1.5" y="2" width="5" height="12" rx="2.5" fill="#dcdcdc" stroke="#7a7a7a" stroke-width="0.7"/>` +
+      `<circle cx="4" cy="5.5" r="2" fill="#9a9a9a"/>` +
+      `<circle cx="11.5" cy="10" r="3.6" fill="#3cc83c" stroke="#1e6e1e" stroke-width="0.7"/>`,
+  ),
+  "string-and-path": svg(caja(1.5, 1.5, 14.5, 7, "#fff", 0.8) + texto(8, 4.35, "abc", 4.2) + caja(1.5, 9, 14.5, 14.5, "#fff", 0.8) + texto(8, 11.85, "Path", 4)),
+  "array-matrix-and-cluster": svg(
+    caja(1, 1, 9, 7.5, "#fff", 0.7) + texto(3, 2.8, "1", 2.8) + texto(7, 2.8, "2", 2.8) + texto(3, 5.8, "3", 2.8) + texto(7, 5.8, "4", 2.8) +
+      caja(10, 1, 15, 7.5, "#fff", 0.7) +
+      caja(1, 9, 7, 15, "#fff", 0.7) + texto(4, 12, "x", 3.5) +
+      caja(8.5, 9, 15, 15, "#fff", 0.7) + lleno(9.5, 10, 12, 12.5, "#2850be") + lleno(12.5, 12.5, 14.5, 14.5, "#dc3c32"),
+  ),
+  "list-table-and-tree": svg(
+    caja(1, 1, 7.5, 6, "#fff", 0.7) + linea(2, 2.7, 6.5, 2.7, 0.6) + linea(2, 4.4, 6.5, 4.4, 0.6) +
+      linea(6, 9, 6, 14, 0.7) + linea(6, 11, 9, 11, 0.7) + linea(6, 14, 9, 14, 0.7) + linea(2, 7.5, 2, 9, 0.7) +
+      caja(1, 7.5, 4, 9, "#fff", 0.6) + caja(9, 10, 13, 12, "#fff", 0.6) + caja(9, 13, 13, 15, "#fff", 0.6),
+  ),
+  graph: svg(
+    lleno(1.5, 1, 14.5, 15, "#1e1e1e") +
+      `<polyline points="3.5,11 5.5,6 7.5,9 9.5,4 11.5,8 13,6" fill="none" stroke="#3cdc3c" stroke-width="0.9"/>` +
+      linea(3, 13, 13.5, 13, 0.5, "#dcdcdc") + linea(3, 3, 3, 13, 0.5, "#dcdcdc"),
+  ),
+  "ring-and-enum": svg(
+    caja(1, 1.5, 15, 6.5, "#fff", 0.7) + texto(6, 4.1, "Ring", 3.4) + poligono([[11.5, 3.3], [14, 3.3], [12.75, 5]], TINTA) +
+      caja(1, 9, 15, 14, "#fff", 0.7) + texto(9.5, 11.6, "Enum", 3.4) + flechitasEnum(2, 9.5, 4),
+  ),
+  containers: svg(
+    poligono([[1, 3], [6, 3], [7.5, 4.8], [15, 4.8], [15, 14], [1, 14]], "#f0f0f0", TINTA, 0.8) +
+      caja(6, 8, 12, 12.5, "#fff", 0.7) + flecha(9, 11, 0, 1, 3),
+  ),
+  io: svg(
+    caja(1.5, 1.5, 9, 7, "#fff", 0.8) + linea(3, 8.5, 7.5, 8.5, 1) +
+      caja(4, 9.5, 14.5, 14.5, "#fff", 0.8) + `<polyline points="5.5,13 7,13 7,11 9.5,11 9.5,13 11,13 11,11 13,11" fill="none" stroke="#2850be" stroke-width="0.8"/>`,
+  ),
+  "variant-and-class": svg(
+    poligono([[4, 6], [8, 4], [13, 6], [13, 12.5], [9, 14.5], [4, 12.5]], "#dcdcdc", TINTA, 0.8) + linea(9, 8, 9, 14.5, 0.8) + linea(4, 6, 9, 8, 0.8) + linea(13, 6, 9, 8, 0.8) +
+      caja(2, 1.5, 5, 3.5, "#fff", 0.6) + linea(3.5, 3.5, 3.5, 5.5, 0.6),
+  ),
+  decorations: svg(
+    `<circle cx="4.5" cy="4.5" r="3.2" fill="#f0f0f0" stroke="${TINTA}" stroke-width="0.8"/>` +
+      poligono([[11.5, 1.5], [15, 7.5], [8, 7.5]], "#f0f0f0", TINTA, 0.8) +
+      caja(1.5, 9.5, 7, 15, "#f0f0f0", 0.8) + caja(9, 9.5, 14.5, 15, "#f0f0f0", 0.8),
+  ),
+  refnum: svg(poligono([[3, 1], [10.5, 1], [13, 3.5], [13, 15], [3, 15]], "#fff", TINTA, 0.8) + texto(8, 8.8, "#", 6, TINTA, 700)),
+};
+
+const escalaHorizontal = () =>
+  linea(8, 29, 40, 29, 0.8) + [["0", 8], ["5", 24], ["10", 40]].map(([t, x]) => linea(x, 27, x, 29, 0.8) + texto48(x, 34, t, 6, TINTA, 400)).join("");
+
+/** Amplía un dibujo de 48 × 48 desde su centro: los controles de LabVIEW llenan su celda. */
+const ampliar = (k, cuerpo) => `<g transform="translate(24 24) scale(${k}) translate(-24 -24)">${cuerpo}</g>`;
+
+/** Controles de Controls ▸ Modern ▸ Numeric, en la rejilla de 48 × 48 de las funciones. */
+export const CONTROLES = {
+  "numeric-control": svg48(ampliar(1.3, incrementador(6, 16, 16) + casilla(13, 17, 42, 31, "1.23"))),
+  "numeric-indicator": svg48(ampliar(1.3, casilla(9, 17, 38, 31, "1.23", "#e4e4e4"))),
+  "time-stamp-control": svg48(ampliar(1.1, incrementador(4, 14, 20) + caja(11, 14, 44, 34, "#fff", 1.2, "#7a7a7a") + texto48(27.5, 20, "12:00", 7, TINTA, 400) + texto48(27.5, 28.5, "11/07", 7, TINTA, 400))),
+  "time-stamp-indicator": svg48(ampliar(1.15, caja(7, 14, 40, 34, "#e4e4e4", 1.2, "#7a7a7a") + texto48(23.5, 20, "12:00", 7, TINTA, 400) + texto48(23.5, 28.5, "11/07", 7, TINTA, 400))),
+  "vertical-fill-slide": svg48(ampliar(1.2, escalaVertical(15, 9, 38, ["0", "5", "10"]) + carril(22, 8, 28, 39, 0.55, true))),
+  "vertical-pointer-slide": svg48(ampliar(1.2, escalaVertical(15, 9, 38, ["0", "5", "10"]) + carril(22, 8, 28, 39, 0.55, true) + poligono([[19, 22], [31, 22], [34, 24.5], [31, 27], [19, 27]], "#f0f0f0", "#6e6e6e", 0.9),)),
+  "vertical-progress-bar": svg48(ampliar(1.2, carril(20, 8, 28, 40, 0.5, true))),
+  "vertical-graduated-bar": svg48(ampliar(1.2, carril(20, 8, 28, 40, 0.5, true) + [14, 20, 26, 32].map((y) => linea(21, y, 27, y, 0.8, "#e8e8e8")).join(""))),
+  "horizontal-fill-slide": svg48(ampliar(1.15, carril(6, 18, 42, 24, 0.55, false) + escalaHorizontal())),
+  "horizontal-pointer-slide": svg48(ampliar(1.15, carril(6, 18, 42, 24, 0.55, false) + escalaHorizontal() + poligono([[23, 15], [28, 15], [28, 25], [25.5, 28], [23, 25]], "#f0f0f0", "#6e6e6e", 0.9))),
+  "horizontal-progress-bar": svg48(ampliar(1.15, carril(6, 20, 42, 28, 0.5, false))),
+  "horizontal-graduated-bar": svg48(ampliar(1.15, carril(6, 20, 42, 28, 0.5, false) + [12, 18, 24, 30, 36].map((x) => linea(x, 21, x, 27, 0.8, "#e8e8e8")).join(""))),
+  knob: svg48(ampliar(1.2, escalaCircular(24, 27, 14, Math.PI * 0.8, Math.PI * 2.2) +
+      `<circle cx="24" cy="27" r="9" fill="#d2d2d2" stroke="#6e6e6e" stroke-width="1"/>` + aguja(24, 27, 8, Math.PI * 1.35, AZUL_CONTROL),)),
+  dial: svg48(ampliar(1.2, escalaCircular(24, 27, 14, Math.PI * 0.8, Math.PI * 2.2) +
+      `<circle cx="24" cy="27" r="10" fill="#e6e6e6" stroke="#6e6e6e" stroke-width="1"/><circle cx="24" cy="27" r="5" fill="#bebebe"/>` + aguja(24, 27, 9, Math.PI * 1.6, AZUL_CONTROL),)),
+  meter: svg48(ampliar(1.1, `<rect x="5" y="8" width="38" height="30" rx="2" fill="#f5f5f5" stroke="#6e6e6e" stroke-width="1"/>` +
+      `<path d="M11 30 A15 15 0 0 1 25 16" fill="none" stroke="#3cb43c" stroke-width="3"/><path d="M25 16 A15 15 0 0 1 38 26" fill="none" stroke="#d23c28" stroke-width="3"/>` +
+      aguja(24, 34, 16, Math.PI * 1.62, "#d22828"),)),
+  gauge: svg48(ampliar(1.1, `<circle cx="24" cy="25" r="17" fill="#f5f5f5" stroke="#6e6e6e" stroke-width="1.2"/>` + escalaCircular(24, 25, 13, Math.PI * 0.75, Math.PI * 2.25, 9) + aguja(24, 25, 12, Math.PI * 1.25))),
+  tank: svg48(ampliar(1.1, escalaVertical(14, 10, 38, ["0", "5", "10"]) + `<rect x="19" y="8" width="18" height="32" rx="4" fill="#f5f5f5" stroke="#6e6e6e" stroke-width="1"/>` + lleno(20, 22, 36, 39, AZUL_CONTROL, 3))),
+  thermometer: svg48(ampliar(1.1, escalaVertical(15, 9, 34, ["0", "50", "100"], 5.5) + termometro(26, 7, 41, 6, 0.75))),
+  "horizontal-scrollbar": svg48(
+    caja(4, 19, 44, 29, "#e8e8e8", 1, "#7a7a7a") + caja(4, 19, 12, 29, "#dcdcdc", 1, "#7a7a7a") + caja(36, 19, 44, 29, "#dcdcdc", 1, "#7a7a7a") +
+      poligono([[6, 24], [10, 21.5], [10, 26.5]], "#6e6e6e") + poligono([[42, 24], [38, 21.5], [38, 26.5]], "#6e6e6e") + caja(19, 20, 27, 28, "#cfcfcf", 0.8, "#7a7a7a"),
+  ),
+  "vertical-scrollbar": svg48(
+    caja(19, 4, 29, 44, "#e8e8e8", 1, "#7a7a7a") + caja(19, 4, 29, 12, "#dcdcdc", 1, "#7a7a7a") + caja(19, 36, 29, 44, "#dcdcdc", 1, "#7a7a7a") +
+      poligono([[24, 6], [21.5, 10], [26.5, 10]], "#6e6e6e") + poligono([[24, 42], [21.5, 38], [26.5, 38]], "#6e6e6e") + caja(20, 19, 28, 27, "#cfcfcf", 0.8, "#7a7a7a"),
+  ),
+  "framed-color-box": svg48(ampliar(1.2, `<rect x="9" y="9" width="30" height="30" rx="2" fill="#5a4a3a" stroke="${TINTA}" stroke-width="1"/>` +
+      [[18, 18, "#dc3c32"], [29, 18, "#f0be1e"], [18, 29, "#3cb43c"], [29, 29, AZUL_CONTROL]].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="4" fill="${c}"/>`).join(""),)),
+};
+
+/**
+ * El terminal de un control o indicador numérico en el diagrama, en su vista de
+ * icono: el control en pequeño, con su tipo abajo, y la flecha del lado por el
+ * que sale (control) o entra (indicador) el dato. Rejilla de 36 × 36; el borde
+ * es del color del tipo: doble y grueso en un control, fino en un indicador,
+ * como en block-diagram/numeric-terminales-icono.png.
+ */
+export function terminalPanelIcono(control, color, tipo) {
+  const borde = control
+    ? `<rect x="1.25" y="1.25" width="33.5" height="33.5" fill="none" stroke="${color}" stroke-width="2.5"/>`
+    : `<rect x="0.75" y="0.75" width="34.5" height="34.5" fill="none" stroke="${color}" stroke-width="1.5"/>`;
+  const interior = `<rect x="4.25" y="4.25" width="27.5" height="27.5" fill="#e4e4e4" stroke="${color}" stroke-width="1.5"/>`;
+  const dentro = control ? incrementador(6, 9, 13) + casilla(12.5, 11, 29, 20, "1.23", "#fff", 6.5) : casilla(9, 11, 27.5, 20, "1.23", "#fff", 6.5);
+  const flechita = control ? poligono([[29, 13], [32.5, 15.5], [29, 18]], TINTA) : poligono([[4, 13], [7.5, 15.5], [4, 18]], TINTA);
+  const etiqueta = `<rect x="10" y="25" width="16" height="9" fill="#fff" stroke="${color}" stroke-width="1.2"/>` + texto48(18, 29.8, tipo, 6.5, color, 700);
+  return svg(borde + interior + dentro + flechita + etiqueta, "0 0 36 36");
+}
+
+/**
+ * El mismo terminal sin vista de icono: una caja compacta con el tipo, de
+ * 33 × 17, como en block-diagram/numeric-terminales.png.
+ */
+export function terminalPanelCompacto(control, color, tipo) {
+  const borde = control
+    ? `<rect x="1" y="1" width="31" height="15" fill="#fff" stroke="${color}" stroke-width="2"/>`
+    : `<rect x="0.6" y="0.6" width="31.8" height="15.8" fill="#fff" stroke="${color}" stroke-width="1.2"/>`;
+  const interior = `<rect x="3.5" y="3.5" width="26" height="10" fill="#fff" stroke="${color}" stroke-width="1"/>`;
+  const flechita = control ? poligono([[25.5, 5.5], [28.5, 8.5], [25.5, 11.5]], "#4a4a3a") : poligono([[4.5, 5.5], [7.5, 8.5], [4.5, 11.5]], "#4a4a3a");
+  return svg(borde + interior + texto48(control ? 15 : 18, 8.7, tipo, 7.5, color, 700) + flechita, "0 0 33 17");
+}

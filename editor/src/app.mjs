@@ -1,9 +1,15 @@
 // Una ventana del editor: el Front Panel o el Block Diagram, según la URL.
 //
-// Pinta con vista.mjs y diagrama.mjs, y traduce los eventos del DOM a
-// estado.mjs (ventanas y paletas) y a edicion.mjs (el diagrama). No decide nada
-// por su cuenta: lo que está hecho lo dice el inventario (regla 55), y los
-// terminales de cada bloque, el catálogo (spec/03, regla 3).
+// Pinta con vista.mjs, diagrama.mjs y panel.mjs, y traduce los eventos del DOM
+// a estado.mjs (ventanas y paletas), a edicion.mjs (el diagrama) y a panel.mjs
+// (el panel). No decide nada por su cuenta: lo que está hecho lo dice el
+// inventario (regla 55), y los terminales de cada bloque, el catálogo
+// (spec/03, regla 3).
+//
+// Las dos ventanas son dos vistas del mismo VI (spec/05 §7): cada una tiene
+// una copia del grafo y, cada vez que la suya queda quieta, la manda a la otra
+// por un BroadcastChannel. Así un control puesto en el panel aparece en el
+// diagrama, y un terminal borrado en el diagrama desaparece del panel.
 
 import * as D from "./diagrama.mjs";
 import * as ED from "./edicion.mjs";
@@ -12,6 +18,7 @@ import * as G from "./glifos.mjs";
 import * as Gr from "./grafo.mjs";
 import * as H from "./historial.mjs";
 import { cargarInventario, esHueco } from "./inventario.mjs";
+import * as P from "./panel.mjs";
 import * as V from "./vista.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
@@ -23,8 +30,9 @@ const [inv, cat] = await Promise.all([
   fetch("/blocks.json").then((r) => r.json()).then(Gr.cargarCatalogo),
 ]);
 const glifos = D.glifosPorBloque(inv);
-/** Sólo el Block Diagram tiene diagrama. */
+/** El Block Diagram edita el diagrama; el Front Panel, el panel. */
 const conDiagrama = nombre === "block-diagram";
+const conPanel = nombre === "front-panel";
 
 /** ¿Está instalada esta fuente? `document.fonts.check` no sirve para las del sistema. */
 function existe(fuente) {
@@ -40,7 +48,15 @@ document.documentElement.style.setProperty("--fuente", existe("Segoe UI") ? "12p
 
 /** El separador decimal del sistema: LabVIEW usa el del idioma de Windows. */
 const separador = (1.5).toLocaleString(navigator.language).includes(",") ? "," : ".";
-const ctx = D.contexto(cat, glifos, separador);
+/** El ancho de un texto en la fuente de la ventana, medido en un lienzo: el de los menús y las etiquetas. */
+const medirMenu = (() => {
+  const lienzo = document.createElement("canvas").getContext("2d");
+  return (t) => {
+    lienzo.font = `${getComputedStyle(document.documentElement).getPropertyValue("--fuente")} "Segoe UI", "Noto Sans", sans-serif`;
+    return lienzo.measureText(t).width;
+  };
+})();
+const ctx = D.contexto(cat, glifos, separador, medirMenu);
 
 // Los cursores de la herramienta automática de LabVIEW.
 for (const [clave, c] of Object.entries(G.CURSORES)) {
@@ -49,7 +65,41 @@ for (const [clave, c] of Object.entries(G.CURSORES)) {
 
 let estado = E.inicial();
 let dia = ED.inicial();
+let pan = P.inicial(dia.g);
 let historial = H.nuevo(dia.g);
+
+/** El grafo de esta ventana. */
+const grafo = () => (conDiagrama ? dia.g : pan.g);
+
+// ——— Las dos ventanas, un solo VI ———
+
+const canal = new BroadcastChannel("telekino-vi");
+/** El último grafo que se mandó a la otra ventana o que llegó de ella. */
+let publicado = dia.g;
+
+/**
+ * El grafo ha quedado quieto —sin nada a medias ni texto a medio escribir—:
+ * el paso se guarda para deshacerlo y la otra ventana lo recibe.
+ */
+function quieto(g) {
+  historial = H.registrar(historial, g);
+  if (g === publicado) return;
+  publicado = g;
+  canal.postMessage({ g });
+}
+
+canal.onmessage = ({ data }) => {
+  // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
+  if (data.pide) return canal.postMessage({ g: grafo() });
+  // Lo que ya se tiene no es un paso nuevo: la respuesta a una ventana recién abierta, por ejemplo.
+  if (!data.g || JSON.stringify(data.g) === JSON.stringify(grafo())) return;
+  publicado = data.g;
+  historial = H.registrar(historial, data.g);
+  if (conDiagrama) dia = ED.recibir(dia, data.g);
+  else pan = P.recibir(pan, data.g);
+  pintar();
+};
+canal.postMessage({ pide: true });
 
 /** Lo que no se activa con un clic: la ventana, el lienzo y el fondo de las paletas. */
 const inerte = (el) => el.dataset.id === prefijo || el.dataset.id === `${prefijo}.workspace` || el.classList.contains("paleta");
@@ -66,28 +116,23 @@ function dentro(el, max) {
   if (r.bottom > max.height) el.style.top = `${Math.max(0, max.height - r.height - 2)}px`;
 }
 
-/** El ancho de un texto de menú en la fuente de la ventana, medido en un lienzo. */
-const medirMenu = (() => {
-  const lienzo = document.createElement("canvas").getContext("2d");
-  return (t) => {
-    lienzo.font = `${getComputedStyle(document.documentElement).getPropertyValue("--fuente")} "Segoe UI", "Noto Sans", sans-serif`;
-    return lienzo.measureText(t).width;
-  };
-})();
 
 function pintar() {
-  let extra = {};
+  const resueltos = Gr.tipos(grafo(), cat);
+  const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos) };
   if (conDiagrama) {
-    const resueltos = Gr.tipos(dia.g, cat);
-    extra = {
-      lienzo: D.contenido(dia, ctx, resueltos),
-      encima: dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu) : "",
-      runRoto: !Gr.ejecutable(dia.g, cat, resueltos),
-      editandoTexto: !!dia.edicion,
-    };
+    extra.lienzo = D.contenido(dia, ctx, resueltos);
+    extra.encima = dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu) : "";
+    extra.editandoTexto = !!dia.edicion;
+  } else {
+    extra.lienzo = P.contenido(pan, ctx);
+    extra.editandoTexto = !!pan.edicion;
   }
   document.body.innerHTML = V.ventana(inv, nombre, estado, extra);
-  document.querySelector(".ventana").classList.toggle("cableando", dia.accion?.tipo === "cablear");
+  const ventana = document.querySelector(".ventana");
+  ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
+  // Mientras se arrastra un control desde la paleta, el lienzo lleva un borde punteado.
+  ventana.classList.toggle("colocando", pan.accion?.tipo === "colocar" && !!pan.accion.arrastrado);
   const tam = { width: innerWidth, height: innerHeight };
   for (const el of document.querySelectorAll(".paleta, .explicacion, .menu-contextual")) dentro(el, tam);
   if (tip.visible) ponerTip();
@@ -107,14 +152,25 @@ function cambiar(nuevo) {
 function cambiarDiagrama(nuevo) {
   if (nuevo === dia) return;
   dia = nuevo;
-  if (!dia.accion && !dia.edicion) historial = H.registrar(historial, dia.g);
+  if (!dia.accion && !dia.edicion) quieto(dia.g);
+  pintar();
+}
+
+/** Cambiar el panel. Como el diagrama: el paso se guarda cuando queda quieto. */
+function cambiarPanel(nuevo) {
+  if (nuevo === pan) return;
+  pan = nuevo;
+  if (!pan.accion && !pan.edicion) quieto(pan.g);
   pintar();
 }
 
 function volver(r) {
   if (!r) return;
   historial = r.h;
-  dia = { ...dia, g: r.g, seleccion: [], accion: null, menu: null, edicion: null };
+  if (conDiagrama) dia = { ...dia, g: r.g, seleccion: [], accion: null, menu: null, edicion: null };
+  else pan = { ...pan, g: r.g, seleccion: [], accion: null, edicion: null };
+  publicado = r.g;
+  canal.postMessage({ g: r.g });
   pintar();
 }
 
@@ -130,6 +186,8 @@ function punto(ev) {
  */
 function objetivo(el) {
   if (!el?.closest(".lienzo")) return null;
+  const etiqueta = el.closest(".etiqueta");
+  if (etiqueta) return { tipo: "etiqueta", id: etiqueta.dataset.etiqueta };
   const asa = el.closest(".asa");
   if (asa) return { tipo: "asa", nodo: asa.dataset.nodo, lado: asa.dataset.asa };
   const t = el.closest(".terminal");
@@ -138,6 +196,16 @@ function objetivo(el) {
   if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo };
   const c = el.closest(".tramo-zona");
   if (c) return { tipo: "tramo", cable: c.dataset.cable, k: Number(c.dataset.tramo) };
+  return { tipo: "fondo" };
+}
+
+/** Qué hay bajo el ratón en el panel: una etiqueta, un objeto o el fondo. Fuera del lienzo, nada. */
+function objetivoPanel(el) {
+  if (!el?.closest(".lienzo")) return null;
+  const etiqueta = el.closest(".etiqueta");
+  if (etiqueta) return { tipo: "etiqueta", id: etiqueta.dataset.etiqueta };
+  const o = el.closest(".objeto-panel");
+  if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
 }
 
@@ -159,11 +227,16 @@ addEventListener("mousedown", (ev) => {
   // temporal, se cierra, y el bloque cuelga del cursor hasta soltarlo.
   const funcion = ev.target.closest(".paleta .icono-funcion");
   const e = funcion && inv.resolver(funcion.dataset.id);
-  if (conDiagrama && e && !esHueco(e) && e.bloque) {
+  if (e && !esHueco(e) && e.bloque && !!cat.bloque(e.bloque).panel === conPanel) {
     ev.preventDefault();
     estado = { ...estado, paleta: null, abierta: null };
-    dia = ED.moverA(ED.coger(dia, e.bloque), ctx, punto(ev));
-    dia = { ...dia, accion: { ...dia.accion, arrastrado: false } };
+    if (conDiagrama) {
+      dia = ED.moverA(ED.coger(dia, e.bloque), ctx, punto(ev));
+      dia = { ...dia, accion: { ...dia.accion, arrastrado: false } };
+    } else {
+      pan = P.moverA(P.coger(pan, e.bloque), ctx, punto(ev));
+      pan = { ...pan, accion: { ...pan.accion, arrastrado: false } };
+    }
     return pintar();
   }
   if (estado.paleta || estado.abierta) {
@@ -172,7 +245,7 @@ addEventListener("mousedown", (ev) => {
     if (enPaleta && (enExplicacion || !estado.abierta)) return;
     return cambiar(E.clicFuera(estado, { enPaleta, enExplicacion }));
   }
-  if (!conDiagrama) return;
+  if (conPanel) return pulsarPanel(ev);
   const sobreDiagrama = objetivo(ev.target);
   if (!sobreDiagrama) {
     // Fuera del lienzo: Enter Text, o cualquier otro sitio, confirma lo que se escribe.
@@ -183,14 +256,35 @@ addEventListener("mousedown", (ev) => {
   ev.preventDefault();
   // El doble clic en una constante la edita. Se mira el número de pulsación y
   // no el evento dblclick, que se pierde si el primer clic repinta.
+  if (ev.detail >= 2 && sobreDiagrama.tipo === "etiqueta") return cambiarDiagrama(ED.editarEtiqueta(dia, sobreDiagrama.id));
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
   if (id && D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable) return cambiarDiagrama(ED.editar(dia, ctx, id));
   cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey));
 });
 
+/** Pulsar en el panel: como en el diagrama, un doble clic en una etiqueta escribe en ella. */
+function pulsarPanel(ev) {
+  const sobre = objetivoPanel(ev.target);
+  if (!sobre) {
+    // Fuera del lienzo: Enter Text, o cualquier otro sitio, confirma lo que se escribe.
+    if (pan.edicion) return cambiarPanel(P.confirmar(pan));
+    if (pan.accion) cambiarPanel(P.escape(pan));
+    return;
+  }
+  ev.preventDefault();
+  if (ev.detail >= 2 && sobre.tipo === "etiqueta") return cambiarPanel(P.editar(pan, sobre.id));
+  cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey));
+}
+
 addEventListener("mousemove", (ev) => {
   mostrarTip(ev);
-  if (!conDiagrama) return;
+  if (conPanel) {
+    if (pan.accion) {
+      pan = P.moverA(pan, ctx, punto(ev));
+      pintar();
+    }
+    return;
+  }
   let nuevo = dia;
   const item = ev.target.closest(".item-menu");
   if (nuevo.menu && item) nuevo = ED.sobreMenu(nuevo, item.dataset.id, inv.tieneContenido(item.dataset.id));
@@ -203,7 +297,9 @@ addEventListener("mousemove", (ev) => {
 });
 
 addEventListener("mouseup", (ev) => {
-  if (ev.button !== 0 || !conDiagrama || !dia.accion) return;
+  if (ev.button !== 0) return;
+  if (conPanel && pan.accion) return cambiarPanel(P.soltar(pan, ctx, objetivoPanel(document.elementFromPoint(ev.clientX, ev.clientY)), punto(ev)));
+  if (!conDiagrama || !dia.accion) return;
   cambiarDiagrama(ED.soltar(dia, ctx, objetivo(document.elementFromPoint(ev.clientX, ev.clientY)), punto(ev)));
 });
 
@@ -230,6 +326,13 @@ addEventListener("click", (ev) => {
 addEventListener("contextmenu", (ev) => {
   ev.preventDefault();
   if (!ev.target.closest(".lienzo")) return;
+  // En el panel, la paleta sale sobre el fondo. El menú de un control aún no
+  // está capturado: sobre él, el clic derecho no hace nada.
+  if (conPanel) {
+    if (pan.edicion) pan = P.confirmar(pan);
+    if (objetivoPanel(ev.target)?.tipo !== "fondo") return cambiarPanel(pan);
+    quieto(pan.g);
+  }
   // Sobre un nodo, su menú; sobre el fondo, la paleta.
   const o = conDiagrama && objetivo(ev.target);
   const id = nodoDe(o);
@@ -248,13 +351,31 @@ addEventListener("keydown", (ev) => {
   const ctrl = ev.ctrlKey || ev.metaKey;
   if (conDiagrama && dia.edicion && !ctrl) {
     ev.preventDefault();
-    if (ev.key === "Enter") return cambiarDiagrama(ED.confirmar(dia, ctx));
+    // En una constante Intro confirma; en una etiqueta empieza otra línea, y
+    // se confirma con Enter Text o con un clic fuera, como en LabVIEW.
+    if (ev.key === "Enter" && !dia.edicion.etiqueta) return cambiarDiagrama(ED.confirmar(dia, ctx));
     if (ev.key === "Escape") return cambiarDiagrama(ED.escape(dia));
     return cambiarDiagrama(ED.teclear(dia, ev.key));
   }
+  if (conPanel && pan.edicion && !ctrl) {
+    ev.preventDefault();
+    if (ev.key === "Escape") return cambiarPanel(P.escape(pan));
+    return cambiarPanel(P.teclear(pan, ev.key));
+  }
   if (ev.key === "Escape") {
     if (estado.paleta || estado.abierta) return cambiar(E.escape(estado));
-    return conDiagrama && cambiarDiagrama(ED.escape(dia));
+    return conDiagrama ? cambiarDiagrama(ED.escape(dia)) : cambiarPanel(P.escape(pan));
+  }
+  if (conPanel && !estado.paleta) {
+    if (ctrl && ev.key.toLowerCase() === "z" && !pan.accion) {
+      ev.preventDefault();
+      return volver(ev.shiftKey ? H.rehacer(historial) : H.deshacer(historial));
+    }
+    if (ev.key === "Delete" || ev.key === "Backspace") return cambiarPanel(P.borrarSeleccion(pan));
+    if (ev.key.startsWith("Arrow")) {
+      ev.preventDefault();
+      return cambiarPanel(P.flecha(pan, ctx, ev.key, ev.shiftKey));
+    }
   }
   if (conDiagrama && !estado.paleta) {
     if (ctrl && ev.key.toLowerCase() === "z" && !dia.accion) {
@@ -366,8 +487,8 @@ function ocultarTip() {
 function mostrarTip(ev) {
   const el = ev.target.closest?.("[data-tip]");
   const e = el?.dataset.id && inv.resolver(el.dataset.id);
-  const quieto = ["colocar", "mover", "tramo", "rectangulo"].includes(dia.accion?.tipo);
-  if (!el || (e && esHueco(e)) || quieto || dia.menu) return ocultarTip();
+  const ocupado = ["colocar", "mover", "tramo", "rectangulo", "etiqueta"].includes((dia.accion ?? pan.accion)?.tipo);
+  if (!el || (e && esHueco(e)) || ocupado || dia.menu) return ocultarTip();
   const clave = `${el.dataset.nodo ?? ""}.${el.dataset.puerto ?? el.dataset.cable ?? el.dataset.id ?? ""}`;
   if (clave === tip.clave) return;
   ocultarTip();

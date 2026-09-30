@@ -236,14 +236,17 @@ para que la interfaz no crezca sin programa detrás.
    DT-037 (g) y DT-038 (c). *(2026-09-30: [DT-039](05-decisiones.md#dt-039),
    con la propuesta tal cual.)*
 3. [ ] **Rebanada vertical**: constante → Add → indicador numérico.
-   - [ ] Un indicador numérico en el *Front Panel*, con su terminal en el
-     diagrama (spec/05 regla 38), desde **Controls ▸ Numeric**.
+   - [x] Un indicador numérico en el *Front Panel*, con su terminal en el
+     diagrama (spec/05 regla 38), desde **Controls ▸ Numeric**. *(2026-09-30:
+     también el control, con sus etiquetas, calcados del vídeo
+     `front-panel/numeric-colocar-etiquetas.mp4`.)*
    - [ ] **Guardar y abrir** el VI como `.qvi`, con codos, configuración y tipos
      (round-trip exacto: criterio de R2).
    - [ ] **Run** de verdad: compilar a WebAssembly y ver el resultado en el
      indicador. Run y Save dejan de ser huecos.
 4. [ ] **Calcar por prioridad de adquisición**, no por orden de la paleta:
-   - [ ] Controls ▸ Numeric (controles e indicadores).
+   - [ ] Controls ▸ Numeric (controles e indicadores). *(Hechos el control y
+     el indicador numéricos; faltan los otros 19 de la subpaleta.)*
    - [ ] Structures: While Loop y For Loop.
    - [ ] Comparison y Boolean.
    - [ ] Timing: Wait (ms).

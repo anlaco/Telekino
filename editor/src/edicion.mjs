@@ -15,13 +15,16 @@
 //     { tipo: "tramo", cable, k, x, y }                arrastrando un tramo de un cable
 //     { tipo: "rectangulo", x0, y0, x1, y1, base }     seleccionar arrastrando por el fondo
 //     { tipo: "estirar", nodo, lado, y, g0 }           estirar un nodo por su asa
+//     { tipo: "etiqueta", nodo, x, y }                 arrastrando una etiqueta sola
 //   sobre      el nodo, y el terminal, que hay bajo el ratón: enseña sus pistas
-//   edicion    { nodo, texto, todo } mientras se escribe en una constante
+//   edicion    { nodo, texto, todo } mientras se escribe en una constante, o
+//              { nodo, etiqueta: true, texto, todo } en la etiqueta de un nodo
 //   menu       { raiz, nodo, puerto, x, y, abierto } el menú de clic derecho de un
 //              nodo o de uno de sus terminales
 //   aviso      por qué no se pudo hacer lo último (spec/05 regla 31)
 
-import { CONSTANTES, MEDIDAS_COMPUESTO, caja, codosPorDefecto, dentroDe, extremos, moverTramo, terminales } from "./diagrama.mjs";
+import { CONSTANTES, MEDIDAS_COMPUESTO, caja, cajaEtiqueta, codosPorDefecto, dentroDe, extremos, moverTramo, terminales } from "./diagrama.mjs";
+import * as Et from "./etiquetas.mjs";
 import * as Gr from "./grafo.mjs";
 import { esEntero, leerNumero } from "./tipos.mjs";
 
@@ -34,6 +37,7 @@ const AGARRE = { x: 4, y: 4 };
 
 const lejos = (a, p) => Math.abs(p.x - a.x) > UMBRAL || Math.abs(p.y - a.y) > UMBRAL;
 const cableDe = (id) => id.split("#")[0];
+const esEtiqueta = (id) => id.endsWith("#etiqueta");
 
 /** Coger un bloque de la paleta: queda colgando del cursor hasta soltarlo en el diagrama. */
 export const coger = (d, bloque) => ({ ...d, accion: { tipo: "colocar", bloque }, aviso: null, menu: null });
@@ -54,7 +58,8 @@ export function pulsar(d, ctx, sobre, p, shift = false) {
   if (d.menu) return { ...d, menu: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
-  if (d.edicion && !(sobre.tipo === "nodo" && sobre.id === d.edicion.nodo)) return confirmar(d, ctx);
+  const enLoQueSeEscribe = sobre.id === d.edicion?.nodo && sobre.tipo === (d.edicion?.etiqueta ? "etiqueta" : "nodo");
+  if (d.edicion && !enLoQueSeEscribe) return confirmar(d, ctx);
   if (d.edicion) return d;
   const { accion } = d;
   if (accion?.tipo === "colocar") return colocar(d, ctx, p);
@@ -71,6 +76,8 @@ export function pulsar(d, ctx, sobre, p, shift = false) {
     return shift ? (ya ? d.seleccion.filter((s) => s !== id) : [...d.seleccion, id]) : ya ? d.seleccion : [id];
   };
   if (sobre.tipo === "nodo") return { ...d0, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: p.x, y: p.y } };
+  // Una etiqueta se agarra sola: moverla no mueve su terminal.
+  if (sobre.tipo === "etiqueta") return { ...d0, seleccion: elegir(`${sobre.id}#etiqueta`), accion: { tipo: "etiqueta", nodo: sobre.id, x: p.x, y: p.y } };
   if (sobre.tipo === "tramo") {
     // Un clic en un cable selecciona ese tramo, y arrastrarlo lo mueve de lado.
     return { ...d0, seleccion: elegir(`${sobre.cable}#${sobre.k}`), accion: { tipo: "tramo", cable: sobre.cable, k: sobre.k, x: p.x, y: p.y } };
@@ -109,6 +116,12 @@ export function moverA(d, ctx, p) {
     }
     case "rectangulo":
       return { ...d, accion: { ...accion, x1: p.x, y1: p.y } };
+    case "etiqueta": {
+      const [dx, dy] = [Math.round(p.x - accion.x), Math.round(p.y - accion.y)];
+      if (!dx && !dy) return d;
+      const k = cajaEtiqueta(d.g.nodos.find((n) => n.id === accion.nodo), ctx);
+      return { ...d, g: Gr.fijarSitioEtiqueta(d.g, accion.nodo, "diagrama", k.dx + dx, k.dy + dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy } };
+    }
     case "estirar": {
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
       // entran encima y las que había conservan sus cables.
@@ -154,6 +167,7 @@ export function soltar(d, ctx, sobre, p) {
     case "mover":
     case "tramo":
     case "estirar":
+    case "etiqueta":
       return { ...d, accion: null };
     case "cablear":
       if (!accion.arrastrado) return d; // un clic en el terminal: el cable sigue al ratón
@@ -190,10 +204,17 @@ export function editar(d, ctx, id) {
   return { ...d, edicion: { nodo: id, texto: CONSTANTES[n.tipo].texto(n, ctx), todo: true }, seleccion: [id], accion: null, menu: null };
 }
 
-/** Una tecla mientras se escribe: lo seleccionado se sustituye. */
+/** Doble clic en la etiqueta de un nodo: se escribe en ella, con todo su texto seleccionado. */
+export function editarEtiqueta(d, id) {
+  const n = d.g.nodos.find((k) => k.id === id);
+  return n?.label ? { ...d, edicion: Et.editar(n), seleccion: [], accion: null, menu: null } : d;
+}
+
+/** Una tecla mientras se escribe: lo seleccionado se sustituye. En una etiqueta, Intro empieza otra línea. */
 export function teclear(d, tecla) {
   const e = d.edicion;
   if (!e) return d;
+  if (e.etiqueta) return { ...d, edicion: Et.teclear(e, tecla) };
   if (tecla === "Backspace") return { ...d, edicion: { ...e, texto: e.todo ? "" : e.texto.slice(0, -1), todo: false } };
   if (tecla.length !== 1) return d;
   return { ...d, edicion: { ...e, texto: e.todo ? tecla : e.texto + tecla, todo: false } };
@@ -207,6 +228,7 @@ export function teclear(d, tecla) {
 export function confirmar(d, ctx) {
   const e = d.edicion;
   if (!e) return d;
+  if (e.etiqueta) return { ...d, g: Gr.fijarEtiqueta(d.g, e.nodo, e.texto), edicion: null };
   const n = d.g.nodos.find((k) => k.id === e.nodo);
   const b = ctx.cat.bloque(n.tipo);
   const tipo = n.config?.type ?? b.config?.default?.type ?? "number";
@@ -241,6 +263,7 @@ export function orden(d, id, ctx) {
   const cerrar = (g) => ({ ...d, g, menu: null });
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   if (id.endsWith(".visible-items.terminals")) return cerrar(Gr.alternarTerminales(d.g, nodo));
+  if (id.endsWith(".view-as-icon")) return cerrar(Gr.alternarIcono(d.g, nodo));
   if (id.endsWith(".invert")) return cerrar(Gr.alternarInvertida(d.g, nodo, puerto ?? "result"));
   if (id.endsWith(".add-input")) return cerrar(Gr.anadirEntrada(d.g, ctx.cat, nodo, puerto));
   if (id.endsWith(".remove-input")) return cerrar(Gr.quitarEntrada(d.g, ctx.cat, nodo, puerto));
@@ -256,6 +279,7 @@ export function marcados(d) {
   const r = d.menu.raiz;
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
+  if (!n.vista?.compacto) m.add(`${r}.view-as-icon`);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if ((n.config?.inverted ?? []).includes(d.menu.puerto ?? "result")) m.add(`${r}.invert`);
   return m;
@@ -296,8 +320,18 @@ export function escape(d) {
  * Supr y Retroceso borran la selección, con los cables de los nodos (spec/05
  * regla 28). Un tramo seleccionado borra su cable entero.
  */
-export const borrarSeleccion = (d) =>
-  d.seleccion.length ? { ...d, g: Gr.borrar(d.g, d.seleccion.map(cableDe)), seleccion: [], aviso: null } : d;
+export function borrarSeleccion(d) {
+  const ids = d.seleccion.filter((id) => !esEtiqueta(id)).map(cableDe);
+  return ids.length ? { ...d, g: Gr.borrar(d.g, ids), seleccion: [], aviso: null } : d;
+}
+
+/** El grafo cambió en la otra ventana: se toma, y lo que ya no existe deja de estar seleccionado. */
+export function recibir(d, g) {
+  const existe = new Set([...g.nodos.map((n) => n.id), ...g.cables.map((c) => c.id)]);
+  const seleccion = d.seleccion.filter((id) => existe.has(id.split("#")[0]));
+  const edicion = d.edicion && existe.has(d.edicion.nodo) ? d.edicion : null;
+  return { ...d, g, seleccion, edicion, accion: null, menu: d.menu && existe.has(d.menu.nodo) ? d.menu : null };
+}
 
 /**
  * Las flechas mueven la selección un píxel; con Shift, 8 (spec/05 regla 36).

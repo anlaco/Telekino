@@ -321,3 +321,43 @@ svg { display: block; overflow: visible; }
   position: absolute; left: -6px; top: -6px; width: 44px; height: 44px; pointer-events: none;
   border: 0.667px solid #2a8ddd; box-shadow: 0 0 0 0.667px #cee2f2, inset 0 0 0 0.667px #7cb8e7;
 }
+
+/* El panel: controles e indicadores numéricos, de front-panel/numeric-panel.png
+   y del vídeo numeric-colocar-etiquetas.mp4. La casilla es blanca en un control
+   y gris en un indicador, hundida con un bisel. */
+.lienzo-front-panel { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
+.objeto-panel { position: absolute; cursor: default; }
+.objeto-panel .incrementador { position: absolute; left: 0; top: 0; width: 16px; height: 100%; }
+.casilla {
+  position: absolute; top: 0; bottom: 0; box-sizing: border-box;
+  border: 4px solid; border-color: #c2c2c2 #ececec #f2f2f2 #cacaca;
+  background: #fafafa; box-shadow: inset 1px 1px 0 #a8a8a8;
+  display: flex; align-items: center; padding-left: 2px;
+  font-size: var(--fuente); line-height: 1; white-space: nowrap; overflow: hidden;
+}
+.casilla.indicador { background: #d1d1d1; }
+.objeto-panel.seleccionado::before, .etiqueta.seleccionada::before {
+  content: ""; position: absolute; inset: -2.5px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) bottom / 100% 1px no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) left / 1px 100% no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) right / 1px 100% no-repeat;
+}
+/* Mientras se arrastra un control desde la paleta: su contorno punteado y un
+   borde punteado alrededor del lienzo, como en el vídeo. */
+.contorno-colocar { position: absolute; border: 1px dashed #000; pointer-events: none; }
+.contorno-colocar.objeto { border-color: #c0203a; }
+.ventana.colocando .lienzo { outline: 1px dashed #000; outline-offset: -2px; }
+
+/* Las etiquetas de los controles, en el panel y en el diagrama: el texto libre
+   que se escribe al soltar el control (DT-022). */
+.etiqueta {
+  position: absolute; box-sizing: border-box; padding: 0 1px; cursor: default;
+  font-size: var(--fuente); line-height: 15px; white-space: pre; color: #000;
+}
+.etiqueta.editando { cursor: text; }
+.etiqueta .caret { display: inline-block; vertical-align: -2px; }
+.glifo-terminal-panel { position: absolute; inset: 0; pointer-events: none; }
+.glifo-terminal-panel svg { width: 100%; height: 100%; display: block; }
+.glifo-terminal-panel text { font-family: Arial, "Liberation Sans", sans-serif; }

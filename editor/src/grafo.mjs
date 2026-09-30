@@ -5,8 +5,9 @@
 // (reglas 1 y 3), un cable válido y el motivo de uno roto (regla 5 y
 // spec/05-editor.md regla 31), la entrada que ya tiene cable se sustituye
 // (spec/05 regla 32), los tipos se resuelven hacia delante (regla 2c) y los
-// ciclos se devuelven como dato (regla 9). Es provisional: cuando exista el
-// núcleo tk-graph, el editor lo llamará a él (regla 4; DT-038 §4).
+// ciclos se devuelven como dato (regla 9). Los controles e indicadores son
+// nodos con sitio en los dos lienzos y una etiqueta (spec/05 §7). Pasará al
+// núcleo, `nucleo/`, cuando se escriba el compilador (DT-039).
 //
 // Módulo puro y sin mutaciones: cada operación devuelve un diagrama nuevo.
 
@@ -67,6 +68,50 @@ export function crearNodo(g, cat, tipo, x, y) {
   }
   return { g: { ...g, nodos: [...g.nodos, nodo], siguiente: g.siguiente + 1 }, id };
 }
+
+/**
+ * La etiqueta que LabVIEW da a un control nuevo: la de su clase («Numeric») y,
+ * si ya hay una igual en el VI, con un número detrás («Numeric 2»).
+ */
+export function etiquetaLibre(g, base) {
+  const usadas = new Set(g.nodos.map((n) => n.label?.text));
+  if (!usadas.has(base)) return base;
+  let k = 2;
+  while (usadas.has(`${base} ${k}`)) k++;
+  return `${base} ${k}`;
+}
+
+/**
+ * Pone un control o un indicador: el objeto en el panel, en (px, py), y su
+ * terminal en el diagrama, en el mismo sitio (spec/05 regla 38). Son un solo
+ * nodo con una posición en cada lienzo y una sola etiqueta, que es la de los
+ * dos.
+ */
+export function crearEnPanel(g, cat, tipo, px, py, etiqueta) {
+  if (!cat.bloque(tipo).panel) throw new Error(`«${tipo}» no es un control ni un indicador`);
+  const r = crearNodo(g, cat, tipo, px, py);
+  const texto = etiquetaLibre(g, etiqueta);
+  return { g: cambiarNodo(r.g, r.id, (n) => ({ ...n, label: { text: texto }, panel: { x: px, y: py } })), id: r.id };
+}
+
+/** Mueve objetos del panel: su terminal en el diagrama no se mueve. */
+export function moverEnPanel(g, ids, dx, dy) {
+  const mueve = new Set(ids);
+  return { ...g, nodos: g.nodos.map((n) => (mueve.has(n.id) && n.panel ? { ...n, panel: { ...n.panel, x: n.panel.x + dx, y: n.panel.y + dy } } : n)) };
+}
+
+/** Cambia el texto de la etiqueta de un nodo: se ve igual en los dos lienzos. */
+export const fijarEtiqueta = (g, id, text) => cambiarNodo(g, id, (n) => ({ ...n, label: { ...n.label, text } }));
+
+/**
+ * Fija dónde va la etiqueta respecto a su objeto en un lienzo, `"panel"` o
+ * `"diagrama"`: en cada uno se mueve por separado, como en el vídeo.
+ */
+export const fijarSitioEtiqueta = (g, id, lienzo, dx, dy) =>
+  cambiarNodo(g, id, (n) => (lienzo === "panel" ? { ...n, panel: { ...n.panel, etiqueta: [dx, dy] } } : { ...n, etiqueta: [dx, dy] }));
+
+/** View As Icon: el terminal de un control se ve con el icono del control o como una caja compacta. */
+export const alternarIcono = (g, id) => cambiarNodo(g, id, (n) => ({ ...n, vista: { ...n.vista, compacto: !n.vista?.compacto } }));
 
 /** Mueve nodos: sólo cambia la presentación (spec/05 regla 25). */
 export function mover(g, ids, dx, dy) {
@@ -310,9 +355,11 @@ export function tipos(g, cat) {
 /**
  * ¿Se puede ejecutar el VI? No, si hay un cable roto o una entrada sin cable ni
  * valor por defecto (spec/03 regla 10). Es lo que pone la flecha de Run rota.
+ * El terminal de un indicador no cuenta: sin cable, conserva su valor, como en
+ * LabVIEW.
  */
 export function ejecutable(g, cat, resueltos) {
   if ([...resueltos.cables.values()].some((c) => c.roto)) return false;
   const llegan = new Set(g.cables.map((c) => `${c.a.nodo}.${c.a.puerto}`));
-  return g.nodos.every((n) => cat.puertos(n).in.every((p) => p.default !== undefined || llegan.has(`${n.id}.${p.name}`)));
+  return g.nodos.every((n) => cat.bloque(n.tipo).panel || cat.puertos(n).in.every((p) => p.default !== undefined || llegan.has(`${n.id}.${p.name}`)));
 }

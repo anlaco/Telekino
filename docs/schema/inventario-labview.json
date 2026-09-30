@@ -39,6 +39,19 @@
     "El de la constante sale cortado tras Replace: lo que sigue no está declarado.",
     "El menú Edit sigue sin capturar, aunque Ctrl+Z ya deshace en el diagrama.",
     "",
+    "PALETA DE CONTROLES Y PANEL: capturas paletas/controls.png (normal),",
+    "paletas/controls-desplegada.png (con las categorías ocultas) y",
+    "paletas/controls-numeric.png, y el vídeo front-panel/numeric-colocar-etiquetas.mp4",
+    "con sus fotogramas: front-panel/numeric-*.png, block-diagram/numeric-terminales*.png",
+    "y los menús de clic derecho de los terminales, block-diagram/numeric-menu-control.png",
+    "y numeric-menu-indicador.png (2026-09-30). Nombres de las carpetas de Modern y",
+    "de los controles de Numeric según la ayuda de NI («Modern Palette», «Numeric",
+    "Controls»). FUERA, por ser módulos o toolkits: las categorías Control &",
+    "Simulation y TestStand. Hechos el control y el indicador numéricos: se ponen",
+    "en el panel con su terminal en el diagrama, y su etiqueta se escribe y se",
+    "mueve en cada lienzo. El menú de clic derecho de un control en el panel no",
+    "está capturado.",
+    "",
     "COMPOUND ARITHMETIC: vídeo block-diagram/compound-arithmetic.mp4, sus fotogramas",
     "block-diagram/compound-*.png y la captura compound-menu.png (2026-09-30): el",
     "menú del nodo y el de una entrada. Los submenús salen cortados por la ventana:",
@@ -159,6 +172,12 @@
     "asistente-externo": {
       "desc": "Lanzar desde el editor un asistente de IA externo que trabaje sobre el .qvi",
       "ref": "design/05-decisiones.md, DT-036"
+    },
+    "estilos-de-controles": {
+      "desc": "Los otros estilos de los controles de LabVIEW (Fuse, Silver, System, Classic): el mismo control con otro aspecto"
+    },
+    "controles-de-plataforma": {
+      "desc": "Controles que incrustan componentes de la plataforma, como .NET y ActiveX en Windows. Sin decidir si Telekino tendrá un equivalente"
     },
     "sub-vis": {
       "desc": "Usar un VI como subVI: su connector pane y su llamada compilada",
@@ -484,9 +503,8 @@
     {
       "id": "window.front-panel",
       "etiqueta": "Front Panel",
-      "estado": "todo",
-      "labview": "El panel de un VI: sus controles e indicadores. Es la interfaz de quien lo usa.",
-      "necesita": "panel-frontal",
+      "estado": "built",
+      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "front-panel/vi-nuevo.png"
     },
     {
@@ -552,6 +570,13 @@
       "labview": "Ayuda de LabVIEW. Contenido sin capturar.",
       "necesita": "editor-escritorio",
       "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.toolbar.enter-text",
+      "etiqueta": "Enter Text",
+      "estado": "built",
+      "prueba": "editor/test/panel.test.mjs::al_soltar_un_control_su_etiqueta_se_edita_y_enter_añade_una_línea",
+      "captura": "front-panel/numeric-panel.png"
     },
     {
       "id": "window.front-panel.toolbar.run",
@@ -689,9 +714,8 @@
     {
       "id": "window.front-panel.workspace",
       "etiqueta": "Workspace",
-      "estado": "todo",
-      "labview": "Lienzo del panel, con rejilla. El clic derecho abre la paleta de controles.",
-      "necesita": "panel-frontal",
+      "estado": "built",
+      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "front-panel/vi-nuevo.png"
     },
 
@@ -1525,6 +1549,414 @@
     },
 
     {
+      "id": "palette.controls",
+      "etiqueta": "Controls",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::el_clic_derecho_en_el_panel_abre_la_paleta_de_controles_con_modern_desplegada",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Fija la paleta: deja de ser temporal y pasa a ser una ventana que recuerda su posición y su tamaño.",
+      "necesita": "paletas-fijas",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.search",
+      "etiqueta": "Search",
+      "estado": "todo",
+      "labview": "Busca en las paletas por texto. Mientras busca, un botón Return vuelve a la paleta.",
+      "necesita": "busqueda-en-paletas",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern",
+      "etiqueta": "Modern",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::el_clic_derecho_en_el_panel_abre_la_paleta_de_controles_con_modern_desplegada",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric",
+      "etiqueta": "Numeric",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::la_carpeta_numeric_de_controls_abre_su_subpaleta",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Fija la subpaleta: deja de ser temporal y pasa a ser una ventana que recuerda su posición y su tamaño.",
+      "necesita": "paletas-fijas",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.numeric-control",
+      "etiqueta": "Numeric Control",
+      "estado": "built",
+      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "captura": "paletas/controls-numeric.png",
+      "bloque": "control"
+    },
+    {
+      "id": "palette.controls.modern.numeric.numeric-indicator",
+      "etiqueta": "Numeric Indicator",
+      "estado": "built",
+      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "captura": "paletas/controls-numeric.png",
+      "bloque": "indicator"
+    },
+    {
+      "id": "palette.controls.modern.numeric.time-stamp-control",
+      "etiqueta": "Time Stamp Control",
+      "estado": "todo",
+      "labview": "Un control de fecha y hora, con un botón que abre un calendario.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.time-stamp-indicator",
+      "etiqueta": "Time Stamp Indicator",
+      "estado": "todo",
+      "labview": "Un indicador de fecha y hora.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.vertical-fill-slide",
+      "etiqueta": "Vertical Fill Slide",
+      "estado": "todo",
+      "labview": "Un deslizador vertical que se rellena hasta el valor.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.vertical-pointer-slide",
+      "etiqueta": "Vertical Pointer Slide",
+      "estado": "todo",
+      "labview": "Un deslizador vertical con un cursor que se arrastra.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.vertical-progress-bar",
+      "etiqueta": "Vertical Progress Bar",
+      "estado": "todo",
+      "labview": "Una barra de progreso vertical.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.vertical-graduated-bar",
+      "etiqueta": "Vertical Graduated Bar",
+      "estado": "todo",
+      "labview": "Una barra vertical dividida en segmentos.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.horizontal-fill-slide",
+      "etiqueta": "Horizontal Fill Slide",
+      "estado": "todo",
+      "labview": "Un deslizador horizontal que se rellena hasta el valor.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.horizontal-pointer-slide",
+      "etiqueta": "Horizontal Pointer Slide",
+      "estado": "todo",
+      "labview": "Un deslizador horizontal con un cursor que se arrastra.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.horizontal-progress-bar",
+      "etiqueta": "Horizontal Progress Bar",
+      "estado": "todo",
+      "labview": "Una barra de progreso horizontal.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.horizontal-graduated-bar",
+      "etiqueta": "Horizontal Graduated Bar",
+      "estado": "todo",
+      "labview": "Una barra horizontal dividida en segmentos.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.knob",
+      "etiqueta": "Knob",
+      "estado": "todo",
+      "labview": "Un mando giratorio.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.dial",
+      "etiqueta": "Dial",
+      "estado": "todo",
+      "labview": "Un dial giratorio con escala.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.meter",
+      "etiqueta": "Meter",
+      "estado": "todo",
+      "labview": "Un medidor de aguja, como el de un instrumento analógico.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.gauge",
+      "etiqueta": "Gauge",
+      "estado": "todo",
+      "labview": "Un reloj de aguja con escala circular.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.tank",
+      "etiqueta": "Tank",
+      "estado": "todo",
+      "labview": "Un depósito que se llena hasta el valor.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.thermometer",
+      "etiqueta": "Thermometer",
+      "estado": "todo",
+      "labview": "Un termómetro.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.horizontal-scrollbar",
+      "etiqueta": "Horizontal Scrollbar",
+      "estado": "todo",
+      "labview": "Una barra de desplazamiento horizontal cuyo valor es la posición del cursor.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "Una barra de desplazamiento vertical cuyo valor es la posición del cursor.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.numeric.framed-color-box",
+      "etiqueta": "Framed Color Box",
+      "estado": "todo",
+      "labview": "Un recuadro que enseña un color; como control, abre un selector de color.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-numeric.png"
+    },
+    {
+      "id": "palette.controls.modern.boolean",
+      "etiqueta": "Boolean",
+      "estado": "todo",
+      "labview": "Botones, interruptores y LED.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.string-and-path",
+      "etiqueta": "String & Path",
+      "estado": "todo",
+      "labview": "Controles e indicadores de texto y de rutas de fichero.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.array-matrix-and-cluster",
+      "etiqueta": "Array, Matrix & Cluster",
+      "estado": "todo",
+      "labview": "Arrays, matrices y clusters de controles.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.list-table-and-tree",
+      "etiqueta": "List, Table & Tree",
+      "estado": "todo",
+      "labview": "Listas, tablas y árboles.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph",
+      "etiqueta": "Graph",
+      "estado": "todo",
+      "labview": "Gráficas y charts.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.ring-and-enum",
+      "etiqueta": "Ring & Enum",
+      "estado": "todo",
+      "labview": "Anillos y enumerados: elegir un valor de una lista.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.containers",
+      "etiqueta": "Containers",
+      "estado": "todo",
+      "labview": "Pestañas, paneles divididos y subpaneles para agrupar controles.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.io",
+      "etiqueta": "I/O",
+      "estado": "todo",
+      "labview": "Nombres de recursos de E/S: canales DAQ, recursos VISA y otros.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.variant-and-class",
+      "etiqueta": "Variant & Class",
+      "estado": "todo",
+      "labview": "Controles de variant y de clases de LabVIEW.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.decorations",
+      "etiqueta": "Decorations",
+      "estado": "todo",
+      "labview": "Líneas, cajas y etiquetas que decoran el panel y no llevan datos.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.modern.refnum",
+      "etiqueta": "Refnum",
+      "estado": "todo",
+      "labview": "Referencias a ficheros, VIs, conexiones y otros recursos.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.fuse-design-system",
+      "etiqueta": "Fuse Design System",
+      "estado": "todo",
+      "labview": "Los controles con el estilo Fuse, el sistema de diseño de NI.",
+      "necesita": "estilos-de-controles",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.silver",
+      "etiqueta": "Silver",
+      "estado": "todo",
+      "labview": "Los controles con el estilo Silver.",
+      "necesita": "estilos-de-controles",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.system",
+      "etiqueta": "System",
+      "estado": "todo",
+      "labview": "Los controles con el aspecto de los del sistema operativo.",
+      "necesita": "estilos-de-controles",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.classic",
+      "etiqueta": "Classic",
+      "estado": "todo",
+      "labview": "Los controles con el estilo clásico de LabVIEW.",
+      "necesita": "estilos-de-controles",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.express",
+      "etiqueta": "Express",
+      "estado": "todo",
+      "labview": "Controles e indicadores simplificados para montar un panel deprisa.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.dotnet-and-activex",
+      "etiqueta": ".NET & ActiveX",
+      "estado": "todo",
+      "labview": "Controles que incrustan componentes .NET y ActiveX en el panel.",
+      "necesita": "controles-de-plataforma",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.signal-processing",
+      "etiqueta": "Signal Processing",
+      "estado": "todo",
+      "labview": "Controles para el procesado de señal.",
+      "necesita": "panel-frontal",
+      "captura": "paletas/controls-desplegada.png",
+      "oculto": true
+    },
+    {
+      "id": "palette.controls.addons",
+      "etiqueta": "Addons",
+      "estado": "todo",
+      "labview": "Los controles de las librerías de complementos instaladas.",
+      "necesita": "librerias",
+      "captura": "paletas/controls-desplegada.png",
+      "oculto": true
+    },
+    {
+      "id": "palette.controls.user-controls",
+      "etiqueta": "User Controls",
+      "estado": "todo",
+      "labview": "Los controles propios del usuario.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "paletas/controls-desplegada.png",
+      "oculto": true
+    },
+    {
+      "id": "palette.controls.select-a-control",
+      "etiqueta": "Select a Control...",
+      "estado": "todo",
+      "labview": "Abre un diálogo para elegir un control guardado en disco y ponerlo en el panel.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.actor-framework",
+      "etiqueta": "Actor Framework",
+      "estado": "todo",
+      "labview": "Controles del Actor Framework.",
+      "necesita": "librerias",
+      "captura": "paletas/controls.png"
+    },
+    {
+      "id": "palette.controls.double-arrows",
+      "etiqueta": "Double Arrows",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::las_flechas_dobles_muestran_lo_oculto",
+      "captura": "paletas/controls-desplegada.png"
+    },
+    {
+      "id": "palette.controls.change-visible-palettes",
+      "etiqueta": "Change Visible Palettes...",
+      "estado": "todo",
+      "labview": "Abre el diálogo para elegir qué categorías enseña la paleta.",
+      "necesita": "personalizar-paletas",
+      "captura": "paletas/controls-desplegada.png",
+      "oculto": true
+    },
+    {
       "id": "context.function",
       "etiqueta": "Function",
       "estado": "built",
@@ -1722,6 +2154,294 @@
       "captura": "block-diagram/numeric-menu-constante.png"
     },
 
+    {
+      "id": "context.numeric-control",
+      "etiqueta": "Numeric Control",
+      "estado": "built",
+      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes del terminal se ven: su etiqueta.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.find-control",
+      "etiqueta": "Find Control",
+      "estado": "todo",
+      "labview": "Enseña el control en el panel, seleccionado.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Convierte el objeto en una definición de tipo guardada aparte.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "block-diagram/numeric-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Oculta el control en el panel; el terminal sigue en el diagrama.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Lo convierte en indicador; los cables que dejen de valer se rompen.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Lo convierte en un array de su tipo.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Lo convierte en una constante del diagrama y lo quita del panel.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.change-to-shared-variable-node",
+      "etiqueta": "Change to Shared Variable Node",
+      "estado": "todo",
+      "labview": "Lo convierte en un nodo de variable compartida.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene el objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea objetos relacionados: una variable local, un nodo de propiedad, una referencia…",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Opciones avanzadas del objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "captura": "block-diagram/numeric-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Cambia la representación numérica: I32, DBL, U8…",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del objeto.",
+      "necesita": "propiedades",
+      "captura": "block-diagram/numeric-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator",
+      "etiqueta": "Numeric Indicator",
+      "estado": "built",
+      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes del terminal se ven: su etiqueta.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.find-indicator",
+      "etiqueta": "Find Indicator",
+      "estado": "todo",
+      "labview": "Enseña el indicador en el panel, seleccionado.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Convierte el objeto en una definición de tipo guardada aparte.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "block-diagram/numeric-menu-indicador.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Oculta el indicador en el panel; el terminal sigue en el diagrama.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-indicador.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Lo convierte en control; los cables que dejen de valer se rompen.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Lo convierte en un array de su tipo.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Lo convierte en una constante del diagrama y lo quita del panel.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.change-to-shared-variable-node",
+      "etiqueta": "Change to Shared Variable Node",
+      "estado": "todo",
+      "labview": "Lo convierte en un nodo de variable compartida.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene el objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea objetos relacionados: una variable local, un nodo de propiedad, una referencia…",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Opciones avanzadas del objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "captura": "block-diagram/numeric-menu-indicador.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.adapt-to-source",
+      "etiqueta": "Adapt To Source",
+      "estado": "todo",
+      "labview": "El indicador toma el tipo de lo que se le cablea.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Cambia la representación numérica: I32, DBL, U8…",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del objeto.",
+      "necesita": "propiedades",
+      "captura": "block-diagram/numeric-menu-indicador.png",
+      "separado": true
+    },
     {
       "id": "context.compound-arithmetic",
       "etiqueta": "Compound Arithmetic",

@@ -7,9 +7,10 @@
 // sacaron (numeric-cablear.mp4); las medidas, en píxeles del vídeo, que son los
 // de la pantalla a 150 %, entre 1,5.
 
+import * as Et from "./etiquetas.mjs";
 import * as G from "./glifos.mjs";
 import { esHueco, ultimo } from "./inventario.mjs";
-import { aspecto, formatear } from "./tipos.mjs";
+import { aspecto, formatear, nombre } from "./tipos.mjs";
 
 const px = (n) => `${Number(n.toFixed(2))}px`;
 const f2 = (n) => Number(n.toFixed(2));
@@ -27,10 +28,10 @@ export function glifosPorBloque(inv) {
 
 /**
  * Lo que comparten la geometría y el pintado: el catálogo, los glifos, el
- * separador decimal del sistema y, si se está escribiendo en una constante,
- * qué.
+ * separador decimal del sistema y cómo se mide un texto en la fuente de la
+ * ventana, para las etiquetas.
  */
-export const contexto = (cat, glifos, separador = ".") => ({ cat, glifos, separador });
+export const contexto = (cat, glifos, separador = ".", medir = Et.medirAproximado) => ({ cat, glifos, separador, medir });
 
 const tipoConfig = (n, ctx) => n.config?.type ?? ctx.cat.bloque(n.tipo).config?.default?.type ?? "number";
 
@@ -82,8 +83,40 @@ function textoConstante(n, ctx, edicion) {
   return CONSTANTES[n.tipo].texto(n, ctx);
 }
 
+/**
+ * El terminal de un control o un indicador: con vista de icono, 36 × 36 px, y
+ * compacto, 33 × 17, de numeric-terminales-icono.png y numeric-terminales.png.
+ * `flecha` es la altura de su flecha, por donde entra o sale el cable.
+ */
+export const MEDIDAS_TERMINAL_PANEL = { icono: { ancho: 36, alto: 36, flecha: 15.5 }, compacto: { ancho: 33, alto: 17, flecha: 8.5 } };
+const esDelPanel = (n, ctx) => !!ctx.cat.bloque(n.tipo).panel;
+const medidasPanel = (n) => MEDIDAS_TERMINAL_PANEL[n.vista?.compacto ? "compacto" : "icono"];
+
+/** Separación entre un terminal del panel y su etiqueta, en el diagrama. */
+const HUECO_ETIQUETA = 3;
+
+/**
+ * La etiqueta de un terminal que nunca se ha movido: a la izquierda de un
+ * control y a la derecha de un indicador, a media altura, como en
+ * numeric-terminales-icono.png.
+ */
+function etiquetaPorDefecto(n, ctx) {
+  const salida = ctx.cat.puertos(n).out.length > 0;
+  return (k, tam) => [salida ? -(tam.ancho + HUECO_ETIQUETA) : k.ancho + HUECO_ETIQUETA, (k.alto - tam.alto) / 2];
+}
+
+/** La caja de la etiqueta de un nodo en el diagrama, o nada si no tiene. */
+export function cajaEtiqueta(n, ctx, edicion) {
+  if (!n.label) return null;
+  return Et.caja(n, "diagrama", caja(n, ctx, edicion), etiquetaPorDefecto(n, ctx), ctx.medir, edicion);
+}
+
 /** La caja de un nodo: su posición es la esquina de la tinta de su icono. */
 export function caja(n, ctx, edicion) {
+  if (esDelPanel(n, ctx)) {
+    const M = medidasPanel(n);
+    return { x: n.x, y: n.y, ancho: M.ancho, alto: M.alto };
+  }
   if (esCompuesto(n, ctx)) {
     const M = MEDIDAS_COMPUESTO;
     const entradas = ctx.cat.puertos(n).in.length;
@@ -113,6 +146,8 @@ export function terminales(n, ctx, edicion) {
   // cuerpo, que es lo que se agarra para moverlo. Una constante sólo tiene
   // salida: su mitad derecha.
   const anchoZona = esCompuesto(n, ctx) ? MEDIDAS_COMPUESTO.izquierda * 0.7 : ins.length ? Math.max(6, k.ancho * 0.36) : Math.max(6, k.ancho * 0.5);
+  // Un terminal del panel recibe o da el dato por su flecha.
+  const flecha = esDelPanel(n, ctx) ? medidasPanel(n).flecha : null;
   const reparte = (lista, dir) =>
     lista.map((p, i) => {
       const alto = k.alto / lista.length;
@@ -123,7 +158,7 @@ export function terminales(n, ctx, edicion) {
         etiqueta: p.label ?? p.name,
         dir,
         x: dir === "in" ? k.x : k.x + k.ancho,
-        y: k.y + alto * (i + 0.5),
+        y: flecha !== null ? k.y + flecha : k.y + alto * (i + 0.5),
         zona,
         centro: { x: zona.x + zona.ancho / 2, y: zona.y + zona.alto / 2 },
       };
@@ -252,6 +287,10 @@ export function contenido(d, ctx, resueltos) {
   }
 
   const nodos = g.nodos.map((n) => nodo(n, d, ctx, resueltos, elegidos.has(n.id))).join("");
+  const etiquetas = g.nodos
+    .filter((n) => n.label)
+    .map((n) => Et.pintar(n, cajaEtiqueta(n, ctx, edicion), { edicion, elegida: elegidos.has(`${n.id}#etiqueta`) }))
+    .join("");
   let rect = "";
   if (accion?.tipo === "rectangulo") {
     const [x, y] = [Math.min(accion.x0, accion.x1), Math.min(accion.y0, accion.y1)];
@@ -265,7 +304,7 @@ export function contenido(d, ctx, resueltos) {
   const aviso = d.aviso ? `<div class="aviso" style="left:${px(d.aviso.x + 8)};top:${px(d.aviso.y + 8)}">${esc(d.aviso.texto)}</div>` : "";
   const pistas = sobre ? pistasTerminales(g.nodos.find((n) => n.id === sobre.nodo), d, ctx, resueltos) : "";
   // Las cuñas de coerción y las pistas de los terminales, encima de los nodos.
-  return `<svg class="cables">${cables}</svg>${nodos}<svg class="cables encima">${cunas}${pistas}${nuevo}</svg>${rect}${fantasma}${aviso}`;
+  return `<svg class="cables">${cables}</svg>${nodos}${etiquetas}<svg class="cables encima">${cunas}${pistas}${nuevo}</svg>${rect}${fantasma}${aviso}`;
 }
 
 /**
@@ -301,6 +340,11 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const texto = esc(textoConstante(n, ctx, d.edicion));
     const valor = ed ? (ed.todo ? `<span class="texto-elegido">${texto}</span>` : `<span>${texto}</span><span class="caret"></span>`) : `<span>${texto}</span>`;
     cuerpo = `<div class="constante${ed ? " editando" : ""}" style="border-color:${color}">${selector}${valor}</div>`;
+  } else if (esDelPanel(n, ctx)) {
+    const tipo = resueltos?.salidas.get(`${n.id}.result`) ?? resueltos?.entradas.get(`${n.id}.value`) ?? "number";
+    const control = ctx.cat.puertos(n).out.length > 0;
+    const glifo = (n.vista?.compacto ? G.terminalPanelCompacto : G.terminalPanelIcono)(control, aspecto(tipo).color, nombre(tipo));
+    cuerpo = `<div class="glifo-terminal-panel">${glifo}</div>`;
   } else if (esCompuesto(n, ctx)) {
     cuerpo = compuesto(n, k, ctx);
   } else if (n.vista?.terminales && resueltos) {
@@ -329,7 +373,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     .filter((t) => invertidas.has(t.puerto))
     .map((t) => `<div class="invertida" style="left:${px(t.x - k.x + (t.dir === "in" ? -1.8 : 1.8) - 1.8)};top:${px(t.y - k.y - 1.8)}"></div>`)
     .join("");
-  return `<div class="nodo${elegido || d.edicion?.nodo === n.id ? " seleccionado" : ""}${editable}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
+  const escribiendo = d.edicion?.nodo === n.id && !d.edicion.etiqueta;
+  return `<div class="nodo${elegido || escribiendo ? " seleccionado" : ""}${editable}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
 }
 
 function compuesto(n, k, ctx) {
@@ -388,12 +433,14 @@ export function dentroDe(g, ctx, r) {
 
 /** El menú de clic derecho de cada clase de nodo, en el inventario. */
 export function menuDe(n, puerto) {
+  if (n.tipo === "control") return "context.numeric-control";
+  if (n.tipo === "indicator") return "context.numeric-indicator";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
   return CONSTANTES[n.tipo]?.editable ? "context.numeric-constant" : CONSTANTES[n.tipo] ? null : "context.function";
 }
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "create", "replace", "change-to-shared-variable-node", "change-mode"];
+const CON_SUBMENU = ["visible-items", "numeric-palette", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation"];
 
 /**
  * Medidas de un menú de clic derecho, de numeric-menu-funcion.png y

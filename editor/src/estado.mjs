@@ -15,11 +15,15 @@ export const PALETA_DE = {
 export const inicial = () => ({ abierta: null, paleta: null });
 
 /**
- * Una paleta recién abierta, con Programming desplegada, como en las capturas.
- * `cascada` son las subpaletas abiertas a su lado, de la más cercana a la más
- * lejana: `{ id, x, y }`, con la esquina de cada una.
+ * Una paleta recién abierta, con su primera categoría desplegada, como en las
+ * capturas: Programming en Functions y Modern en Controls. `cascada` son las
+ * subpaletas abiertas a su lado, de la más cercana a la más lejana:
+ * `{ id, x, y }`, con la esquina de cada una.
  */
-export const paletaNueva = (raiz, x, y) => ({ raiz, x, y, desplegadas: [`${raiz}.programming`], verOcultas: false, cascada: [] });
+export const paletaNueva = (raiz, x, y, primera = PRIMERA[raiz]) => ({ raiz, x, y, desplegadas: primera ? [primera] : [], verOcultas: false, cascada: [] });
+
+/** La categoría que cada paleta abre desplegada. */
+const PRIMERA = { "palette.functions": "palette.functions.programming", "palette.controls": "palette.controls.modern" };
 
 /** ¿Es una categoría de la lista de la paleta, y no una carpeta de una rejilla? */
 const esCategoria = (paleta, id) => id.slice(0, id.lastIndexOf(".")) === paleta.raiz;

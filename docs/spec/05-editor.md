@@ -214,6 +214,15 @@ Front Panel y Block Diagram son dos vistas del **mismo** VI, no dos documentos.
 > **Regla 40.** Cambiar el *tipo de dato* de un control **DEBE** invalidar los
 > wires que dejen de ser válidos, avisando antes.
 
+> **Las reglas 38 y 39 están implementadas en el editor web** (2026-09-30,
+> `editor/src/panel.mjs`) para el control y el indicador numéricos: un control
+> es un solo nodo del grafo con su sitio en cada lienzo y una sola etiqueta, así
+> que ponerlo en el panel pone su terminal en el diagrama, y borrarlo en
+> cualquiera de los dos lo borra del otro, con sus cables. Cada ventana tiene su
+> copia del grafo y se la manda a la otra por un `BroadcastChannel` cada vez que
+> queda quieta. Crear un control desde el diagrama (Create ▸ Control) sigue
+> siendo un hueco. La regla 40 espera a Representation.
+
 *(El acoplamiento entre los dos lienzos es del dominio, no deuda técnica: son una
 unidad 1:1. Lo que sí es deuda es cómo se implementaba —un modelo global mutado
 a través de un campo genérico de la interfaz, sin ningún mecanismo de
@@ -231,7 +240,9 @@ notificación.)*
 > `editor/src/historial.mjs`): como el grafo nunca se muta, cada estado estable
 > es una foto, y un gesto —arrastrar un nodo o un tramo, escribir en una
 > constante— es un solo paso. `Ctrl+Z` deshace y `Ctrl+Shift+Z` rehace. Falta el
-> menú Edit, que no está capturado, y el panel. Antes iba a heredarse de
+> menú Edit, que no está capturado. En el panel también deshace (2026-09-30),
+> pero cada ventana lleva su historial: lo que se deshace en una llega a la otra
+> como un cambio más. Antes iba a heredarse de
 > `red-sg` (DT-031, ver [`../whitelist.md`](../whitelist.md) §3).
 
 ## 9. Lo que el editor no hace
