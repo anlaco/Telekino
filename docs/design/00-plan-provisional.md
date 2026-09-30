@@ -214,6 +214,38 @@ Cada fase termina con algo demostrable. No se empieza una sin cerrar la anterior
 
 Tras R7 se retoma la Fase 4 de hardware (#20 USBTMC, #21 Serie, #22 Modbus, #23 DAQ) sobre una base mucho mejor: cada driver nuevo es un import con su puerta, no código generado con acceso libre.
 
+### 7.1 Hoja de ruta de los próximos días
+
+*(Acordada el 2026-09-30. Se marca cada paso al cerrarlo, con la fecha.)* Hasta
+aquí el editor calca LabVIEW —ventanas, paleta de funciones, subpaleta Numeric,
+edición del diagrama (R2 en su mayor parte)—, pero un VI no se guarda, no se
+abre y no se ejecuta. Antes de calcar más ancho se cierra un circuito completo,
+para que la interfaz no crezca sin programa detrás.
+
+1. [x] **Guardar lo hecho** en commits con sentido. *(2026-09-30)*
+2. [ ] **Decidir dónde vive el núcleo** —grafo, compilador y `check`— antes de
+   escribir el compilador. Propuesta: JavaScript, una sola implementación para
+   editor, compilador y `check` (regla 4 de `spec/03`), y Rust o un módulo
+   nativo sólo para el host de hardware. Se escribe como DT nueva que corrige
+   DT-037 (g) y DT-038 (c).
+3. [ ] **Rebanada vertical**: constante → Add → indicador numérico.
+   - [ ] Un indicador numérico en el *Front Panel*, con su terminal en el
+     diagrama (spec/05 regla 38), desde **Controls ▸ Numeric**.
+   - [ ] **Guardar y abrir** el VI como `.qvi`, con codos, configuración y tipos
+     (round-trip exacto: criterio de R2).
+   - [ ] **Run** de verdad: compilar a WebAssembly y ver el resultado en el
+     indicador. Run y Save dejan de ser huecos.
+4. [ ] **Calcar por prioridad de adquisición**, no por orden de la paleta:
+   - [ ] Controls ▸ Numeric (controles e indicadores).
+   - [ ] Structures: While Loop y For Loop.
+   - [ ] Comparison y Boolean.
+   - [ ] Timing: Wait (ms).
+   - [ ] Instrument I/O: serie y VISA.
+5. [ ] **Capturas**: la ventana de LabVIEW más grande, para que los menús no
+   salgan cortados, y una captura PNG de cada estado clave además del vídeo. Hoy
+   faltan: Change Mode de Compound Arithmetic completo, el menú de la constante
+   entero, el menú Edit y los símbolos de OR y XOR.
+
 ## 8. Riesgos
 
 | Riesgo | Mitigación |
