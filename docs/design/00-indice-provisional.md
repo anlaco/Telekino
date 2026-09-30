@@ -201,16 +201,16 @@ de la sesión. No es código de producción ni cuenta como inicio de la migraci�
 
 | Decisión | Elección | Nota |
 |----------|----------|------|
-| Lenguaje y runtime | Rust + WASM sobre wasmtime | Deroga DT-001 |
+| Lenguaje y runtime | ~~Rust + WASM sobre wasmtime~~ Núcleo en JavaScript; WASM en el motor de la página ([DT-039](05-decisiones.md#dt-039)); Rust sólo para el hardware | Deroga DT-001 |
 | GUI | Web en Electron ([DT-037](05-decisiones.md#dt-037)); antes egui + eframe | Deroga DT-026; resuelve #65 y #68 |
 | Motor de ejecución | Sólo WASM desde el día 1 | Una única semántica |
-| Backend del compilador | Árbol WAT tipado → crate `wat` | Conserva DT-008 |
+| Backend del compilador | ~~Árbol WAT tipado → crate `wat`~~ Árbol WASM tipado → binario propio + texto WAT ([DT-039](05-decisiones.md#dt-039)) | Conserva DT-008 |
 | **Formato del `.qvi`** | **Sólo el diagrama. Sin WAT guardado** | Modelo HTML puro: una única fuente de verdad, deriva imposible |
 | **Envoltorio del `.qvi`** | **JSON + JSON Schema** | Decidido tras la auditoría. `serde_json` frente a un `serde_yaml` archivado y un `serde_yml` archivado con avisos RUSTSEC. **El esquema es el documento de gramática, y es ejecutable** — la propiedad que §9 de la whitelist exige. Coste: convertir 14 ficheros, una vez |
 | **"Texto ejecutable"** | **`telekino run foo.qvi`** | Como un `.py` necesita python. Se renuncia a `wasmtime foo.qvi` a cambio de eliminar la deriva |
 | **Diagrama en el `.wasm`** | **Opción de `build`** | Limpio y reproducible por defecto; `--con-diagrama` embebe la sección custom, estilo source map |
 | Arquitectura | Kernel `tk-graph` + 3 clientes | §5 |
-| Superficie pública | Formato + CLI + WIT. La API Rust, no | §6 |
+| Superficie pública | Formato + CLI + imports del módulo. La API del núcleo, no ([DT-039](05-decisiones.md#dt-039)) | §6 |
 
 Estas decisiones se formalizarán como DT- numeradas en B5.
 

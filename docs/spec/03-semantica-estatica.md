@@ -441,6 +441,8 @@ cuando se incumpla.)*
 
 Las marcadas «en el editor» lo están en `editor/src/grafo.mjs`, que es
 provisional (DT-038 c): el núcleo, que debe implementarlas todas, no existe.
+DT-039 decide que el núcleo es JavaScript: `grafo.mjs` pasará a `nucleo/` y
+dejará de ser provisional.
 **El resto no está verificado**: describe reglas cuya implementación no existe. Es la diferencia entre una especificación y una
 intención, y está marcada como tal.
 

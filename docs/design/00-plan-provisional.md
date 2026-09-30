@@ -10,7 +10,7 @@
 |----------|----------|--------------------------|
 | GUI del editor | **Web (HTML, CSS, JS) en Electron** — [DT-037](05-decisiones.md#dt-037) | egui + eframe (elegida aquí en julio, sustituida por DT-037), iced, gpui/winit+wgpu |
 | Motor de ejecución | **Solo WASM desde el día 1** | intérprete de grafo previo o permanente |
-| Backend del compilador | **Emitir WAT, ensamblar con el crate `wat`** | IR propio → `wasm-encoder`, generar Rust + cargo |
+| Backend del compilador | **Árbol WASM tipado en JavaScript → binario con codificador propio, y texto WAT para depurar** — [DT-039](05-decisiones.md#dt-039) | Emitir WAT y ensamblar con el crate `wat` (elegida aquí en julio, sustituida por DT-039), IR propio → `wasm-encoder`, generar Rust + cargo |
 | Formato en disco | **`.qvi` solo con `qvi-diagram`; WASM en memoria** | sidecar `.wasm`, bundle `.tkx` |
 
 ### Por qué egui
@@ -103,6 +103,12 @@ wasmtime publica una release al mes y marca LTS cada 12 (2 años de soporte). **
 
 ## 3. Arquitectura
 
+> **Sustituido por [DT-039](05-decisiones.md#dt-039)**: el núcleo (formato,
+> grafo, bloques, compilador, `check`) es un directorio `nucleo/` de módulos ES
+> que usan el editor y la línea de órdenes en Node; el VI corre en el motor WASM
+> de la página, en un worker, y wasmtime sale del proyecto. Rust queda sólo para
+> el host de hardware. Se deja el árbol original como registro.
+
 ```
 telekino/
 ├── crates/
@@ -170,13 +176,13 @@ Estas normas de `CLAUDE.md` y `docs/decisiones.md` quedan obsoletas y hay que re
 
 | Norma | Qué le pasa |
 |-------|-------------|
-| Regla 3 / DT-001 «Todo en Red-Lang» | **Derogada.** Sustituida por «todo en Rust, sin dependencias fuera del ecosistema crates.io fijado» para el núcleo; la interfaz es web, en Electron (DT-037). |
+| Regla 3 / DT-001 «Todo en Red-Lang» | **Derogada.** Sustituida por «núcleo en JavaScript sin dependencias en tiempo de ejecución; Rust sólo para el host de hardware» (DT-039); la interfaz es web, en Electron (DT-037). |
 | Regla 1 / DT-026 «Nunca faces nativas en el canvas» | **Derogada.** El editor dibuja todo en la web (DT-037); deja de existir el conflicto de eventos. |
 | Regla 11 «Consultar el skill de Red-Lang» | **Derogada.** |
 | DT-005 / DT-009 «El `.qvi` lleva código Red/View ejecutable» | **Reescrita.** El `.qvi` queda solo con `qvi-diagram`. El FP lo renderiza el host. `red mi-vi.qvi` deja de funcionar; pasa a ser `telekino run mi-vi.qvi`. |
 | DT-028 «Cero código dinámico, compilable con `red -c`» | **Reescrita** en el mismo espíritu: el WAT generado no tiene evaluación dinámica y el módulo es AOT-compilable con Cranelift. |
 | DT-008 «Nunca strings intermedios» | **Se conserva** vía árbol WAT tipado. |
-| Regla 10 «Ejecutar `red-cli tests/run-all.red`» | Pasa a `cargo test` + corpus dorado (§6), y `npm test` en `editor/` para la interfaz. |
+| Regla 10 «Ejecutar `red-cli tests/run-all.red`» | Pasa a `npm test` + corpus dorado (§6), para el núcleo y para la interfaz (DT-039). |
 | `docs/GTK_ISSUES.md`, fork `anlaco/red` | **Desaparecen.** Es una de las ganancias grandes de la migración. |
 
 ## 6. Cómo se garantiza «funciona exactamente igual»
@@ -223,11 +229,12 @@ abre y no se ejecuta. Antes de calcar más ancho se cierra un circuito completo,
 para que la interfaz no crezca sin programa detrás.
 
 1. [x] **Guardar lo hecho** en commits con sentido. *(2026-09-30)*
-2. [ ] **Decidir dónde vive el núcleo** —grafo, compilador y `check`— antes de
+2. [x] **Decidir dónde vive el núcleo** —grafo, compilador y `check`— antes de
    escribir el compilador. Propuesta: JavaScript, una sola implementación para
    editor, compilador y `check` (regla 4 de `spec/03`), y Rust o un módulo
    nativo sólo para el host de hardware. Se escribe como DT nueva que corrige
-   DT-037 (g) y DT-038 (c).
+   DT-037 (g) y DT-038 (c). *(2026-09-30: [DT-039](05-decisiones.md#dt-039),
+   con la propuesta tal cual.)*
 3. [ ] **Rebanada vertical**: constante → Add → indicador numérico.
    - [ ] Un indicador numérico en el *Front Panel*, con su terminal en el
      diagrama (spec/05 regla 38), desde **Controls ▸ Numeric**.

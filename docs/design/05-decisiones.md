@@ -20,6 +20,7 @@ toda la historia del proyecto, sin tener que aclarar de qué etapa es.
 | [036](#dt-036) | El asistente de IA es externo, y se lanza desde el botón que en LabVIEW abre Nigel | Aceptada · sin implementar |
 | [037](#dt-037) | La interfaz del editor se hace con tecnologías web y corre en Electron | Aceptada · implementada en el esqueleto |
 | [038](#dt-038) | Los tipos numéricos son las representaciones de LabVIEW, con su conversión | Aceptada · implementada en el editor |
+| [039](#dt-039) | El núcleo se escribe en JavaScript y el VI corre en el motor WASM de la página; Rust, sólo para el hardware | Aceptada · sin implementar |
 
 ## Las 34 decisiones de Red
 
@@ -383,7 +384,9 @@ está en Electron.
 
 ### Consecuencias
 
-a. **El núcleo sigue en Rust**: formato, grafo, compilador y runtime. Lo que se
+a. **El núcleo sigue en Rust**: formato, grafo, compilador y runtime.
+   *(Corregida por [DT-039](#dt-039): el núcleo es JavaScript; Rust queda para
+   el host de hardware.)* Lo que se
    verifica sin interfaz (DT-035 §6) no cambia.
 
 b. **El esqueleto en egui se retira**: `crates/tk-ui`, el binario
@@ -412,6 +415,8 @@ g. **No se decide aquí** cómo habla el editor con el núcleo en Rust —compil
    WASM dentro de la página, o como proceso aparte al que el editor llama—, ni
    dónde se ejecuta el VI compilado: wasmtime en un proceso aparte o el motor
    WASM de la propia página. Depende de las puertas de la fase R7.
+   *(Decidido en [DT-039](#dt-039): no hay frontera, porque el núcleo es
+   JavaScript, y el VI corre en el motor WASM de la página, en un worker.)*
 
 ### Verificación
 
@@ -494,7 +499,8 @@ c. **El modelo del grafo vive, por ahora, en el editor**, en JavaScript: los
    sola función del núcleo para editor, compilador y `check`—, porque el núcleo
    no existe. Cuando exista, el editor lo llamará y `grafo.mjs` desaparecerá.
    Está abierto si el núcleo acaba siendo JavaScript también: no cambia nada de
-   esta decisión.
+   esta decisión. *(Cerrado por [DT-039](#dt-039): el núcleo es JavaScript;
+   `grafo.mjs` no desaparece, pasa a `nucleo/`.)*
 
 d. **Los puertos llevan `label`**, el nombre del terminal en LabVIEW («x+y»,
    «floor(x/y)»), que el editor enseña en el tip strip. `name` sigue siendo el
@@ -513,3 +519,116 @@ e. **Pendiente, sin capturas todavía:** cómo pinta LabVIEW un nodo, una consta
 | Coerción y cable roto | Tests «una función toma el tipo común y marca la coerción» y «un cable entre tipos incompatibles queda roto y explica por qué» (`editor/test/grafo.test.mjs`) | **Verificado** |
 | Las 32 funciones se ponen con sus terminales | Test «cada función de numeric se pone en el diagrama con sus terminales» | **Verificado** |
 | Se ve como LabVIEW en el diagrama | Capturas de un diagrama de LabVIEW con estos bloques | **Pendiente**: no hay capturas |
+
+---
+
+## DT-039
+
+**El núcleo —formato, grafo, compilador y `check`— se escribe en JavaScript, y
+el VI compilado corre en el motor WebAssembly de la propia página. Rust queda
+sólo para el host de hardware.**
+
+- **Estado:** Aceptada el 2026-09-30. **Sin implementar**: el grafo y los tipos
+  siguen en `editor/src/` hasta que se escriba el compilador (paso 3 de
+  [`00-plan-provisional.md`](00-plan-provisional.md) §7.1).
+- **Cómo se decidió:** en una conversación con quien desarrolla el proyecto, al
+  llegar al paso 2 de la hoja de ruta del 2026-09-30: decidir dónde vive el
+  núcleo antes de escribir el compilador. Se compararon tres opciones —núcleo en
+  JavaScript, núcleo en Rust compilado a WASM dentro de la página, y núcleo en
+  Rust como proceso aparte— y se eligió la primera.
+- **Corrige:** [DT-037](#dt-037) (a) y (g) y [DT-038](#dt-038) (c). **Sustituye:**
+  en [`00-plan-provisional.md`](00-plan-provisional.md), la fila «Backend del
+  compilador» de §1, el árbol de *crates* de §3 y la norma «todo en Rust» de §5;
+  en [`00-indice-provisional.md`](00-indice-provisional.md) §8, las filas
+  «Lenguaje y runtime», «Backend del compilador» y «Superficie pública».
+
+### Contexto
+
+**1. El grafo ya está en JavaScript, y funciona.** DT-038 dejó `can_connect`, la
+resolución de tipos, la coerción y los ciclos en `editor/src/grafo.mjs` y
+`tipos.mjs`, con tests. Lo dejó como provisional porque contradice la regla 4 de
+[`03-semantica-estatica.md`](../spec/03-semantica-estatica.md): una sola
+implementación para editor, compilador y `check`. Con el núcleo en Rust, esa
+regla obliga a portarlo todo y a que el editor lo llame a través de una frontera
+(wasm-bindgen o un proceso aparte).
+
+**2. El editor ya no está en Rust.** El plan de julio ponía el núcleo en Rust
+porque la interfaz también lo iba a estar (egui). Desde DT-037 la interfaz es web,
+y un núcleo en Rust la obliga a cruzar de lenguaje en cada edición: para validar
+un cable, para resolver un tipo, para pintar un punto de coerción.
+
+**3. La página ya trae un motor WebAssembly completo.** El V8 de Electron 40 y de
+Node 24 ejecuta WasmGC, que es lo que el plan pide para strings, arrays y
+clusters (§2). wasmtime aportaba dos cosas más: el sandbox sin WASI y la
+interrupción por *epoch*. Un módulo WASM en el navegador ya nace sin acceso a
+fichero, red ni reloj —sólo toca lo que se le importa—, y un bucle infinito se
+corta terminando el *worker* donde corre.
+
+**4. El hardware sí necesita código nativo.** Hablar con un puerto serie, con VISA
+o con una tarjeta DAQ no se hace desde una página. Eso es lo único que queda
+fuera del alcance de JavaScript, y no hace falta hasta la subpaleta Instrument
+I/O (paso 4 de la hoja de ruta) o la fase R7.
+
+### Decisión
+
+1. **Un solo núcleo en JavaScript**, módulos ES sin framework y sin paso de
+   compilación, como el editor (DT-037). Contiene el formato (`.qvi`, `.qlib`,
+   `.qproj`), el modelo del grafo, el registro de bloques, el compilador y
+   `check`. Lo usan igual el editor, en la página, y la línea de órdenes, en
+   Node. Vive en su propio directorio, `nucleo/`, fuera de `editor/`.
+2. **El compilador construye un árbol WASM tipado** —como ya pedía §1 del plan
+   para el WAT— y lo serializa de dos maneras: a **binario**, con un codificador
+   propio, para ejecutarlo; y a **texto WAT**, para leerlo al depurar y para los
+   tests de salida dorada. Nunca concatena cadenas: DT-008 se conserva. El
+   codificador propio cubre sólo el subconjunto que el compilador emite; se
+   descarta `wabt`, que no ensambla WasmGC, y `binaryen`, que es una dependencia
+   de varios megas para eso.
+3. **El VI compilado corre en el motor WASM de la página**, dentro de un *Web
+   Worker*: la interfaz no se congela mientras el VI trabaja, y Abort termina el
+   *worker*. `telekino run` hace lo mismo en Node. wasmtime sale del proyecto.
+4. **Las puertas no cambian de idea.** El módulo sólo toca lo que se le importa, y
+   el host valida cada import contra el manifiesto (plan §4). Lo que cambia es
+   quién hace de host: el *worker*, no un `Store` de wasmtime.
+5. **Rust, o un módulo nativo, sólo para el host de hardware.** Cómo se conecta
+   con el editor —un módulo nativo de Node en el proceso principal de Electron o
+   un proceso aparte— se decide cuando llegue, con el primer driver.
+6. **Sin dependencias en tiempo de ejecución** en el núcleo. `ajv` sigue sólo en
+   los tests.
+
+### Consecuencias
+
+a. **La regla 4 de `03` se cumple** en cuanto `grafo.mjs` y `tipos.mjs` pasen a
+   `nucleo/`: dejan de ser provisionales y son el núcleo. Se mueven al escribir el
+   compilador, no antes.
+
+b. **Tests.** Todo el núcleo se prueba con `node:test`, como el editor. La norma
+   del plan §5 «`cargo test` + corpus dorado» pasa a «`npm test` + corpus
+   dorado».
+
+c. **La fase R0** cambia de mecanismo, no de criterio: `telekino run
+   examples/suma-basica.qvi` imprime `8.0`, ejecutado por Node.
+
+d. **El I/O bloqueante sigue abierto** (plan §3), con otro candidato: JSPI
+   (*JavaScript Promise Integration*), que deja a un import devolver una promesa
+   sin que el guest lo note. Se decide con el primer driver, junto al punto 5.
+
+e. **Rust.** El workspace de Cargo no vuelve con el núcleo, como preveía DT-037
+   (b), sino con el host de hardware. `rust-toolchain.toml` se queda fijando la
+   versión para entonces.
+
+f. **La superficie pública** es el formato, la línea de órdenes y los imports del
+   módulo. La API del núcleo en JavaScript, como antes la de Rust, es interna.
+
+g. **Riesgo aceptado: rendimiento del compilador.** Compilar en JavaScript es
+   más lento que en Rust; para diagramas del tamaño de un VI no se nota. Si algún
+   día estorba, se mide antes de tocar nada.
+
+### Verificación
+
+| Qué | Mecanismo | Estado |
+|-----|-----------|--------|
+| Una sola implementación del grafo | `grafo.mjs` y `tipos.mjs` en `nucleo/`, importados por el editor y por `check` | **Pendiente** |
+| El binario generado es válido | `WebAssembly.validate` sobre la salida de cada test del compilador | **Pendiente** |
+| El texto WAT es el mismo programa | Tests de salida dorada del `.wat` | **Pendiente** |
+| R0 | `telekino run examples/suma-basica.qvi` imprime `8.0` | **Pendiente** |
+| Un bucle infinito no congela la interfaz | Test del *worker*: Abort lo termina | **Pendiente** |
