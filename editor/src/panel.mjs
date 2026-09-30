@@ -17,11 +17,12 @@
 //     { tipo: "mover", x, y }                          arrastrando la selección
 //     { tipo: "etiqueta", nodo, x, y }                 arrastrando una etiqueta sola
 //     { tipo: "rectangulo", x0, y0, x1, y1, base }     seleccionar arrastrando por el fondo
-//   edicion    { nodo, etiqueta: true, texto, todo } mientras se escribe en una etiqueta
+//   edicion    { nodo, etiqueta: true, texto, todo } mientras se escribe en una etiqueta,
+//              o { nodo, valor: true, texto, todo } en la casilla de un control
 
 import * as Et from "./etiquetas.mjs";
-import * as Gr from "./grafo.mjs";
-import { formatear } from "./tipos.mjs";
+import * as Gr from "../../nucleo/grafo.mjs";
+import { formatear, leerNumero } from "../../nucleo/tipos.mjs";
 
 export const inicial = (g = Gr.nuevo()) => ({ g, seleccion: [], accion: null, edicion: null });
 
@@ -73,15 +74,23 @@ export const objetos = (g) => g.nodos.filter((n) => n.panel);
 const px = (n) => `${Number(n.toFixed(2))}px`;
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-/** El incrementador: dos flechas en una cápsula gris, a lo alto del objeto. */
-const INCREMENTADOR = `<svg class="incrementador" viewBox="0 0 16 25" aria-hidden="true"><rect x="1" y="2" width="11" height="21" rx="5.5" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,5 3.8,10 9.2,10" fill="#7a7a7a"/><polygon points="6.5,20 3.8,15 9.2,15" fill="#7a7a7a"/></svg>`;
+/**
+ * El incrementador: dos flechas en una cápsula gris, a lo alto del objeto. Cada
+ * mitad es una flecha que se pulsa (`data-paso`).
+ */
+const INCREMENTADOR = `<div class="incrementador"><svg viewBox="0 0 16 25" aria-hidden="true"><rect x="1" y="2" width="11" height="21" rx="5.5" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,5 3.8,10 9.2,10" fill="#7a7a7a"/><polygon points="6.5,20 3.8,15 9.2,15" fill="#7a7a7a"/></svg><div class="flecha-inc" data-paso="1"></div><div class="flecha-inc" data-paso="-1"></div></div>`;
 
-function objeto(n, ctx, elegido) {
+/** El valor de un control, como lo enseña su casilla. */
+const textoValor = (n, ctx) => formatear(n.config?.value ?? 0, "number", ctx.separador);
+
+function objeto(n, ctx, elegido, edicion) {
   const k = caja(n);
   const c = CONTROLES[n.tipo];
-  const valor = esc(formatear(n.config?.value ?? 0, "number", ctx.separador));
-  const casilla = `<div class="casilla${c?.incrementador ? "" : " indicador"}" style="left:${px(k.casilla)};width:${px(MEDIDAS_PANEL.casilla)}"><span class="valor">${valor}</span></div>`;
-  return `<div class="objeto-panel${elegido ? " seleccionado" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${c?.incrementador ? INCREMENTADOR : ""}${casilla}</div>`;
+  const e = edicion?.valor && edicion.nodo === n.id ? edicion : null;
+  // Mientras se escribe en ella, la casilla enseña lo escrito, con el cursor al final o todo seleccionado.
+  const valor = e ? (e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`) : `<span>${esc(textoValor(n, ctx))}</span>`;
+  const casilla = `<div class="casilla${c?.incrementador ? "" : " indicador"}" data-casilla="${esc(n.id)}" style="left:${px(k.casilla)};width:${px(MEDIDAS_PANEL.casilla)}"><span class="valor">${valor}</span></div>`;
+  return `<div class="objeto-panel${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${c?.incrementador ? INCREMENTADOR : ""}${casilla}</div>`;
 }
 
 /** Todo lo que el panel pinta dentro del lienzo. */
@@ -89,7 +98,7 @@ export function contenido(p, ctx) {
   const elegidos = new Set(p.seleccion);
   let html = "";
   for (const n of objetos(p.g)) {
-    html += objeto(n, ctx, elegidos.has(n.id));
+    html += objeto(n, ctx, elegidos.has(n.id), p.edicion);
     html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)) });
   }
   const { accion } = p;
@@ -138,14 +147,21 @@ function colocar(p, ctx, pt) {
 export function pulsar(p, ctx, sobre, pt, shift = false) {
   // Pulsar fuera de la etiqueta en la que se escribe confirma lo escrito, y
   // nada más.
-  if (p.edicion && !(sobre.tipo === "etiqueta" && sobre.id === p.edicion.nodo)) return confirmar(p);
+  const enLoQueSeEscribe = sobre.id === p.edicion?.nodo && sobre.tipo === (p.edicion?.valor ? "casilla" : "etiqueta");
+  // Pulsar fuera de lo que se escribe lo confirma, y nada más, como en el vídeo.
+  if (p.edicion && !enLoQueSeEscribe) return confirmar(p);
   if (p.edicion) return p;
   if (p.accion?.tipo === "colocar") return colocar(p, ctx, pt);
   const elegir = (id) => {
     const ya = p.seleccion.includes(id);
     return shift ? (ya ? p.seleccion.filter((s) => s !== id) : [...p.seleccion, id]) : ya ? p.seleccion : [id];
   };
-  if (sobre.tipo === "objeto") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y } };
+  // Las flechas del incrementador suman o restan 1 por clic, como en LabVIEW.
+  if (sobre.tipo === "paso") return { ...p, g: pasoValor(p.g, sobre.id, sobre.paso) };
+  // Un clic en la casilla de un control escribe en ella, con el cursor al final.
+  const n = p.g.nodos.find((m) => m.id === sobre.id);
+  if (sobre.tipo === "casilla" && CONTROLES[n?.tipo]?.incrementador) return editarValor(p, ctx, sobre.id, false);
+  if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
 }
@@ -224,10 +240,40 @@ export function editar(p, id) {
   return n ? { ...p, edicion: Et.editar(n), seleccion: [], accion: null } : p;
 }
 
-export const teclear = (p, tecla) => (p.edicion ? { ...p, edicion: Et.teclear(p.edicion, tecla) } : p);
+export const teclear = (p, tecla) => {
+  if (!p.edicion) return p;
+  // En la casilla de un control Intro no baja de línea: confirma.
+  if (p.edicion.valor && tecla === "Enter") return confirmar(p);
+  return { ...p, edicion: Et.teclear(p.edicion, tecla) };
+};
 
-/** Confirmar lo escrito (el botón Enter Text o un clic fuera): la etiqueta cambia en los dos lienzos. */
-export const confirmar = (p) => (p.edicion ? { ...p, g: Gr.fijarEtiqueta(p.g, p.edicion.nodo, p.edicion.texto), edicion: null } : p);
+/**
+ * Escribir en la casilla de un control: con un clic, el cursor al final de lo
+ * que hay; con doble clic, todo seleccionado.
+ */
+export function editarValor(p, ctx, id, todo) {
+  const n = p.g.nodos.find((m) => m.id === id);
+  return n ? { ...p, edicion: { nodo: id, valor: true, texto: textoValor(n, ctx), todo }, seleccion: [], accion: null } : p;
+}
+
+/** Una flecha del incrementador: el valor sube o baja 1. */
+function pasoValor(g, id, paso) {
+  const n = g.nodos.find((m) => m.id === id);
+  return Gr.fijarValor(g, id, (n.config?.value ?? 0) + paso);
+}
+
+/**
+ * Confirmar lo escrito (Intro, el botón Enter Text o un clic fuera). Una
+ * etiqueta cambia en los dos lienzos; en una casilla, lo que no es un número
+ * deja el valor como estaba.
+ */
+export function confirmar(p) {
+  const e = p.edicion;
+  if (!e) return p;
+  if (!e.valor) return { ...p, g: Gr.fijarEtiqueta(p.g, e.nodo, e.texto), edicion: null };
+  const leido = leerNumero(e.texto, "number");
+  return { ...p, g: leido ? Gr.fijarValor(p.g, e.nodo, leido.valor) : p.g, edicion: null };
+}
 
 // ——— Teclado ———
 

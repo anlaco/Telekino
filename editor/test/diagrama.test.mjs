@@ -6,10 +6,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { COLORES } from "../src/tipos.mjs";
+import { COLORES } from "../../nucleo/tipos.mjs";
 import * as D from "../src/diagrama.mjs";
 import * as ED from "../src/edicion.mjs";
-import { conectar, crearNodo, nuevo, tipos } from "../src/grafo.mjs";
+import { conectar, crearNodo, nuevo, tipos } from "../../nucleo/grafo.mjs";
 import { idsPintados } from "../src/vista.mjs";
 import { CAT, INV } from "./comun.mjs";
 

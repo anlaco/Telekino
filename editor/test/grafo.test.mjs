@@ -7,7 +7,7 @@ import { test } from "node:test";
 
 import { contexto, glifosPorBloque, terminales } from "../src/diagrama.mjs";
 import * as G from "../src/glifos.mjs";
-import { borrar, conectar, crearNodo, ejecutable, nuevo, orden, tipos } from "../src/grafo.mjs";
+import { borrar, conectar, crearNodo, ejecutable, nuevo, orden, tipos } from "../../nucleo/grafo.mjs";
 import { esHueco, ultimo } from "../src/inventario.mjs";
 import { CAT, INV } from "./comun.mjs";
 

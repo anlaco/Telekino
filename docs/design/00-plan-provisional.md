@@ -240,8 +240,9 @@ para que la interfaz no crezca sin programa detrás.
      diagrama (spec/05 regla 38), desde **Controls ▸ Numeric**. *(2026-09-30:
      también el control, con sus etiquetas, calcados del vídeo
      `front-panel/numeric-colocar-etiquetas.mp4`.)*
-   - [ ] **Guardar y abrir** el VI como `.qvi`, con codos, configuración y tipos
-     (round-trip exacto: criterio de R2).
+   - [x] **Guardar y abrir** el VI como `.qvi`, con codos, configuración y tipos
+     (round-trip exacto: criterio de R2). *(2026-09-30: `nucleo/qvi.mjs`, con
+     File ▸ Open, Save y Save As y el asterisco de cambios sin guardar.)*
    - [ ] **Run** de verdad: compilar a WebAssembly y ver el resultado en el
      indicador. Run y Save dejan de ser huecos.
 4. [ ] **Calcar por prioridad de adquisición**, no por orden de la paleta:

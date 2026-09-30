@@ -233,6 +233,13 @@ notificación.)*
 > **Regla 41.** El editor **DEBE** distinguir un VI con cambios sin guardar y
 > **DEBE** pedir confirmación antes de descartarlos.
 
+> **La regla 41 está implementada en el editor web** (2026-09-30,
+> `editor/electron/main.mjs`): cada ventana cuenta al proceso principal cómo
+> queda el VI tras cada cambio; si no coincide con lo guardado, el título lleva
+> un asterisco, como en LabVIEW, y antes de abrir otro VI o de cerrar el panel se
+> pregunta si guardar, no guardar o no seguir. Falta un test automático: se ha
+> comprobado en la aplicación.
+
 > **Regla 42.** El editor **DEBE** ofrecer deshacer y rehacer sobre toda
 > operación que modifique el VI.
 

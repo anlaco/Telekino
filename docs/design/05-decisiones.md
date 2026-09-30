@@ -20,7 +20,7 @@ toda la historia del proyecto, sin tener que aclarar de qué etapa es.
 | [036](#dt-036) | El asistente de IA es externo, y se lanza desde el botón que en LabVIEW abre Nigel | Aceptada · sin implementar |
 | [037](#dt-037) | La interfaz del editor se hace con tecnologías web y corre en Electron | Aceptada · implementada en el esqueleto |
 | [038](#dt-038) | Los tipos numéricos son las representaciones de LabVIEW, con su conversión | Aceptada · implementada en el editor |
-| [039](#dt-039) | El núcleo se escribe en JavaScript y el VI corre en el motor WASM de la página; Rust, sólo para el hardware | Aceptada · sin implementar |
+| [039](#dt-039) | El núcleo se escribe en JavaScript y el VI corre en el motor WASM de la página; Rust, sólo para el hardware | Aceptada · en implementación |
 
 ## Las 34 decisiones de Red
 
@@ -433,8 +433,8 @@ g. **No se decide aquí** cómo habla el editor con el núcleo en Rust —compil
 como en LabVIEW: con un punto de coerción, no con un cable roto.**
 
 - **Estado:** Aceptada el 2026-09-29. **Implementada en el editor**
-  ([`editor/src/tipos.mjs`](../../editor/src/tipos.mjs) y
-  [`editor/src/grafo.mjs`](../../editor/src/grafo.mjs)); el compilador y el
+  ([`nucleo/tipos.mjs`](../../editor/src/tipos.mjs) y
+  [`nucleo/grafo.mjs`](../../editor/src/grafo.mjs)); el compilador y el
   runtime, que aún no existen, la heredan.
 - **Cómo se decidió:** al pedir quien desarrolla el proyecto que los bloques de
   Numeric se pudieran poner en el diagrama y cablear con el color de su tipo, se
@@ -515,7 +515,7 @@ e. **Pendiente, sin capturas todavía:** cómo pinta LabVIEW un nodo, una consta
 
 | Qué | Mecanismo | Estado |
 |-----|-----------|--------|
-| La regla del tipo común | Test «el tipo común sigue la regla de LabVIEW» (`editor/test/tipos.test.mjs`) | **Verificado** |
+| La regla del tipo común | Test «el tipo común sigue la regla de LabVIEW» (`nucleo/test/tipos.test.mjs`) | **Verificado** |
 | Coerción y cable roto | Tests «una función toma el tipo común y marca la coerción» y «un cable entre tipos incompatibles queda roto y explica por qué» (`editor/test/grafo.test.mjs`) | **Verificado** |
 | Las 32 funciones se ponen con sus terminales | Test «cada función de numeric se pone en el diagrama con sus terminales» | **Verificado** |
 | Se ve como LabVIEW en el diagrama | Capturas de un diagrama de LabVIEW con estos bloques | **Pendiente**: no hay capturas |
@@ -528,9 +528,9 @@ e. **Pendiente, sin capturas todavía:** cómo pinta LabVIEW un nodo, una consta
 el VI compilado corre en el motor WebAssembly de la propia página. Rust queda
 sólo para el host de hardware.**
 
-- **Estado:** Aceptada el 2026-09-30. **Sin implementar**: el grafo y los tipos
-  siguen en `editor/src/` hasta que se escriba el compilador (paso 3 de
-  [`00-plan-provisional.md`](00-plan-provisional.md) §7.1).
+- **Estado:** Aceptada el 2026-09-30. **En implementación**: `nucleo/` ya tiene
+  el grafo, los tipos y la lectura y escritura del `.qvi`; falta el compilador
+  (paso 3 de [`00-plan-provisional.md`](00-plan-provisional.md) §7.1).
 - **Cómo se decidió:** en una conversación con quien desarrolla el proyecto, al
   llegar al paso 2 de la hoja de ruta del 2026-09-30: decidir dónde vive el
   núcleo antes de escribir el compilador. Se compararon tres opciones —núcleo en
@@ -545,7 +545,7 @@ sólo para el host de hardware.**
 ### Contexto
 
 **1. El grafo ya está en JavaScript, y funciona.** DT-038 dejó `can_connect`, la
-resolución de tipos, la coerción y los ciclos en `editor/src/grafo.mjs` y
+resolución de tipos, la coerción y los ciclos en `nucleo/grafo.mjs` y
 `tipos.mjs`, con tests. Lo dejó como provisional porque contradice la regla 4 de
 [`03-semantica-estatica.md`](../spec/03-semantica-estatica.md): una sola
 implementación para editor, compilador y `check`. Con el núcleo en Rust, esa
@@ -627,7 +627,7 @@ g. **Riesgo aceptado: rendimiento del compilador.** Compilar en JavaScript es
 
 | Qué | Mecanismo | Estado |
 |-----|-----------|--------|
-| Una sola implementación del grafo | `grafo.mjs` y `tipos.mjs` en `nucleo/`, importados por el editor y por `check` | **Pendiente** |
+| Una sola implementación del grafo | `grafo.mjs` y `tipos.mjs` en `nucleo/`, importados por el editor y por `check` | **Hecho en el editor** (2026-09-30), junto a `nucleo/qvi.mjs`; `check` aún no existe |
 | El binario generado es válido | `WebAssembly.validate` sobre la salida de cada test del compilador | **Pendiente** |
 | El texto WAT es el mismo programa | Tests de salida dorada del `.wat` | **Pendiente** |
 | R0 | `telekino run examples/suma-basica.qvi` imprime `8.0` | **Pendiente** |

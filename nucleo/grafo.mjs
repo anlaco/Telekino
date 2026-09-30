@@ -139,6 +139,12 @@ const cambiarNodo = (g, id, f) => ({ ...g, nodos: g.nodos.map((n) => (n.id === i
  */
 export const fijarCodos = (g, id, codos) => ({ ...g, cables: g.cables.map((c) => (c.id === id ? { ...c, codos } : c)) });
 
+/**
+ * El punto de unión de una rama: donde un cable sale de otro que lleva el mismo
+ * dato. Presentación pura, como los codos: se dibuja un punto ahí.
+ */
+export const fijarUnion = (g, id, union) => ({ ...g, cables: g.cables.map((c) => (c.id === id ? { ...c, union } : c)) });
+
 /** El valor de una constante y, si cambia, su tipo (una I32 que recibe un decimal pasa a DBL). */
 export const fijarValor = (g, id, value, type) =>
   cambiarNodo(g, id, (n) => ({ ...n, config: { ...n.config, value, ...(type !== undefined ? { type } : {}) } }));

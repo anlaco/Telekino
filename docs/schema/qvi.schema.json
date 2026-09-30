@@ -69,7 +69,26 @@
       "additionalProperties": false,
       "properties": {
         "diagram": { "$ref": "#/$defs/placements" },
-        "panel": { "$ref": "#/$defs/placements" }
+        "panel": { "$ref": "#/$defs/placements" },
+        "wires": {
+          "description": "Por dónde va cada wire en el diagrama. Se indexa por su destino (`to`), que es único porque una entrada recibe un solo wire.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/endpoint" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "bends": {
+                "description": "Los codos: una lista que alterna x e y y empieza y acaba en x. El wire sale en horizontal, gira en cada x hacia la y siguiente y entra en horizontal.",
+                "type": "array", "items": { "type": "number" }
+              },
+              "junction": {
+                "description": "Si el wire es una rama de otro que lleva el mismo dato, dónde sale de él: el punto de unión que se dibuja.",
+                "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -193,6 +212,14 @@
         "active-frame": {
           "description": "Sólo para case-structure: qué marco muestra el editor. No afecta a la ejecución.",
           "type": "integer", "minimum": 0
+        },
+        "show-terminals": {
+          "description": "Visible Items ▸ Terminals: el nodo enseña sus terminales en lugar de su icono.",
+          "type": "boolean"
+        },
+        "view-as-icon": {
+          "description": "View As Icon del terminal de un control o indicador. Por defecto, cierto.",
+          "type": "boolean"
         }
       }
     },
@@ -256,6 +283,22 @@
             },
             "vi": {
               "description": "Para subvi: ruta relativa al .qvi invocado.",
+              "type": "string"
+            },
+            "mode": {
+              "description": "Para compound-arithmetic: la operación (add, multiply, and, or, xor).",
+              "type": "string"
+            },
+            "inputs": {
+              "description": "Para compound-arithmetic: cuántas entradas tiene.",
+              "type": "integer", "minimum": 2
+            },
+            "inverted": {
+              "description": "Para compound-arithmetic: los puertos invertidos (`value-0`…, `result`).",
+              "type": "array", "items": { "type": "string" }
+            },
+            "expression": {
+              "description": "Para expression-node: la expresión, de una sola variable x.",
               "type": "string"
             }
           }

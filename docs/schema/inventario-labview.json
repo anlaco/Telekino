@@ -60,6 +60,10 @@
     "de la ventana de ayuda contextual. En la paleta Boolean, Compound Arithmetic",
     "sale en modo AND (lo dice su ayuda).",
     "",
+    "MENÚ FILE: capturado en LabVIEW 2026 Q3 Community, en la VM, en las dos ventanas",
+    "del VI (front-panel/menu-file.png y block-diagram/menu-file.png): es el mismo.",
+    "Hechos Open, Save, Save As y Exit.",
+    "",
     "COMPOUND ARITHMETIC: vídeo block-diagram/compound-arithmetic.mp4, sus fotogramas",
     "block-diagram/compound-*.png y la captura compound-menu.png (2026-09-30): el",
     "menú del nodo y el de una entrada. Los submenús salen cortados por la ventana:",
@@ -186,6 +190,21 @@
     },
     "controles-de-plataforma": {
       "desc": "Controles que incrustan componentes de la plataforma, como .NET y ActiveX en Windows. Sin decidir si Telekino tendrá un equivalente"
+    },
+    "varios-vis": {
+      "desc": "Tener varios VIs abiertos a la vez: crearlos, cerrarlos y guardarlos todos. Hoy el editor abre un solo VI"
+    },
+    "versiones-del-formato": {
+      "desc": "Guardar un VI en una versión anterior del formato .qvi. Hoy sólo existe la 1"
+    },
+    "imprimir": {
+      "desc": "Imprimir un VI: su documentación o sus ventanas"
+    },
+    "propiedades-del-vi": {
+      "desc": "El diálogo de propiedades del VI y dónde se guarda lo que fija en el .qvi"
+    },
+    "recientes": {
+      "desc": "La lista de los VIs y proyectos abiertos hace poco"
     },
     "sub-vis": {
       "desc": "Usar un VI como subVI: su connector pane y su llamada compilada",
@@ -515,14 +534,191 @@
       "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "front-panel/vi-nuevo.png"
     },
-    {
-      "id": "window.front-panel.menu.file",
-      "etiqueta": "File",
-      "estado": "todo",
-      "labview": "Operaciones con ficheros: VIs y proyectos. Contenido sin capturar.",
-      "necesita": "editor-escritorio",
-      "captura": "front-panel/vi-nuevo.png"
-    },
+      {
+        "id": "window.front-panel.menu.file",
+        "etiqueta": "File",
+        "estado": "built",
+        "prueba": "editor/test/estado.test.mjs::el_menú_file_se_abre_bajo_su_título_con_sus_atajos",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.new-vi",
+        "etiqueta": "New VI",
+        "estado": "todo",
+        "labview": "Crea un VI nuevo en blanco, con su panel y su diagrama.",
+        "necesita": "varios-vis",
+        "atajo": "Ctrl+N",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.new",
+        "etiqueta": "New...",
+        "estado": "todo",
+        "labview": "Abre el diálogo para crear un VI, un proyecto u otro fichero a partir de una plantilla.",
+        "necesita": "varios-vis",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.open",
+        "etiqueta": "Open...",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "atajo": "Ctrl+O",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.close",
+        "etiqueta": "Close",
+        "estado": "todo",
+        "labview": "Cierra el VI; si tiene cambios sin guardar, pregunta antes.",
+        "necesita": "varios-vis",
+        "atajo": "Ctrl+W",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.close-all",
+        "etiqueta": "Close All",
+        "estado": "todo",
+        "labview": "Cierra todos los VIs abiertos.",
+        "necesita": "varios-vis",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.save",
+        "etiqueta": "Save",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "atajo": "Ctrl+S",
+        "captura": "front-panel/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.front-panel.menu.file.save-as",
+        "etiqueta": "Save As...",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.save-all",
+        "etiqueta": "Save All",
+        "estado": "todo",
+        "labview": "Guarda todos los VIs abiertos que tengan cambios.",
+        "necesita": "varios-vis",
+        "atajo": "Ctrl+Shift+S",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.save-for-previous-version",
+        "etiqueta": "Save for Previous Version...",
+        "estado": "todo",
+        "labview": "Guarda una copia del VI en el formato de una versión anterior de LabVIEW.",
+        "necesita": "versiones-del-formato",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.revert",
+        "etiqueta": "Revert...",
+        "estado": "todo",
+        "labview": "Descarta los cambios y vuelve a la última versión guardada. Sin cambios, sale desactivado.",
+        "necesita": "leer-escribir-qvi",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.create-project",
+        "etiqueta": "Create Project...",
+        "estado": "todo",
+        "labview": "Crea un proyecto nuevo.",
+        "necesita": "formato-qproj",
+        "captura": "front-panel/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.front-panel.menu.file.open-project",
+        "etiqueta": "Open Project...",
+        "estado": "todo",
+        "labview": "Abre un proyecto.",
+        "necesita": "formato-qproj",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.save-project",
+        "etiqueta": "Save Project",
+        "estado": "todo",
+        "labview": "Guarda el proyecto al que pertenece el VI.",
+        "necesita": "formato-qproj",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.close-project",
+        "etiqueta": "Close Project",
+        "estado": "todo",
+        "labview": "Cierra el proyecto al que pertenece el VI.",
+        "necesita": "formato-qproj",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.page-setup",
+        "etiqueta": "Page Setup...",
+        "estado": "todo",
+        "labview": "Configura la página para imprimir.",
+        "necesita": "imprimir",
+        "captura": "front-panel/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.front-panel.menu.file.print",
+        "etiqueta": "Print...",
+        "estado": "todo",
+        "labview": "Imprime la documentación del VI.",
+        "necesita": "imprimir",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.print-window",
+        "etiqueta": "Print Window...",
+        "estado": "todo",
+        "labview": "Imprime la ventana tal como se ve.",
+        "necesita": "imprimir",
+        "atajo": "Ctrl+P",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.vi-properties",
+        "etiqueta": "VI Properties",
+        "estado": "todo",
+        "labview": "Abre las propiedades del VI: su descripción, su aspecto de ventana, su ejecución y más.",
+        "necesita": "propiedades-del-vi",
+        "atajo": "Ctrl+I",
+        "captura": "front-panel/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.front-panel.menu.file.recent-projects",
+        "etiqueta": "Recent Projects",
+        "estado": "todo",
+        "labview": "Los proyectos abiertos hace poco. Sin ninguno, sale desactivado.",
+        "necesita": "recientes",
+        "captura": "front-panel/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.front-panel.menu.file.recent-files",
+        "etiqueta": "Recent Files",
+        "estado": "todo",
+        "labview": "Los VIs abiertos hace poco. Sin ninguno, sale desactivado.",
+        "necesita": "recientes",
+        "captura": "front-panel/menu-file.png"
+      },
+      {
+        "id": "window.front-panel.menu.file.exit",
+        "etiqueta": "Exit",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "atajo": "Ctrl+Q",
+        "captura": "front-panel/menu-file.png",
+        "separado": true
+      },
     {
       "id": "window.front-panel.menu.edit",
       "etiqueta": "Edit",
@@ -734,14 +930,191 @@
       "prueba": "editor/test/edicion.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
       "captura": "block-diagram/vi-nuevo.png"
     },
-    {
-      "id": "window.block-diagram.menu.file",
-      "etiqueta": "File",
-      "estado": "todo",
-      "labview": "Operaciones con ficheros: VIs y proyectos. Contenido sin capturar.",
-      "necesita": "editor-escritorio",
-      "captura": "block-diagram/vi-nuevo.png"
-    },
+      {
+        "id": "window.block-diagram.menu.file",
+        "etiqueta": "File",
+        "estado": "built",
+        "prueba": "editor/test/estado.test.mjs::el_menú_file_se_abre_bajo_su_título_con_sus_atajos",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.new-vi",
+        "etiqueta": "New VI",
+        "estado": "todo",
+        "labview": "Crea un VI nuevo en blanco, con su panel y su diagrama.",
+        "necesita": "varios-vis",
+        "atajo": "Ctrl+N",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.new",
+        "etiqueta": "New...",
+        "estado": "todo",
+        "labview": "Abre el diálogo para crear un VI, un proyecto u otro fichero a partir de una plantilla.",
+        "necesita": "varios-vis",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.open",
+        "etiqueta": "Open...",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "atajo": "Ctrl+O",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.close",
+        "etiqueta": "Close",
+        "estado": "todo",
+        "labview": "Cierra el VI; si tiene cambios sin guardar, pregunta antes.",
+        "necesita": "varios-vis",
+        "atajo": "Ctrl+W",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.close-all",
+        "etiqueta": "Close All",
+        "estado": "todo",
+        "labview": "Cierra todos los VIs abiertos.",
+        "necesita": "varios-vis",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.save",
+        "etiqueta": "Save",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "atajo": "Ctrl+S",
+        "captura": "block-diagram/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.block-diagram.menu.file.save-as",
+        "etiqueta": "Save As...",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.save-all",
+        "etiqueta": "Save All",
+        "estado": "todo",
+        "labview": "Guarda todos los VIs abiertos que tengan cambios.",
+        "necesita": "varios-vis",
+        "atajo": "Ctrl+Shift+S",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.save-for-previous-version",
+        "etiqueta": "Save for Previous Version...",
+        "estado": "todo",
+        "labview": "Guarda una copia del VI en el formato de una versión anterior de LabVIEW.",
+        "necesita": "versiones-del-formato",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.revert",
+        "etiqueta": "Revert...",
+        "estado": "todo",
+        "labview": "Descarta los cambios y vuelve a la última versión guardada. Sin cambios, sale desactivado.",
+        "necesita": "leer-escribir-qvi",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.create-project",
+        "etiqueta": "Create Project...",
+        "estado": "todo",
+        "labview": "Crea un proyecto nuevo.",
+        "necesita": "formato-qproj",
+        "captura": "block-diagram/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.block-diagram.menu.file.open-project",
+        "etiqueta": "Open Project...",
+        "estado": "todo",
+        "labview": "Abre un proyecto.",
+        "necesita": "formato-qproj",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.save-project",
+        "etiqueta": "Save Project",
+        "estado": "todo",
+        "labview": "Guarda el proyecto al que pertenece el VI.",
+        "necesita": "formato-qproj",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.close-project",
+        "etiqueta": "Close Project",
+        "estado": "todo",
+        "labview": "Cierra el proyecto al que pertenece el VI.",
+        "necesita": "formato-qproj",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.page-setup",
+        "etiqueta": "Page Setup...",
+        "estado": "todo",
+        "labview": "Configura la página para imprimir.",
+        "necesita": "imprimir",
+        "captura": "block-diagram/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.block-diagram.menu.file.print",
+        "etiqueta": "Print...",
+        "estado": "todo",
+        "labview": "Imprime la documentación del VI.",
+        "necesita": "imprimir",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.print-window",
+        "etiqueta": "Print Window...",
+        "estado": "todo",
+        "labview": "Imprime la ventana tal como se ve.",
+        "necesita": "imprimir",
+        "atajo": "Ctrl+P",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.vi-properties",
+        "etiqueta": "VI Properties",
+        "estado": "todo",
+        "labview": "Abre las propiedades del VI: su descripción, su aspecto de ventana, su ejecución y más.",
+        "necesita": "propiedades-del-vi",
+        "atajo": "Ctrl+I",
+        "captura": "block-diagram/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.block-diagram.menu.file.recent-projects",
+        "etiqueta": "Recent Projects",
+        "estado": "todo",
+        "labview": "Los proyectos abiertos hace poco. Sin ninguno, sale desactivado.",
+        "necesita": "recientes",
+        "captura": "block-diagram/menu-file.png",
+        "separado": true
+      },
+      {
+        "id": "window.block-diagram.menu.file.recent-files",
+        "etiqueta": "Recent Files",
+        "estado": "todo",
+        "labview": "Los VIs abiertos hace poco. Sin ninguno, sale desactivado.",
+        "necesita": "recientes",
+        "captura": "block-diagram/menu-file.png"
+      },
+      {
+        "id": "window.block-diagram.menu.file.exit",
+        "etiqueta": "Exit",
+        "estado": "built",
+        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "atajo": "Ctrl+Q",
+        "captura": "block-diagram/menu-file.png",
+        "separado": true
+      },
     {
       "id": "window.block-diagram.menu.edit",
       "etiqueta": "Edit",

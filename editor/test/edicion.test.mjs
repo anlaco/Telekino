@@ -5,9 +5,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { MEDIDAS_COMPUESTO, caja, contexto, extremos, glifosPorBloque, ruta, terminales } from "../src/diagrama.mjs";
+import { MEDIDAS_COMPUESTO, caja, contenido, contexto, extremos, glifosPorBloque, ruta, terminales } from "../src/diagrama.mjs";
 import * as ED from "../src/edicion.mjs";
-import { tipos } from "../src/grafo.mjs";
+import { tipos } from "../../nucleo/grafo.mjs";
 import * as H from "../src/historial.mjs";
 import { CAT, INV } from "./comun.mjs";
 
@@ -357,3 +357,40 @@ test("la constante booleana cambia con un clic y se mueve arrastrándola", () =>
   e = ED.pulsar(ED.moverA(e, CTX, { x: 50, y: 50 }), CTX, FONDO, { x: 50, y: 50 });
   assert.equal(e.g.nodos[0].config.mode, "and");
 });
+
+// En LabVIEW 2026 Q3: un cable que se tira desde una entrada y se suelta en otro
+// cable sale de él, con un punto de unión, y baja 12 px antes de la entrada.
+test("un cable que acaba en otro cable sale de él como una rama", () => {
+  let d = ED.inicial();
+  d = poner(d, "const", { x: 20, y: 40 });
+  d = poner(d, "add", { x: 200, y: 100 });
+  const [k, add] = ids(d);
+  d = cablear(d, terminal(d, k, "result"), terminal(d, add, "a"));
+  const padre = d.g.cables[0];
+  const [tb, pb] = terminal(d, add, "b");
+  // Clic en la entrada b y clic en el primer tramo del cable.
+  d = ED.pulsar(d, CTX, tb, pb);
+  d = ED.soltar(d, CTX, tb, pb);
+  const r = ruta(...[`${k}.result`, `${add}.a`].map((t) => extremos(d.g, CTX).get(t)), padre.codos);
+  d = ED.pulsar(d, CTX, { tipo: "tramo", cable: padre.id, k: 0 }, { x: r[0][0] + 5, y: r[0][1] });
+  assert.equal(d.g.cables.length, 2);
+  const nueva = d.g.cables[1];
+  assert.deepEqual([nueva.de, nueva.a], [padre.de, { nodo: add, puerto: "b" }], "lleva el mismo dato que el cable del que sale");
+  assert.equal(nueva.union[1], r[0][1], "la unión está en el tramo pinchado");
+  assert.equal(nueva.union[0], Math.min(pb.x - 12, r[1][0]), "tan cerca del destino como deja el tramo");
+  assert.equal(tipos(d.g, CAT).cables.get(nueva.id).roto, null);
+  assert.match(D_contenido(d), /class="union"/);
+
+  // Desde una salida, no: ese cable ya tiene fuente.
+  d = poner(d, "const", { x: 20, y: 200 });
+  const k2 = ids(d)[2];
+  const [ts, ps] = terminal(d, k2, "result");
+  d = ED.soltar(ED.pulsar(d, CTX, ts, ps), CTX, ts, ps);
+  d = ED.pulsar(d, CTX, { tipo: "tramo", cable: padre.id, k: 0 }, { x: r[0][0] + 5, y: r[0][1] });
+  assert.equal(d.g.cables.length, 2);
+  assert.match(d.aviso.texto, /ya tiene una fuente/);
+});
+
+function D_contenido(d) {
+  return contenido(d, CTX, tipos(d.g, CAT));
+}

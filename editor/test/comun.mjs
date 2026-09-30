@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargarCatalogo as cargarCatalogo_ } from "../src/grafo.mjs";
+import { cargarCatalogo as cargarCatalogo_ } from "../../nucleo/grafo.mjs";
 import { cargarInventario } from "../src/inventario.mjs";
 
 export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");

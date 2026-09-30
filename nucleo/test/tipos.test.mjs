@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { COLORES, aspecto, comun, conversion, nombre } from "../src/tipos.mjs";
+import { COLORES, aspecto, comun, conversion, nombre } from "../tipos.mjs";
 
 // «Numeric Conversion», en la ayuda de NI: gana la representación con más
 // bits; con los mismos, la sin signo. La coma flotante gana al entero.
@@ -41,7 +41,7 @@ test("el cable lleva el color de su tipo y el grosor de su dimensión", () => {
 });
 
 test("una constante enseña su valor como LabVIEW y lee lo que se escribe", async () => {
-  const { formatear, leerNumero } = await import("../src/tipos.mjs");
+  const { formatear, leerNumero } = await import("../tipos.mjs");
   assert.equal(formatear(43.3, "number", ","), "43,3");
   assert.equal(formatear(0, "number", ","), "0");
   assert.equal(formatear(32, "i32", ","), "32");

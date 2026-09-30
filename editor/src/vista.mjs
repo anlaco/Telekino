@@ -196,7 +196,7 @@ export function ventana(inv, nombre, estado, extra = {}) {
     .hijos(`${pre}.menu`)
     // El texto va dos veces: el derecho, invisible, fija el ancho, para que la
     // cursiva de un hueco no desplace a los menús siguientes.
-    .map((e) => `<div class="${clases(inv, e.id, "menu")}" data-id="${esc(e.id)}"><span class="medida">${esc(e.etiqueta)}</span><span class="texto">${esc(e.etiqueta)}</span></div>`)
+    .map((e) => `<div class="${clases(inv, e.id, `menu${estado.menuBarra?.id === e.id ? " abierto" : ""}`)}" data-id="${esc(e.id)}"><span class="medida">${esc(e.etiqueta)}</span><span class="texto">${esc(e.etiqueta)}</span></div>`)
     .join("");
 
   const { elementos, sitios } = disposicionBarra(inv, nombre);

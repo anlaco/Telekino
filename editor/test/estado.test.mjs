@@ -15,7 +15,7 @@ const conPaleta = () => ({ ...inicial(), paleta: paletaNueva("palette.functions"
 test("activar un hueco solo muestra su explicación", () => {
   const id = "window.block-diagram.toolbar.run";
   const abierto = clic(inicial(), INV, id, AQUI);
-  assert.deepEqual(abierto, { abierta: { id, x: 10, y: 20 }, paleta: null });
+  assert.deepEqual(abierto, { abierta: { id, x: 10, y: 20 }, paleta: null, menuBarra: null });
   assert.equal(escape(abierto).abierta, null, "Esc la cierra");
 });
 
@@ -148,4 +148,22 @@ test("la carpeta boolean abre su subpaleta", () => {
   assert.deepEqual(donde["and-array-elements"], [2, 0]);
   assert.deepEqual(donde["false-constant"], [3, 1]);
   assert.ok(!subpaletas(INV, abierta.paleta).includes("icono-funcion hueco"), "todas sus funciones están hechas");
+});
+
+// front-panel/menu-file.png: el menú se abre bajo su título, que se resalta; sus
+// filas llevan el atajo en una segunda columna, y los huecos se explican.
+test("el menú file se abre bajo su título con sus atajos", async () => {
+  const { menuContextual } = await import("../src/diagrama.mjs");
+  const { ventana } = await import("../src/vista.mjs");
+  const id = "window.front-panel.menu.file";
+  const e = clic(inicial(), INV, id, { x: 4, y: 20 });
+  assert.deepEqual(e.menuBarra, { id, x: 4, y: 20, abierto: null });
+  assert.match(ventana(INV, "front-panel", e), /class="menu abierto" data-id="window\.front-panel\.menu\.file"/);
+  const html = menuContextual(INV, { raiz: id, x: 4, y: 20 });
+  assert.equal(idsPintados(html).length, 21);
+  assert.match(html, /data-id="window\.front-panel\.menu\.file\.save"[^>]*>.*?<span class="atajo-menu"[^>]*>Ctrl\+S</);
+  assert.match(html, /class="item-menu hueco" data-id="window\.front-panel\.menu\.file\.save-all"/);
+  assert.equal((html.match(/separador-menu/g) ?? []).length, 6, "los separadores de la captura");
+  assert.equal(clic(e, INV, id, { x: 4, y: 20 }).menuBarra, null, "pulsarlo otra vez lo cierra");
+  assert.equal(escape(e).menuBarra, null);
 });

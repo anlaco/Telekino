@@ -182,6 +182,18 @@ casos especiales.
 Presentación pura (§2). Su ausencia es válida: un `.qvi` sin `layout` es un
 programa correcto que el editor dispondrá como pueda.
 
+- `diagram` y `panel`: por nombre de nodo, su sitio (`x`, `y`), su etiqueta
+  (`label`) y dónde va ésta respecto al objeto (`label-offset`), en cada lienzo
+  por separado. En el diagrama, además, `show-terminals` (Visible Items ▸
+  Terminals) y `view-as-icon: false` (el terminal de un control, compacto).
+- `wires`: por destino (`nombre.puerto`, único porque una entrada recibe un solo
+  wire), sus codos en `bends`: una lista que alterna x e y y empieza y acaba en x.
+
+> **Requisito normativo.** Escribir un VI, leerlo y volver a escribirlo **DEBE**
+> dar el mismo texto, y lo leído **DEBE** dibujarse igual que lo guardado. Lo
+> comprueba `editor/test/qvi.test.mjs` («lo que se guarda se abre igual»), con
+> la lectura y la escritura de `nucleo/qvi.mjs`.
+
 ## 5. Estructuras
 
 Una estructura contiene un subgrafo y controla su ejecución.

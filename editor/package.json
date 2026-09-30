@@ -7,7 +7,7 @@
   "main": "electron/main.mjs",
   "scripts": {
     "app": "node scripts/app.mjs",
-    "test": "node --test 'test/*.test.mjs'"
+    "test": "node --test 'test/*.test.mjs' '../nucleo/test/*.test.mjs'"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

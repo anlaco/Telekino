@@ -23,10 +23,10 @@
 //              nodo o de uno de sus terminales
 //   aviso      por qué no se pudo hacer lo último (spec/05 regla 31)
 
-import { CONSTANTES, MEDIDAS_COMPUESTO, caja, cajaEtiqueta, codosPorDefecto, dentroDe, extremos, moverTramo, terminales } from "./diagrama.mjs";
+import { CONSTANTES, MEDIDAS_COMPUESTO, caja, cajaEtiqueta, codosPorDefecto, dentroDe, extremos, moverTramo, rama, terminales } from "./diagrama.mjs";
 import * as Et from "./etiquetas.mjs";
-import * as Gr from "./grafo.mjs";
-import { esEntero, leerNumero } from "./tipos.mjs";
+import * as Gr from "../../nucleo/grafo.mjs";
+import { esEntero, leerNumero } from "../../nucleo/tipos.mjs";
 
 export const inicial = () => ({ g: Gr.nuevo(), seleccion: [], accion: null, aviso: null, sobre: null, edicion: null, menu: null });
 
@@ -70,6 +70,7 @@ export function pulsar(d, ctx, sobre, p, shift = false) {
   if (accion?.tipo === "colocar") return colocar(d, ctx, p);
   if (accion?.tipo === "cablear") {
     if (sobre.tipo === "terminal") return terminar(d, ctx, sobre, p);
+    if (sobre.tipo === "tramo") return unirACable(d, ctx, sobre, p);
     return d; // cableando con clics: el fondo no corta el cable; Esc sí
   }
   const d0 = { ...d, aviso: null };
@@ -164,6 +165,26 @@ function terminar(d, ctx, sobre, p) {
   return { ...d, g: r.g, accion: null, seleccion: [] };
 }
 
+/**
+ * Un cable que se está tirando desde una entrada termina en otro cable: sale de
+ * él una rama que lleva el mismo dato, con su punto de unión, como en LabVIEW.
+ * Desde una salida no se puede: ese cable ya tiene quien lo alimente.
+ */
+function unirACable(d, ctx, sobre, p) {
+  const { desde } = d.accion;
+  if (desde.dir === "out") {
+    return { ...d, accion: null, aviso: { texto: "Ese cable ya tiene una fuente: un cable sólo puede salir de una salida.", x: p.x, y: p.y } };
+  }
+  const c = d.g.cables.find((k) => k.id === sobre.cable);
+  const ext = extremos(d.g, ctx);
+  const [a, b] = [ext.get(`${c.de.nodo}.${c.de.puerto}`), ext.get(`${c.a.nodo}.${c.a.puerto}`)];
+  const destino = ext.get(`${desde.nodo}.${desde.puerto}`);
+  const r = rama(c.codos ?? codosPorDefecto(a, b), a, b, sobre.k, destino, p);
+  const hecho = Gr.conectar(d.g, ctx.cat, { ...c.de, dir: "out" }, desde, r.codos);
+  if (hecho.motivo) return { ...d, accion: null, aviso: { texto: hecho.motivo, x: p.x, y: p.y } };
+  return { ...d, g: Gr.fijarUnion(hecho.g, hecho.id, r.union), accion: null, seleccion: [] };
+}
+
 /** Soltar el botón. */
 export function soltar(d, ctx, sobre, p) {
   const { accion } = d;
@@ -186,6 +207,7 @@ export function soltar(d, ctx, sobre, p) {
     case "cablear":
       if (!accion.arrastrado) return d; // un clic en el terminal: el cable sigue al ratón
       if (sobre?.tipo === "terminal") return terminar(d, ctx, sobre, p);
+      if (sobre?.tipo === "tramo") return unirACable(d, ctx, sobre, p);
       return { ...d, accion: null };
     case "rectangulo": {
       const dentro = dentroDe(d.g, ctx, accion);

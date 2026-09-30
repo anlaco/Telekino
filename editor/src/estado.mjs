@@ -12,7 +12,20 @@ export const PALETA_DE = {
   "block-diagram": "palette.functions",
 };
 
-export const inicial = () => ({ abierta: null, paleta: null });
+export const inicial = () => ({ abierta: null, paleta: null, menuBarra: null });
+
+/** ¿Es un menú de la barra de una ventana, como File? */
+export const esMenuBarra = (id) => /^window\.[^.]+\.menu\.[^.]+$/.test(id);
+
+/**
+ * Un menú de la barra con contenido declarado se abre bajo su título; pulsarlo
+ * otra vez lo cierra. `donde` es la esquina inferior izquierda del título.
+ */
+export function abrirMenuBarra(estado, inv, id, donde) {
+  if (!inv.tieneContenido(id)) return estado;
+  if (estado.menuBarra?.id === id) return { ...estado, menuBarra: null };
+  return { ...estado, abierta: null, paleta: null, menuBarra: { id, x: donde.x, y: donde.y, abierto: null } };
+}
 
 /**
  * Una paleta recién abierta, con su primera categoría desplegada, como en las
@@ -64,6 +77,7 @@ export function cerrarSubpaletas(estado, nivel) {
 export function clic(estado, inv, id, donde, nivel = 0) {
   const e = inv.resolver(id);
   if (!e) return estado;
+  if (esMenuBarra(id) && inv.tieneContenido(id)) return abrirMenuBarra(estado, inv, id, donde);
   const { paleta } = estado;
   if (paleta && id.startsWith(`${paleta.raiz}.`)) {
     if (ultimo(id) === "double-arrows" && !esHueco(e)) {
@@ -92,7 +106,7 @@ export function clicDerecho(estado, inv, ventana, donde) {
 }
 
 /** Esc cierra la explicación y la paleta, que es temporal. */
-export const escape = (estado) => ({ ...estado, abierta: null, paleta: null });
+export const escape = (estado) => ({ ...estado, abierta: null, paleta: null, menuBarra: null });
 
 /** Un clic fuera de la paleta la cierra; fuera de la explicación, también. */
 export function clicFuera(estado, { enPaleta, enExplicacion }) {
@@ -100,6 +114,7 @@ export function clicFuera(estado, { enPaleta, enExplicacion }) {
     ...estado,
     paleta: enPaleta ? estado.paleta : null,
     abierta: enExplicacion ? estado.abierta : null,
+    menuBarra: null,
   };
 }
 

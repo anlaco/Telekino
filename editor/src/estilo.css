@@ -292,6 +292,10 @@ svg { display: block; overflow: visible; }
 .item-menu.activo svg polygon, .item-menu:hover svg polygon { fill: #fff; }
 .item-menu.hueco:hover, .item-menu.hueco.activo { color: #fff; }
 .item-menu .flecha-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu .atajo-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu.hueco .atajo-menu { font-style: italic; }
+/* El menú de la barra abierto: su título, resaltado en azul. */
+.menu.abierto { background: #0078d7; color: #fff; box-shadow: none; }
 .item-menu .flecha-menu svg { width: 4px; height: 7.2px; }
 .item-menu.marcado::before { content: "✓"; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
 .separador-menu { position: absolute; left: 5px; right: 5px; height: 1px; background: #bdbdbd; }
@@ -328,6 +332,15 @@ svg { display: block; overflow: visible; }
 .lienzo-front-panel { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
 .objeto-panel { position: absolute; cursor: default; }
 .objeto-panel .incrementador { position: absolute; left: 0; top: 0; width: 16px; height: 100%; }
+.incrementador svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Cada mitad del incrementador es una flecha que se pulsa. */
+.flecha-inc { position: absolute; left: 0; width: 13px; height: 50%; }
+.flecha-inc[data-paso="1"] { top: 0; }
+.flecha-inc[data-paso="-1"] { bottom: 0; }
+/* Mientras se escribe el valor de un control: cursor de texto y un marco negro alrededor. */
+.casilla { cursor: text; }
+.casilla.indicador { cursor: default; }
+.objeto-panel.editando-valor { outline: 1px solid #000; outline-offset: 1px; }
 .casilla {
   position: absolute; top: 0; bottom: 0; box-sizing: border-box;
   border: 4px solid; border-color: #c2c2c2 #ececec #f2f2f2 #cacaca;

@@ -8,7 +8,7 @@ import { test } from "node:test";
 import * as D from "../src/diagrama.mjs";
 import * as ED from "../src/edicion.mjs";
 import * as Et from "../src/etiquetas.mjs";
-import * as Gr from "../src/grafo.mjs";
+import * as Gr from "../../nucleo/grafo.mjs";
 import * as P from "../src/panel.mjs";
 import { CAT, INV } from "./comun.mjs";
 
@@ -151,4 +151,34 @@ test("las etiquetas miden su línea más ancha", () => {
   const medir = (t) => t.length * 5;
   assert.deepEqual(Et.tamano("abc\nabcdef", medir), { ancho: 32, alto: 2 * Et.ALTO_LINEA });
   assert.equal(Gr.etiquetaLibre(Gr.nuevo(), "Numeric"), "Numeric");
+});
+
+// En LabVIEW 2026 Q3: cada clic en una flecha del incrementador suma o resta 1;
+// un clic en la casilla escribe en ella con el cursor al final, Intro confirma
+// y lo que no es un número deja el valor como estaba.
+test("el valor de un control se escribe en su casilla y cambia con las flechas", () => {
+  let p = ponerYConfirmar(P.inicial(), "control", { x: 100, y: 100 });
+  const id = p.g.nodos[0].id;
+  for (const paso of [1, 1, 1, -1]) p = P.pulsar(p, CTX, { tipo: "paso", id, paso }, { x: 0, y: 0 });
+  assert.equal(p.g.nodos[0].config.value, 2);
+  assert.match(P.contenido(p, CTX), /<span class="valor"><span>2<\/span>/);
+
+  p = P.pulsar(p, CTX, { tipo: "casilla", id }, { x: 0, y: 0 });
+  assert.deepEqual(p.edicion, { nodo: id, valor: true, texto: "2", todo: false });
+  assert.match(P.contenido(p, CTX), /editando-valor/, "el control se enmarca mientras se escribe");
+  for (const t of ["5", ",", "5"]) p = P.teclear(p, t);
+  p = P.teclear(p, "Enter");
+  assert.equal(p.edicion, null);
+  assert.equal(p.g.nodos[0].config.value, 25.5);
+
+  p = P.editarValor(p, CTX, id, true);
+  p = P.confirmar(P.teclear(p, "x"));
+  assert.equal(p.g.nodos[0].config.value, 25.5, "lo que no es un número no cambia el valor");
+
+  // En un indicador no se escribe: su casilla sólo lo selecciona.
+  p = ponerYConfirmar(p, "indicator", { x: 400, y: 100 });
+  const ind = p.g.nodos[1].id;
+  p = P.pulsar(p, CTX, { tipo: "casilla", id: ind }, { x: 400, y: 100 });
+  assert.equal(p.edicion, null);
+  assert.deepEqual(p.seleccion, [ind]);
 });

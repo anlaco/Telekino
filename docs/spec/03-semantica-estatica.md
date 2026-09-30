@@ -427,7 +427,7 @@ cuando se incumpla.)*
 | Regla | Mecanismo | Estado |
 |-------|-----------|--------|
 | 1 puerto desconocido = error | Test «un puerto que no existe es un error»; falta el caso de `check` | **Verificada en el editor** |
-| 2 igualdad estricta, conversión entre numéricos | Tests `editor/test/tipos.test.mjs` y `grafo.test.mjs` (coerción, cable roto) | **Verificada en el editor** |
+| 2 igualdad estricta, conversión entre numéricos | Tests `nucleo/test/tipos.test.mjs` y `grafo.test.mjs` (coerción, cable roto) | **Verificada en el editor** |
 | 2f tipo común | Test «el tipo común sigue la regla de LabVIEW» | **Verificada en el editor** |
 | 2b `array`/`cluster` sin parámetro | **Casos negativos del esquema** | ✅ **Verificada** |
 | 2c propagación hacia delante | Test: `index-array` sobre `array<string>` devuelve `string` | Pendiente |
@@ -441,10 +441,8 @@ cuando se incumpla.)*
 | 10 entradas sin conectar | Caso negativo de `check` | Pendiente |
 | Todas | Los 14 ficheros del corpus reparado **DEBEN** pasar `check` | Pendiente |
 
-Las marcadas «en el editor» lo están en `editor/src/grafo.mjs`, que es
-provisional (DT-038 c): el núcleo, que debe implementarlas todas, no existe.
-DT-039 decide que el núcleo es JavaScript: `grafo.mjs` pasará a `nucleo/` y
-dejará de ser provisional.
+Las marcadas «en el editor» lo están en `nucleo/grafo.mjs`: desde DT-039 es el
+núcleo, que usan igual el editor y, cuando existan, el compilador y `check`.
 **El resto no está verificado**: describe reglas cuya implementación no existe. Es la diferencia entre una especificación y una
 intención, y está marcada como tal.
 

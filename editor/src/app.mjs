@@ -15,10 +15,11 @@ import * as D from "./diagrama.mjs";
 import * as ED from "./edicion.mjs";
 import * as E from "./estado.mjs";
 import * as G from "./glifos.mjs";
-import * as Gr from "./grafo.mjs";
+import * as Gr from "../../nucleo/grafo.mjs";
 import * as H from "./historial.mjs";
 import { cargarInventario, esHueco } from "./inventario.mjs";
 import * as P from "./panel.mjs";
+import * as Q from "../../nucleo/qvi.mjs";
 import * as V from "./vista.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
@@ -86,12 +87,63 @@ function quieto(g) {
   if (g === publicado) return;
   publicado = g;
   canal.postMessage({ g });
+  avisar(g);
 }
+
+// ——— Guardar y abrir (nucleo/qvi.mjs) ———
+//
+// La página sólo convierte el VI en texto y al revés; el disco, los diálogos
+// del sistema y el asterisco del título son del proceso principal
+// (electron/main.mjs), que recibe cada cambio para saber si hay algo sin guardar.
+
+/** El VI ha cambiado: el proceso principal compara con lo guardado. */
+const avisar = (g) => window.telekino?.cambio(Q.aTexto(g, cat));
+
+/** Lo que se está escribiendo se confirma antes de guardar, como con Enter Text. */
+function confirmarEscritura() {
+  if (conDiagrama && dia.edicion) cambiarDiagrama(ED.confirmar(dia, ctx));
+  if (conPanel && pan.edicion) cambiarPanel(P.confirmar(pan));
+}
+
+/** File ▸ Save y Save As. */
+async function guardarVI(como) {
+  if (!window.telekino) return;
+  confirmarEscritura();
+  await window.telekino.guardar(Q.aTexto(grafo(), cat), como);
+}
+
+/** Un VI recién abierto: empieza sin historia y sin nada seleccionado. */
+function cargar(g) {
+  publicado = g;
+  historial = H.nuevo(g);
+  dia = { ...ED.inicial(), g };
+  pan = P.inicial(g);
+  pintar();
+  avisar(g);
+}
+
+/** File ▸ Open: el VI se lee aquí y se manda a la otra ventana. */
+async function abrirVI() {
+  const r = await window.telekino?.abrir();
+  if (!r) return;
+  let g;
+  try {
+    g = Q.leer(r.texto, cat);
+  } catch (e) {
+    return window.telekino.error(e.message);
+  }
+  cargar(g);
+  canal.postMessage({ g, nuevo: true });
+}
+
+/** Las órdenes hechas del menú File, por el último segmento de su id. */
+const ORDENES_MENU = { save: () => guardarVI(false), "save-as": () => guardarVI(true), open: abrirVI, exit: () => window.telekino?.salir() };
 
 canal.onmessage = ({ data }) => {
   // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
   if (data.pide) return canal.postMessage({ g: grafo() });
   // Lo que ya se tiene no es un paso nuevo: la respuesta a una ventana recién abierta, por ejemplo.
+  if (data.nuevo) return cargar(data.g);
   if (!data.g || JSON.stringify(data.g) === JSON.stringify(grafo())) return;
   publicado = data.g;
   historial = H.registrar(historial, data.g);
@@ -128,6 +180,8 @@ function pintar() {
     extra.lienzo = P.contenido(pan, ctx);
     extra.editandoTexto = !!pan.edicion;
   }
+  // El menú de la barra que está abierto, bajo su título.
+  if (estado.menuBarra) extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, new Set(), medirMenu);
   document.body.innerHTML = V.ventana(inv, nombre, estado, extra);
   const ventana = document.querySelector(".ventana");
   ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
@@ -204,6 +258,10 @@ function objetivoPanel(el) {
   if (!el?.closest(".lienzo")) return null;
   const etiqueta = el.closest(".etiqueta");
   if (etiqueta) return { tipo: "etiqueta", id: etiqueta.dataset.etiqueta };
+  const flecha = el.closest(".flecha-inc");
+  if (flecha) return { tipo: "paso", id: flecha.closest(".objeto-panel").dataset.nodo, paso: Number(flecha.dataset.paso) };
+  const casilla = el.closest(".casilla");
+  if (casilla) return { tipo: "casilla", id: casilla.dataset.casilla };
   const o = el.closest(".objeto-panel");
   if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
@@ -212,6 +270,12 @@ function objetivoPanel(el) {
 /** El nodo de lo que hay bajo el ratón, si es un nodo o uno de sus terminales. */
 const nodoDe = (o) => (o?.tipo === "terminal" ? o.nodo : o?.tipo === "nodo" ? o.id : null);
 
+/** Un menú de la barra se abre justo bajo su título, alineado con él. */
+const anclaMenu = (el) => {
+  const r = el.getBoundingClientRect();
+  return { x: r.left, y: r.bottom };
+};
+
 const ancla = (el) => {
   const r = el.getBoundingClientRect();
   return { x: r.left, y: r.bottom + 2 };
@@ -219,6 +283,9 @@ const ancla = (el) => {
 
 addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
+  // Con un menú de la barra abierto, pulsar fuera de él y de los títulos lo cierra.
+  if (estado.menuBarra && !ev.target.closest(".menu-contextual, .menu")) return cambiar({ ...estado, menuBarra: null });
+  if (estado.menuBarra) return;
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
     return cambiarDiagrama({ ...dia, menu: null });
@@ -273,6 +340,8 @@ function pulsarPanel(ev) {
   }
   ev.preventDefault();
   if (ev.detail >= 2 && sobre.tipo === "etiqueta") return cambiarPanel(P.editar(pan, sobre.id));
+  // Doble clic en la casilla de un control: todo el valor seleccionado.
+  if (ev.detail >= 2 && sobre.tipo === "casilla" && pan.edicion?.valor) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true));
   cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey));
 }
 
@@ -305,6 +374,18 @@ addEventListener("mouseup", (ev) => {
 
 addEventListener("click", (ev) => {
   if (ev.target.closest(".explicacion")) return;
+  // Una fila del menú de la barra: lo hecho se hace; un hueco, se explica.
+  const filaBarra = estado.menuBarra && ev.target.closest(".item-menu");
+  if (filaBarra) {
+    const id = filaBarra.dataset.id;
+    const e = inv.resolver(id);
+    const orden = !esHueco(e) && ORDENES_MENU[id.slice(id.lastIndexOf(".") + 1)];
+    if (orden) {
+      cambiar({ ...estado, menuBarra: null });
+      return orden();
+    }
+    return cambiar(E.clic({ ...estado, menuBarra: null }, inv, id, ancla(filaBarra)));
+  }
   // Una fila de un menú de clic derecho: un submenú se abre, lo hecho se hace y
   // un hueco se explica (regla 53).
   const fila = conDiagrama && dia.menu && ev.target.closest(".item-menu");
@@ -319,7 +400,7 @@ addEventListener("click", (ev) => {
   }
   const el = ev.target.closest("[data-id]");
   if (!el || inerte(el)) return;
-  const donde = abreSubpaleta(el) ? V.anclaSubpaleta(el.getBoundingClientRect()) : ancla(el);
+  const donde = abreSubpaleta(el) ? V.anclaSubpaleta(el.getBoundingClientRect()) : el.classList.contains("menu") ? anclaMenu(el) : ancla(el);
   cambiar(E.clic(estado, inv, el.dataset.id, donde, nivelDe(el)));
 });
 
@@ -349,6 +430,14 @@ addEventListener("contextmenu", (ev) => {
 
 addEventListener("keydown", (ev) => {
   const ctrl = ev.ctrlKey || ev.metaKey;
+  // File ▸ Save, Open y Exit, con los atajos de LabVIEW.
+  if (ctrl && !ev.shiftKey && !ev.altKey) {
+    const orden = { s: "save", o: "open", q: "exit" }[ev.key.toLowerCase()];
+    if (orden) {
+      ev.preventDefault();
+      return ORDENES_MENU[orden]();
+    }
+  }
   if (conDiagrama && dia.edicion && !ctrl) {
     ev.preventDefault();
     // En una constante Intro confirma; en una etiqueta empieza otra línea, y
@@ -363,7 +452,7 @@ addEventListener("keydown", (ev) => {
     return cambiarPanel(P.teclear(pan, ev.key));
   }
   if (ev.key === "Escape") {
-    if (estado.paleta || estado.abierta) return cambiar(E.escape(estado));
+    if (estado.paleta || estado.abierta || estado.menuBarra) return cambiar(E.escape(estado));
     return conDiagrama ? cambiarDiagrama(ED.escape(dia)) : cambiarPanel(P.escape(pan));
   }
   if (conPanel && !estado.paleta) {
@@ -415,6 +504,11 @@ function ocultarEmergente() {
 }
 
 addEventListener("mouseover", (ev) => {
+  // Con un menú de la barra abierto, pasar por otro título lo abre en su lugar.
+  const titulo = estado.menuBarra && ev.target.closest(".menu");
+  if (titulo && titulo.dataset.id !== estado.menuBarra.id && inv.tieneContenido(titulo.dataset.id)) {
+    return cambiar(E.abrirMenuBarra({ ...estado, menuBarra: null }, inv, titulo.dataset.id, anclaMenu(titulo)));
+  }
   let el = ev.target.closest("[data-id]");
   if (el === sobre) return;
   sobre = el;
@@ -500,3 +594,4 @@ function mostrarTip(ev) {
 }
 
 pintar();
+avisar(grafo());

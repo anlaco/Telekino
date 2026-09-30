@@ -10,7 +10,7 @@
 import * as Et from "./etiquetas.mjs";
 import * as G from "./glifos.mjs";
 import { esHueco, ultimo } from "./inventario.mjs";
-import { aspecto, formatear, nombre } from "./tipos.mjs";
+import { aspecto, formatear, nombre } from "../../nucleo/tipos.mjs";
 
 const px = (n) => `${Number(n.toFixed(2))}px`;
 const f2 = (n) => Number(n.toFixed(2));
@@ -206,6 +206,32 @@ export function ruta(a, b, codos = codosPorDefecto(a, b)) {
   return pts;
 }
 
+/** Cuánto antes de la entrada baja una rama: 12 px, medido en LabVIEW 2026 Q3. */
+const ANTES_RAMA = 12;
+
+/**
+ * Una rama que sale del tramo `k` de un cable (de `a` a `b`, con sus `codos`)
+ * hacia la entrada `destino`, pinchada en `p`. Sigue el cable hasta ese tramo y
+ * gira hacia el destino. Como en LabVIEW, en un tramo horizontal la unión no
+ * queda donde se pincha, sino tan cerca del destino como deja el tramo: la rama
+ * baja 12 px antes de la entrada. Devuelve los codos de la rama y su punto de
+ * unión.
+ */
+export function rama(codos, a, b, k, destino, p) {
+  const pts = ruta(a, b, codos);
+  const [[x1, y1], [x2, y2]] = [pts[k], pts[k + 1]];
+  const entre = (v, u, w) => Math.min(Math.max(v, Math.min(u, w)), Math.max(u, w));
+  if (y1 === y2) {
+    const jx = f2(entre(destino.x - ANTES_RAMA, x1, x2));
+    const antes = codos.slice(0, k);
+    // En el último tramo, el que entra en `b`, falta la y a la que llega.
+    if (k > codos.length) antes.push(b.y);
+    return { codos: [...antes, jx], union: [jx, y1] };
+  }
+  const jy = f2(entre(p.y, y1, y2));
+  return { codos: [...codos.slice(0, k), jy, f2(destino.x - ANTES_RAMA)], union: [x1, jy] };
+}
+
 /**
  * Mover el tramo `k` de un cable: los verticales se mueven de lado y los
  * horizontales de arriba abajo. El primero y el último están pegados a un
@@ -277,6 +303,8 @@ export function contenido(d, ctx, resueltos) {
       cables += `<g class="cable-x"><line x1="${mx - 3}" y1="${my - 3}" x2="${mx + 3}" y2="${my + 3}"/><line x1="${mx - 3}" y1="${my + 3}" x2="${mx + 3}" y2="${my - 3}"/></g>`;
     }
     cables += `</g>`;
+    // El punto de unión de una rama: un punto del color del cable.
+    if (c.union && !info.roto) cunas += `<circle class="union" cx="${f2(c.union[0])}" cy="${f2(c.union[1])}" r="2.2" fill="${aspecto(info.tipo).color}"/>`;
     // El punto de coerción: una cuña roja en el borde de la entrada que convierte.
     if (info.coercion) cunas += `<polygon class="coercion" points="${f2(b.x)},${f2(b.y - 2.7)} ${f2(b.x + 3.3)},${f2(b.y)} ${f2(b.x)},${f2(b.y + 2.7)}"/>`;
   }
@@ -454,7 +482,7 @@ const CON_SUBMENU = ["visible-items", "numeric-palette", "create", "replace", "c
  * ajusta al texto más largo: 32 px del vídeo a su izquierda y 46 a su derecha,
  * en los dos menús (246 px el de Add, 334 el de la constante).
  */
-export const MEDIDAS_MENU = { fila: 19.3, separador: 8.8, arriba: 1.7, texto: 21.6, derecha: 31, flecha: 14, solape: 4 };
+export const MEDIDAS_MENU = { fila: 19.3, separador: 8.8, arriba: 1.7, texto: 21.6, derecha: 31, flecha: 14, solape: 4, antesAtajo: 12, trasAtajo: 18 };
 
 /** El ancho de un texto de menú, a falta de medirlo en pantalla (la ventana pasa el suyo). */
 const anchoMenuAproximado = (t) => [...t].reduce((s, c) => s + (/[A-Z]/.test(c) ? 7.3 : /[il.,' ]/.test(c) ? 3.1 : 6.1), 0);
@@ -466,7 +494,14 @@ const anchoMenuAproximado = (t) => [...t].reduce((s, c) => s + (/[A-Z]/.test(c) 
  */
 export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMenuAproximado) {
   const M = MEDIDAS_MENU;
-  const anchoDe = (padre) => M.texto + Math.max(...inv.hijos(padre).map((e) => medir(e.etiqueta))) + M.derecha;
+  // Los menús de la barra llevan sus atajos en una segunda columna, como en
+  // front-panel/menu-file.png: tras el texto más largo, y a 18 px del borde.
+  const anchoAtajos = (padre) => Math.max(0, ...inv.hijos(padre).map((e) => (e.atajo ? medir(e.atajo) : 0)));
+  const anchoTextos = (padre) => Math.max(...inv.hijos(padre).map((e) => medir(e.etiqueta)));
+  const anchoDe = (padre) => {
+    const atajos = anchoAtajos(padre);
+    return M.texto + anchoTextos(padre) + (atajos ? M.antesAtajo + atajos + M.trasAtajo : M.derecha);
+  };
   const lista = (padre, x, y) => {
     const ancho = anchoDe(padre);
     let top = M.arriba;
@@ -481,7 +516,8 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
       const abierto = menu.abierto === e.id;
       const clases = `item-menu${esHueco(e) ? " hueco" : ""}${abierto ? " activo" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
       const flecha = conSub ? `<span class="flecha-menu" style="right:${px(M.flecha)}">${G.FLECHA_CATEGORIA}</span>` : "";
-      filas += `<div class="${clases}" data-id="${esc(e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(e.etiqueta)}</span>${flecha}</div>`;
+      const atajo = e.atajo ? `<span class="atajo-menu" style="left:${px(M.texto + anchoTextos(padre) + M.antesAtajo)}">${esc(e.atajo)}</span>` : "";
+      filas += `<div class="${clases}" data-id="${esc(e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(e.etiqueta)}</span>${atajo}${flecha}</div>`;
       if (abierto && inv.tieneContenido(e.id)) sub = lista(e.id, x + ancho - M.solape, y + top - M.arriba);
       top += M.fila;
     }

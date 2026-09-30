@@ -142,7 +142,7 @@ Los wires codifican el tipo de dato mediante **tres canales visuales**:
 
 *Arrays, clusters y tipos compuestos se definirán al implementarse en Fase 2.*
 
-> **Implementado en el editor web** (2026-09-29, `editor/src/tipos.mjs`,
+> **Implementado en el editor web** (2026-09-29, `nucleo/tipos.mjs`,
 > [DT-038](../design/05-decisiones.md#dt-038)): naranja `#fb7c00` para DBL y
 > SGL, azul `#0000ff` para los enteros y los enums —medidos en el borde de las
 > constantes y en los cables de los vídeos de LabVIEW; los iconos de la paleta
