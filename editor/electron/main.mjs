@@ -14,6 +14,9 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(AQUI, "..");
 /** El inventario de LabVIEW (DT-035): la única fuente de lo que está hecho. */
 const INVENTARIO = path.resolve(EDITOR, "../docs/schema/inventario-labview.json");
+/** El catálogo de bloques: la única fuente de los terminales (spec/03, regla 3). */
+const CATALOGO = path.resolve(EDITOR, "../docs/schema/blocks.json");
+const FUERA = { "/inventario.json": INVENTARIO, "/blocks.json": CATALOGO };
 
 const TIPOS = {
   ".html": "text/html",
@@ -31,9 +34,8 @@ protocol.registerSchemesAsPrivileged([
 function servir() {
   protocol.handle("telekino", async (peticion) => {
     const ruta = decodeURIComponent(new URL(peticion.url).pathname);
-    const fichero =
-      ruta === "/inventario.json" ? INVENTARIO : path.normalize(path.join(EDITOR, ruta === "/" ? "index.html" : ruta));
-    if (fichero !== INVENTARIO && !fichero.startsWith(EDITOR + path.sep)) {
+    const fichero = FUERA[ruta] ?? path.normalize(path.join(EDITOR, ruta === "/" ? "index.html" : ruta));
+    if (!Object.values(FUERA).includes(fichero) && !fichero.startsWith(EDITOR + path.sep)) {
       return new Response("fuera del editor", { status: 403 });
     }
     try {
@@ -77,7 +79,9 @@ function abrir(nombre) {
 /**
  * TELEKINO_CAPTURAS=<directorio>: guarda las dos ventanas en PNG y sale. Con
  * TELEKINO_PALETA=x,y, antes abre la paleta del diagrama con un clic derecho en
- * ese punto. Es lo que usan las comparaciones píxel a píxel con LabVIEW.
+ * ese punto; con TELEKINO_CLICS=<id> <id>…, después hace clic en esos
+ * elementos del inventario, por ejemplo en una carpeta para abrir su
+ * subpaleta. Es lo que usan las comparaciones píxel a píxel con LabVIEW.
  */
 async function capturar(ventanas, directorio) {
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -93,6 +97,12 @@ async function capturar(ventanas, directorio) {
       `document.elementFromPoint(${x}, ${y}).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: ${x}, clientY: ${y} }))`,
     );
     await espera(400);
+  }
+  for (const id of (process.env.TELEKINO_CLICS ?? "").split(/\s+/).filter(Boolean)) {
+    await ventanas["block-diagram"].webContents.executeJavaScript(
+      `document.querySelector('[data-id="${id}"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))`,
+    );
+    await espera(300);
   }
   await mkdir(directorio, { recursive: true });
   for (const [nombre, v] of Object.entries(ventanas)) {

@@ -291,3 +291,235 @@ export const SUBPALETAS = {
       [5, 7.5, 10, 12.5].map((y) => linea(4.5, y, 11.5, y, 0.8, "#6e6e6e")).join(""),
   ),
 };
+
+// Subpaletas de Numeric.
+Object.assign(SUBPALETAS, {
+  conversion: svg(
+    poligono([[1.5, 2], [12.5, 2], [14.5, 4.5], [12.5, 7], [1.5, 7]], "#ffffcc", TINTA, 0.9) +
+      texto(7.8, 4.6, "I32", 4.4, TINTA, 700) +
+      poligono([[3.5, 9], [13, 9], [15, 11.5], [13, 14], [3.5, 14]], "#ffffcc", TINTA, 0.9) +
+      texto(9.2, 11.6, "DBL", 4.4, TINTA, 700),
+  ),
+  "data-manipulation": svg(
+    caja(1.5, 4.5, 14.5, 11.5, "#fff", 0.9) +
+      linea(8, 4.5, 8, 11.5, 0.9) +
+      texto(4.8, 8.1, "16", 3.6) + texto(11.2, 8.1, "16", 3.6) +
+      `<polyline points="4,3.5 4,2 12,2 12,3.5" fill="none" stroke="${TINTA}" stroke-width="0.7"/>` +
+      `<polyline points="4,12.5 4,14 12,14 12,12.5" fill="none" stroke="${TINTA}" stroke-width="0.7"/>`,
+  ),
+  complex: svg(caja(2.5, 3, 13.5, 13, "#ffffcc", 1) + texto(8, 8.1, "x+iy", 3.8)),
+  scaling: svg(
+    caja(1, 2, 15, 14, "#fff", 0.9) + linea(1, 8, 15, 8, 0.9) + texto(8, 5.1, "mx+b", 4.2) +
+      `<path d="M2.5 11 q1.2 -2 2.4 0 t2.4 0" fill="none" stroke="${TINTA}" stroke-width="0.7"/>` +
+      flecha(9.3, 11, 1, 0, 1.6) +
+      `<path d="M10.5 12.5 l1 -3 l1 3 l1 -3 l1 3" fill="none" stroke="${TINTA}" stroke-width="0.7"/>`,
+  ),
+  "fixed-point": svg(
+    caja(2, 2.5, 14, 13.5, "#faeca0", 0.9, "#6e6e6e") +
+      texto(8, 6.3, "FXP", 4.6, "#2850be", 700) +
+      caja(3.5, 9.5, 12.5, 12, "#fff", 0.6) + lleno(7.4, 10.2, 8.6, 11.3, TINTA),
+  ),
+  "math-and-scientific-constants": svg(
+    caja(1.5, 1.5, 8, 8, "#faeca0", 1.2) + texto(4.75, 4.9, "π", 5, TINTA, 700) +
+      caja(8, 8, 14.5, 14.5, "#faeca0", 1.2) + texto(11.25, 11.1, "e", 5, TINTA, 700),
+  ),
+});
+
+// Funciones de las paletas. Cada glifo ocupa la caja de un icono, 32 × 32 px
+// CSS, pero se dibuja en una rejilla de 48 × 48: la de los píxeles de la
+// captura a 150 %, para copiar sus coordenadas tal cual.
+const PRIM = "#ffffcc"; // el amarillo de las primitivas
+const BORDE = "#2b2b22";
+const AZUL = "#0000ff"; // las constantes enteras
+const NARANJA = "#ff6633"; // las de coma flotante
+const svg48 = (cuerpo) => svg(cuerpo, "0 0 48 48");
+/** Texto de un icono. El negrito de LabVIEW es más grueso que el de las fuentes: se engruesa con un trazo. */
+const texto48 = (x, y, t, tam, color = TINTA, peso = 700) =>
+  `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, 'Liberation Sans', sans-serif" font-size="${tam}" font-weight="${peso}" fill="${color}"${
+    peso >= 700 ? ` stroke="${color}" stroke-width="0.8"` : ""
+  }>${t}</text>`;
+
+/** El triángulo de una primitiva, con la base a la izquierda y la punta en la salida. */
+function triangulo(x0, y0, x1, y1, simbolo) {
+  const ym = (y0 + y1) / 2;
+  return svg48(
+    poligono([[x0, y0], [x1, ym], [x0, y1]], PRIM, BORDE, 1.5) +
+      linea(x0 + 1.6, y0 + 2.6, x0 + 1.6, y1 - 2.6, 1.3, "#85856c") +
+      simbolo,
+  );
+}
+const prim = (simbolo) => triangulo(8.75, 8.75, 40, 40.25, simbolo);
+const sim = (t, tam = 12, x = 18.5) => texto48(x, 24.8, t, tam);
+
+/** Una constante: caja con el borde del color de su tipo. */
+const constante = (x0, y0, x1, y1, color, relleno, t, colorTexto = TINTA, tam = 13.5) =>
+  svg48(caja(x0, y0, x1, y1, relleno, 3, color) + texto48((x0 + x1) / 2, (y0 + y1) / 2 + 0.3, t, tam, colorTexto, 500));
+
+/** Un dado visto en perspectiva: cara frontal, techo y lateral. */
+function dado(x, y, l, relleno, trazo, puntos) {
+  const d = l * 0.35;
+  return (
+    poligono([[x, y], [x + d, y - d], [x + l + d, y - d], [x + l, y]], relleno, trazo, 1.2) +
+    poligono([[x + l, y], [x + l + d, y - d], [x + l + d, y + l - d], [x + l, y + l]], relleno, trazo, 1.2) +
+    poligono([[x, y], [x + l, y], [x + l, y + l], [x, y + l]], relleno, trazo, 1.2) +
+    puntos.map(([px, py]) => `<circle cx="${f(x + px * l)}" cy="${f(y + py * l)}" r="${f(l * 0.1)}" fill="${TINTA}"/>`).join("")
+  );
+}
+
+export const FUNCIONES = {
+  add: prim(linea(14, 24.5, 22.5, 24.5, 2.6) + linea(18.25, 20.25, 18.25, 28.75, 2.6)),
+  subtract: prim(linea(14, 24.5, 22.5, 24.5, 2)),
+  multiply: prim(linea(15, 21.25, 21.5, 27.75, 2.4) + linea(21.5, 21.25, 15, 27.75, 2.4)),
+  divide: prim(
+    linea(14, 24.5, 22.5, 24.5, 1.5) +
+      `<circle cx="18.25" cy="20.5" r="1.3" fill="${TINTA}"/><circle cx="18.25" cy="28.5" r="1.3" fill="${TINTA}"/>`,
+  ),
+  "quotient-and-remainder": svg48(
+    caja(7.75, 6.75, 39.25, 39.25, PRIM, 1.5, BORDE) + texto48(13.5, 23.5, "÷", 15) + texto48(33, 14.5, "R", 11) + texto48(30, 32.5, "IQ", 11),
+  ),
+  increment: prim(sim("+1", 12.5, 18)),
+  decrement: prim(sim("−1", 12.5, 18)),
+  "add-array-elements": triangulo(5.75, 5.75, 41.5, 43.25, texto48(16.5, 25.3, "Σ", 24)),
+  "multiply-array-elements": triangulo(5.75, 5.75, 41.5, 43.25, texto48(16.5, 25.3, "Π", 24)),
+  "compound-arithmetic": svg48(
+    caja(2.75, -0.25, 42.25, 47.25, PRIM, 1.5, BORDE) +
+      linea(24, -0.25, 24, 47.25, 1.2, BORDE) +
+      [11.5, 23.5, 35.5].map((y) => linea(2.75, y, 24, y, 1.2, BORDE)).join("") +
+      texto48(33, 5.5, "+", 10, TINTA, 400) + texto48(33, 17, "×", 10, TINTA, 400) +
+      texto48(33, 29.5, "^", 10, TINTA, 400) + texto48(33, 39.5, "v", 9, TINTA, 400) +
+      [[0.5, 5], [0.5, 39], [46, 24.5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.9" fill="${PRIM}" stroke="${BORDE}" stroke-width="1"/>`).join(""),
+  ),
+  "absolute-value": prim(lleno(13.5, 18, 16, 31, TINTA) + lleno(19, 18, 21.5, 31, TINTA)),
+  "round-to-nearest": prim(
+    `<polyline points="16.5,18 13.5,18 13.5,31 16.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>` +
+      `<polyline points="20.5,18 23.5,18 23.5,31 20.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>`,
+  ),
+  "round-toward-negative-infinity": prim(
+    `<polyline points="13.5,18 13.5,31 16.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>` +
+      `<polyline points="23.5,18 23.5,31 20.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>`,
+  ),
+  "round-toward-positive-infinity": prim(
+    `<polyline points="16.5,18 13.5,18 13.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>` +
+      `<polyline points="20.5,18 23.5,18 23.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>`,
+  ),
+  "scale-by-power-of-2": prim(texto48(18.5, 26, "x2", 10) + texto48(26.5, 19.5, "n", 7, TINTA, 400)),
+  "square-root": prim(`<polyline points="12,26 14,25 16.5,31 19.5,18 25,18" fill="none" stroke="${TINTA}" stroke-width="2"/>`),
+  square: prim(texto48(16.5, 26.5, "x", 12) + texto48(23.5, 19, "2", 8.5)),
+  negate: prim(texto48(19.5, 25, "(-x)", 10.5, TINTA, 400)),
+  reciprocal: prim(texto48(14.5, 19.5, "1", 9) + linea(12.5, 31, 22.5, 17, 1.5) + texto48(20.5, 29.5, "x", 11)),
+  sign: prim(texto48(16, 17.5, "1", 9) + texto48(22, 25.5, "0", 11) + texto48(14.5, 32, "-1", 9)),
+  "numeric-constant": constante(5.5, 13.5, 40.5, 32.5, AZUL, "#fff", "123"),
+  "enum-constant": svg48(
+    caja(0.5, 13.5, 46.5, 32.5, "#fff", 3, AZUL) +
+      poligono([[5, 23], [8, 20.5], [8, 25.5]], AZUL) + poligono([[11.5, 23], [8.5, 20.5], [8.5, 25.5]], AZUL) +
+      texto48(28.5, 23.3, "Enum", 10.5, AZUL),
+  ),
+  "ring-constant": constante(6.5, 13.5, 40.5, 32.5, AZUL, "#fff", "Ring", TINTA, 12),
+  "random-number-0-1": svg48(
+    dado(22, 12, 13, PRIM, BORDE, [[0.25, 0.3], [0.75, 0.7]]) + dado(12.5, 22, 14, PRIM, BORDE, [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]]),
+  ),
+  "random-number-range": svg48(
+    caja(0, -0.25, 47.5, 47, "#fff", 2, "#2a2a2a") +
+      dado(9, 13, 18, "#444", "#2a2a2a", []) +
+      [[14, 20], [21, 26], [30, 16], [33, 26]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#808080"/>`).join("") +
+      linea(27, 36.5, 27, 44, 1.2, "#2a2a2a") + linea(44, 36.5, 44, 44, 1.2, "#2a2a2a") +
+      linea(29.5, 40.3, 41.5, 40.3, 1.2, "#2a2a2a") + flecha(29, 40.3, -1, 0, 3) + flecha(42, 40.3, 1, 0, 3),
+  ),
+  "dbl-numeric-constant": constante(5.5, 13.5, 40.5, 32.5, NARANJA, "#fff", "1.23"),
+  "positive-infinity": constante(8.5, 12.5, 38.5, 33.5, NARANJA, PRIM, "+∞", NARANJA, 14),
+  "negative-infinity": constante(8.5, 12.5, 38.5, 33.5, NARANJA, PRIM, "-∞", NARANJA, 14),
+  "machine-epsilon": constante(11.5, 12.5, 37.5, 35.5, NARANJA, PRIM, "ε", NARANJA, 14),
+  "not-a-number-constant": constante(5.5, 13.5, 40.5, 32.5, NARANJA, "#fff", "NaN", TINTA, 12.5),
+  "range-limits-for-type": svg48(
+    caja(0, 0, 47.5, 22.5, "#ffcc99", 1.5, "#2b221a") +
+      linea(8, 3, 8, 12, 1.4) + flecha(8, 13.5, 0, 1, 4.5) + linea(38.5, 3, 38.5, 12, 1.4) + flecha(38.5, 13.5, 0, 1, 4.5) +
+      linea(5, 17.5, 42, 17.5, 1, "#80664c") +
+      [5, 11, 17, 23, 29, 35, 41].map((x) => linea(x, 17.5, x, 19.5, 1, "#80664c")).join(""),
+  ),
+  "expression-node": svg48(
+    caja(0, 15.75, 47.5, 31, PRIM, 1.5, BORDE) + linea(5, 15.75, 5, 31, 1.2, BORDE) + linea(42.5, 15.75, 42.5, 31, 1.2, BORDE) +
+      texto48(23.75, 23.6, "EXPR", 11, BORDE, 500),
+  ),
+};
+
+/**
+ * La tinta de cada glifo de función en su rejilla de 48 × 48: [x0, y0, x1, y1],
+ * medida en paletas/functions-numeric.png. En el diagrama, el nodo ocupa esa
+ * caja: es lo que se pulsa y de donde salen los terminales.
+ */
+const PRIMITIVA = [8, 8, 41, 41];
+export const CAJAS = {
+  add: PRIMITIVA,
+  subtract: PRIMITIVA,
+  multiply: PRIMITIVA,
+  divide: PRIMITIVA,
+  "quotient-and-remainder": [7, 6, 41, 41],
+  increment: PRIMITIVA,
+  decrement: PRIMITIVA,
+  "add-array-elements": [5, 5, 43, 44],
+  "multiply-array-elements": [5, 5, 43, 44],
+  "compound-arithmetic": [-1, -1, 49, 48],
+  "absolute-value": PRIMITIVA,
+  "round-to-nearest": PRIMITIVA,
+  "round-toward-negative-infinity": PRIMITIVA,
+  "round-toward-positive-infinity": PRIMITIVA,
+  "scale-by-power-of-2": PRIMITIVA,
+  "square-root": PRIMITIVA,
+  square: PRIMITIVA,
+  negate: PRIMITIVA,
+  reciprocal: PRIMITIVA,
+  sign: PRIMITIVA,
+  "numeric-constant": [4, 12, 43, 35],
+  "enum-constant": [-1, 12, 49, 35],
+  "ring-constant": [5, 12, 43, 35],
+  "random-number-0-1": [11, 6, 41, 39],
+  "random-number-range": [-1, -1, 49, 48],
+  "dbl-numeric-constant": [4, 12, 43, 35],
+  "positive-infinity": [7, 11, 41, 36],
+  "negative-infinity": [7, 11, 41, 36],
+  "machine-epsilon": [10, 11, 40, 38],
+  "not-a-number-constant": [4, 12, 43, 35],
+  "range-limits-for-type": [-1, -1, 49, 24],
+  "expression-node": [-1, 15, 49, 32],
+};
+
+/**
+ * La flecha de Run rota: el VI no se puede ejecutar. Dos trozos de la flecha,
+ * gris oscuro, separados por una grieta, como en numeric-editar-constante.png.
+ */
+BARRA["run-roto"] = svg(
+  poligono([[1.5, 5.5], [6.5, 5.5], [8.2, 8.3], [6.5, 10.5], [1.5, 10.5]], "#5a5a5a", TINTA, 1.1) +
+    poligono([[9, 2.2], [15, 8], [9, 13.8], [9.6, 10.6], [7.8, 8.3], [9.6, 5.8]], "#5a5a5a", TINTA, 1.1),
+);
+
+/** Enter Text: la marca que confirma lo que se escribe en el diagrama. */
+BARRA["enter-text"] = svg(`<polyline points="3,8.6 6.3,12.4 13.2,3.6" fill="none" stroke="${TINTA}" stroke-width="2.1" stroke-linejoin="miter"/>`);
+
+const cursor = (cuerpo, lado = 24) =>
+  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}" shape-rendering="crispEdges">${cuerpo}</svg>`)}`;
+
+/**
+ * Los cursores de la herramienta automática de LabVIEW, dibujados de nuevo a
+ * partir del vídeo: la cruz fina sobre el fondo, con su marca arriba a la
+ * derecha, y la bobina de cablear sobre un terminal, con la punta del cable
+ * abajo a la izquierda, que es el punto activo. `punto` es ese punto, en px.
+ */
+export const CURSORES = {
+  cruz: {
+    url: cursor(
+      `<path d="M11.5 3v17M3 11.5h17" stroke="#fff" stroke-width="3"/><path d="M11.5 3v17M3 11.5h17" stroke="#000" stroke-width="1"/>` +
+        `<rect x="15" y="2" width="2" height="2" fill="#000"/><rect x="14" y="4" width="1" height="1" fill="#000"/><rect x="17" y="4" width="1" height="1" fill="#000"/><rect x="15" y="5" width="2" height="1" fill="#000"/>`,
+    ),
+    punto: [11, 11],
+  },
+  bobina: {
+    url: cursor(
+      `<g transform="rotate(-45 12 12)">` +
+        `<rect x="6" y="7" width="13" height="10" fill="#fff" stroke="#000" stroke-width="1"/>` +
+        [7, 9, 11, 13, 15, 17].map((x) => [8, 10, 12, 14, 16].map((y) => ((x + y) % 4 === 3 ? `<rect x="${x}" y="${y}" width="1" height="1" fill="#000"/>` : "")).join("")).join("") +
+        `<rect x="4" y="5" width="2" height="14" fill="#000"/><rect x="19" y="5" width="2" height="14" fill="#000"/>` +
+        `</g><path d="M6 17 L1.5 22.5" stroke="#000" stroke-width="1.5"/>`,
+    ),
+    punto: [1, 22],
+  },
+};

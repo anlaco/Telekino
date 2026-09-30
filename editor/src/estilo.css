@@ -128,9 +128,9 @@ svg { display: block; overflow: visible; }
    La esquina va arriba a la derecha porque LabVIEW ya usa la de abajo para los
    botones con menú al mantener pulsado. */
 .hueco { color: var(--texto-hueco); }
-.menu.hueco > .texto, .texto-barra.hueco, .instancia.hueco, .hueco .valor, .fila.hueco .fila-texto { font-style: italic; }
-.hueco .glifo, .icono-vi.hueco svg, .carpeta.hueco svg, .chincheta.hueco svg { opacity: 0.6; }
-.boton.hueco::after, .icono-vi.hueco::after, .carpeta.hueco .caja-carpeta::after, .chincheta.hueco::after {
+.menu.hueco > .texto, .texto-barra.hueco, .instancia.hueco, .hueco .valor, .fila.hueco .fila-texto, .item-menu.hueco .texto-menu { font-style: italic; }
+.hueco .glifo, .icono-vi.hueco svg, .carpeta.hueco svg, .chincheta.hueco svg, .icono-funcion.hueco svg { opacity: 0.6; }
+.boton.hueco::after, .icono-vi.hueco::after, .carpeta.hueco .caja-carpeta::after, .chincheta.hueco::after, .icono-funcion.hueco::after {
   content: ""; position: absolute; top: 1px; right: 1px; width: 5px; height: 5px; pointer-events: none;
   background: linear-gradient(225deg, #c8c8c8 0 50%, #878787 50% calc(50% + 0.8px), transparent calc(50% + 0.8px));
 }
@@ -141,6 +141,8 @@ svg { display: block; overflow: visible; }
   position: absolute; z-index: 10;
   background: #dddddd;
   border: 0.667px solid #a0a0a0;
+  /* La sombra de ventana: 7 px por fuera del borde a la derecha y abajo. */
+  box-shadow: 0.667px 0.667px 0 #bebebe, 3.333px 3.333px 3.333px -1.333px rgba(0, 0, 0, 0.66);
 }
 .paleta::after, .paleta::before { content: ""; position: absolute; left: 0; right: 0; pointer-events: none; z-index: 3; }
 .paleta::after { top: 0; bottom: 0; box-shadow: inset 0 0 0 0.667px #cccccc; }
@@ -195,10 +197,127 @@ svg { display: block; overflow: visible; }
 .explicacion, .emergente {
   position: absolute; z-index: 20; max-width: 360px;
   background: #fff; border: 1px solid #b4b4b4; border-radius: 3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: 0.667px 0.667px 0 #bebebe, 3.333px 3.333px 3.333px -1.333px rgba(0, 0, 0, 0.66);
   padding: 6px 8px; font-size: 12px; font-style: normal; color: #000; user-select: text;
 }
 .emergente { z-index: 30; pointer-events: none; }
 .explicacion p, .emergente p { margin: 4px 0 0; }
 .explicacion-cabeza em { color: #6e6e6e; margin-left: 4px; }
 .explicacion code, .emergente code { display: block; margin-top: 4px; font-size: 10px; color: #828282; }
+
+/* Subpaleta, de paletas/functions-numeric.png: una ventana aparte, al lado de
+   la carpeta que la abre, con la barra de título 2 px más alta que la paleta. */
+.subpaleta { z-index: 11; }
+.subpaleta::before { height: 24px; }
+.subpaleta .chincheta { left: 13px; top: 6.33px; }
+.subpaleta .paleta-nombre { left: 43px; transform: translateY(calc(-50% + 2.3px)); }
+.rejilla-subpaleta { position: absolute; left: 0; right: 0; top: 26px; bottom: 0; background: #f8f8f8; }
+.icono-funcion { position: absolute; }
+.icono-funcion svg { width: 100%; height: 100%; }
+.icono-funcion text { font-family: Arial, "Liberation Sans", sans-serif; }
+
+/* La carpeta cuya subpaleta está abierta lleva un marco azul alrededor: la
+   línea en las columnas 228–293 y las filas 84–149 de la captura, con un halo
+   por fuera y otro por dentro. La carpeta no se mueve. */
+.carpeta .marco {
+  position: absolute; left: -2px; top: -2px; width: 44px; height: 44px; pointer-events: none;
+  border: 0.667px solid #2a8ddd;
+  box-shadow: 0 0 0 0.667px #cee2f2, inset 0 0 0 0.667px #7cb8e7;
+}
+
+/* El diagrama: cables debajo, nodos encima (spec/05 §3.2). Calca
+   capturas-labview/block-diagram/numeric-*.png y el vídeo del que salen. Los
+   cables llevan el color de su tipo y el grosor de su dimensión
+   (spec/06-visual.md §4). Los cursores los pone app.mjs en --cursor-cruz y
+   --cursor-bobina: son los de la herramienta automática de LabVIEW. */
+.lienzo-block-diagram { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
+.cables { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.cables polyline { fill: none; }
+.tramo-zona { stroke: transparent; stroke-width: 6; pointer-events: stroke; cursor: default; }
+/* Un tramo seleccionado: hormigas azules sobre el cable, sólo en ese tramo. */
+.tramo-elegido { stroke: #3c8fd8; stroke-width: 2.2; stroke-dasharray: 2 2; animation: hormigas 0.5s linear infinite; }
+.cable-roto { stroke: #000; stroke-width: 1; stroke-dasharray: 3 2; }
+.cable-x line { stroke: #e00000; stroke-width: 1.5; }
+/* El cable que se está tirando: punteado negro. */
+.cable-tirando { stroke: #000; stroke-width: 1.33; stroke-dasharray: 1.33 1.33; }
+@keyframes hormigas { to { stroke-dashoffset: -4; } }
+/* El punto de coerción: una cuña roja en la entrada que convierte. */
+.coercion { fill: #ff0000; }
+.nodo { position: absolute; cursor: default; }
+.glifo-nodo { position: absolute; width: 32px; height: 32px; pointer-events: none; }
+.glifo-nodo svg { width: 100%; height: 100%; }
+.glifo-nodo text { font-family: Arial, "Liberation Sans", sans-serif; }
+/* Lo seleccionado, con hormigas alrededor, como LabVIEW. */
+.nodo.seleccionado::before {
+  content: ""; position: absolute; inset: -2.5px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) bottom / 100% 1px no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) left / 1px 100% no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) right / 1px 100% no-repeat;
+}
+.constante {
+  position: absolute; inset: 0; background: #fff; border: 2px solid;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  font-size: var(--fuente); line-height: 1; white-space: nowrap;
+}
+.constante.editando { cursor: text; }
+/* Al editar, el texto sale seleccionado: blanco sobre negro. */
+.texto-elegido { background: #000; color: #fff; padding: 0 0.5px; }
+.caret { width: 1px; height: 11px; background: #000; animation: parpadeo 1s steps(1) infinite; }
+@keyframes parpadeo { 50% { opacity: 0; } }
+.selector-constante { margin-right: auto; padding-left: 1px; font-size: 8px; color: #0000ff; }
+/* Vista de terminales: cada terminal del color de su tipo, con bordes negros. */
+.vista-terminales { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.vista-terminales .divisiones line { stroke: #000; stroke-width: 1.33; }
+.vista-terminales .contorno { fill: none; stroke: #000; stroke-width: 1.6; stroke-linejoin: miter; }
+/* Sobre un terminal, la bobina de cablear. */
+.terminal { position: absolute; cursor: var(--cursor-bobina, crosshair); }
+.ventana.cableando, .ventana.cableando * { cursor: var(--cursor-bobina, crosshair) !important; }
+.rectangulo { position: absolute; border: 1px dashed #000; pointer-events: none; }
+.fantasma { opacity: 0.8; pointer-events: none; }
+.aviso {
+  position: absolute; z-index: 20; max-width: 300px;
+  background: #fff; border: 1px solid #b4b4b4; border-radius: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  padding: 4px 6px; font-size: 12px;
+}
+/* Menú de clic derecho, de numeric-menu-funcion.png: el de Windows. */
+.menu-contextual {
+  position: absolute; z-index: 25; background: #f0f0f0;
+  border: 1px solid #979797; box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.35);
+}
+.item-menu { position: absolute; left: 2px; right: 2px; white-space: nowrap; }
+.item-menu .texto-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu.activo, .item-menu:hover { background: #0078d7; color: #fff; }
+.item-menu.activo svg polygon, .item-menu:hover svg polygon { fill: #fff; }
+.item-menu.hueco:hover, .item-menu.hueco.activo { color: #fff; }
+.item-menu .flecha-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu .flecha-menu svg { width: 4px; height: 7.2px; }
+.item-menu.marcado::before { content: "✓"; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
+.separador-menu { position: absolute; left: 5px; right: 5px; height: 1px; background: #bdbdbd; }
+/* El tip strip de LabVIEW: el nombre de lo que hay bajo el ratón. */
+/* En el vídeo sale 22 px por debajo del ratón, con el texto centrado en una
+   caja alta: «x» ocupa 17 × 30 px. */
+.tip {
+  position: absolute; z-index: 40; pointer-events: none; white-space: nowrap;
+  background: #ffffe1; border: 1px solid #000; padding: 0 4px; font-size: var(--fuente);
+  min-width: 11px; height: 20px; line-height: 18px; text-align: center;
+}
+
+/* Compound Arithmetic en el diagrama, de compound-estirar.png: celdas de
+   entrada a la izquierda, el símbolo del modo a la derecha. */
+.compuesto { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.compuesto rect { fill: #ffffcc; stroke: #7a7a62; stroke-width: 1; }
+.compuesto .celdas line { stroke: #7a7a62; stroke-width: 1; }
+.compuesto .division { stroke: #000; stroke-width: 1.2; }
+.compuesto text { font-size: 9.5px; text-anchor: middle; dominant-baseline: central; fill: #505040; font-family: Arial, "Liberation Sans", sans-serif; }
+/* Las asas de un nodo que se estira: cuadritos azules arriba y abajo. */
+.asa { position: absolute; width: 4px; height: 4px; background: #1a7fd6; cursor: ns-resize; z-index: 2; }
+/* Invert: un circulito en el terminal invertido. */
+.invertida { position: absolute; width: 3.6px; height: 3.6px; border-radius: 50%; background: #fff; border: 1px solid #000; box-sizing: border-box; pointer-events: none; }
+/* En una subpaleta, el nombre de lo que está bajo el ratón, centrado bajo el título. */
+.nombre-sobre { position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center; white-space: nowrap; }
+.icono-funcion .marco-funcion {
+  position: absolute; left: -6px; top: -6px; width: 44px; height: 44px; pointer-events: none;
+  border: 0.667px solid #2a8ddd; box-shadow: 0 0 0 0.667px #cee2f2, inset 0 0 0 0.667px #7cb8e7;
+}

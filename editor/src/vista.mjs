@@ -20,6 +20,7 @@ export const MEDIDAS = {
   anchoCanalon: 16, // la franja de la barra de desplazamiento: 24 px
   pasoRejilla: 12, // la rejilla del panel: cada 18 px, desde el borde
   margenBarra: 50.5, // el centro del glifo de Run cae en 93 px
+  centroEnterText: 24 / 1.5, // la marca de Enter Text, en el hueco a la izquierda de Run
   anchoBoton: 23,
   anchoBotonDesplegable: 36.5,
   espacioSeparado: 4,
@@ -63,8 +64,42 @@ export const MEDIDAS_PALETA = {
   altoPie: 6.5 / 1.5,
 };
 
+/**
+ * Una subpaleta, de `paletas/functions-numeric.png`: una ventana aparte, con
+ * borde, sombra y barra de título como la paleta, y una rejilla de iconos.
+ * Columnas y filas desde su borde exterior, en la columna 296 y la fila 117.
+ */
+export const MEDIDAS_SUBPALETA = {
+  borde: 1 / 1.5,
+  altoTitulo: 36 / 1.5, // filas 118–153: 2 px más que la de la paleta
+  altoSeparador: 3 / 1.5, // filas 154–156
+  lado: 32, // la caja de un icono: 48 px
+  paso: 48, // 72 px en los dos ejes
+  margenIzquierdo: (311 - 297) / 1.5, // de dentro del borde a la primera caja
+  margenDerecho: (749 - 719) / 1.5, // de la última caja a fuera del borde
+  sobreRejilla: (194 - 157) / 1.5, // del separador a la primera caja
+  bajoRejilla: (696 - 674) / 1.5, // de la última caja a fuera del borde
+  subeCarpeta: 4 / 1.5, // una carpeta va 4 px por encima del centro de su celda
+  nombreArriba: 4, // el nombre de lo que está bajo el ratón: su centro, 12 px bajo el separador
+  /** De la esquina de una carpeta, sin abrir, a la de su subpaleta. */
+  anclaX: (296 - 231) / 1.5, // la carpeta Numeric empieza en la columna 231
+  anclaY: (117 - 87) / 1.5, // y en la fila 87
+};
+
+/**
+ * Cómo reparte LabVIEW cada subpaleta en su rejilla. Es disposición: el
+ * inventario da el orden y esto, las columnas y las celdas que se saltan.
+ * `celdas` fija [fila, columna] de un elemento; los siguientes siguen desde él.
+ */
+const REJILLAS = {
+  "palette.functions.programming.numeric": { columnas: 6, celdas: { "expression-node": [6, 5] } },
+};
+const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
+
 /** Elementos de la barra que LabVIEW alinea a la derecha. Es disposición. */
 const A_LA_DERECHA = ["save-version", "search", "nigel", "show-context-help-window"];
+/** Elementos de la barra que sólo aparecen mientras se escribe, a la izquierda de Run. */
+const AL_ESCRIBIR = ["enter-text"];
 /** De la paleta: lo que va en su barra de título o en su pie. */
 const EN_TITULO = ["thumbtack", "search"];
 const EN_PIE = ["double-arrows", "change-visible-palettes"];
@@ -101,7 +136,8 @@ export const anchoZonaIconos = (ventana) =>
  */
 export function disposicionBarra(inv, ventana) {
   const elementos = inv.hijos(`window.${ventana}.toolbar`);
-  const izquierda = elementos.filter((e) => !A_LA_DERECHA.includes(ultimo(e.id)));
+  const izquierda = elementos.filter((e) => !A_LA_DERECHA.includes(ultimo(e.id)) && !AL_ESCRIBIR.includes(ultimo(e.id)));
+  const alEscribir = elementos.filter((e) => AL_ESCRIBIR.includes(ultimo(e.id)));
   const derecha = elementos.filter((e) => A_LA_DERECHA.includes(ultimo(e.id)));
   const sitios = new Map();
   let x = MEDIDAS.margenBarra;
@@ -118,14 +154,16 @@ export function disposicionBarra(inv, ventana) {
     sitios.set(e.id, { right: r, ancho });
     if (i > 0) r += (ancho ?? 0) + (ultimo(derecha[i - 1].id) === "save-version" ? MEDIDAS.antesDeBusqueda : MEDIDAS.entreDerecha);
   }
-  return { elementos: [...izquierda, ...derecha], sitios };
+  for (const e of alEscribir) sitios.set(e.id, { left: MEDIDAS.centroEnterText - MEDIDAS.anchoBoton / 2, ancho: MEDIDAS.anchoBoton, alEscribir: true });
+  return { elementos: [...alEscribir, ...izquierda, ...derecha], sitios };
 }
 
-function elementoBarra(inv, e, sitio) {
+function elementoBarra(inv, e, sitio, extra) {
   const n = ultimo(e.id);
+  if (sitio.alEscribir && !extra.editandoTexto) sitio = { ...sitio, oculto: true };
   const pos = sitio.left !== undefined ? `left:${px(sitio.left)}` : `right:${px(sitio.right)}`;
   const ancho = sitio.ancho !== null ? `;width:${px(sitio.ancho)}` : "";
-  const estilo = `style="${pos}${ancho}"`;
+  const estilo = `style="${pos}${ancho}${sitio.oculto ? ";visibility:hidden" : ""}"`;
   const id = `data-id="${esc(e.id)}"`;
   if (n === "text-settings")
     return `<div class="${clases(inv, e.id, "caja-valor")}" ${id} ${estilo}><span class="valor">${esc(rotulo(e))}</span><span class="triangulo">${G.TRIANGULO}</span></div>`;
@@ -133,15 +171,21 @@ function elementoBarra(inv, e, sitio) {
     return `<div class="${clases(inv, e.id, "caja-busqueda")}" ${id} ${estilo}><span class="selector">${G.SELECTOR}</span><span class="valor">${esc(rotulo(e))}</span><span class="lupa">${G.LUPA}</span></div>`;
   if (n === "save-version") return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;
   if (G.BARRA[n]) {
+    const glifo = n === "run" && extra.runRoto ? G.BARRA["run-roto"] : G.BARRA[n];
     const triangulo = G.CON_DESPLEGABLE.has(n) ? `<span class="triangulo">${G.TRIANGULO}</span>` : "";
-    return `<div class="${clases(inv, e.id, `boton${triangulo ? " con-desplegable" : ""}`)}" ${id} ${estilo}><span class="glifo">${G.BARRA[n]}</span>${triangulo}</div>`;
+    return `<div class="${clases(inv, e.id, `boton${triangulo ? " con-desplegable" : ""}`)}" ${id} ${estilo}><span class="glifo">${glifo}</span>${triangulo}</div>`;
   }
   // Algo que el editor aún no sabe dibujar: su etiqueta, para que aparezca igual.
   return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;
 }
 
-/** Pinta una ventana entera. */
-export function ventana(inv, nombre, estado) {
+/**
+ * Pinta una ventana entera. `extra`: `lienzo`, lo que va dentro del lienzo (el
+ * diagrama); `encima`, lo que va sobre todo (un menú de clic derecho);
+ * `runRoto`, si el VI no se puede ejecutar, y `editandoTexto`.
+ */
+export function ventana(inv, nombre, estado, extra = {}) {
+  const { lienzo = "", encima = "" } = extra;
   const pre = `window.${nombre}`;
   const zona = anchoZonaIconos(nombre);
   const M = MEDIDAS;
@@ -154,7 +198,7 @@ export function ventana(inv, nombre, estado) {
     .join("");
 
   const { elementos, sitios } = disposicionBarra(inv, nombre);
-  const barra = elementos.map((e) => elementoBarra(inv, e, sitios.get(e.id))).join("");
+  const barra = elementos.map((e) => elementoBarra(inv, e, sitios.get(e.id), extra)).join("");
 
   const iconos = [];
   let x = 1.3;
@@ -177,10 +221,11 @@ export function ventana(inv, nombre, estado) {
     <div class="borde-barra" style="top:${px(M.altoMenus + M.altoSurco + M.altoBarra)};height:${px(M.altoBordeBarra)}"></div>
     <div class="zona-iconos" style="width:${px(zona)};height:${px(M.altoMenus + M.altoSurco + M.altoBarra)}">${iconos.join("")}</div>
   </div>
-  <div class="lienzo lienzo-${nombre}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}"></div>
+  <div class="lienzo lienzo-${nombre}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}">${lienzo}</div>
   <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"></div>
   <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}</div>
-  ${estado.paleta ? paleta(inv, estado.paleta) : ""}
+  ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}
+  ${encima}
   ${estado.abierta ? explicacionFlotante(inv, estado.abierta) : ""}
 </div>`;
 }
@@ -213,7 +258,7 @@ export function paleta(inv, estado) {
     const desplegada = estado.desplegadas.includes(e.id) && inv.tieneContenido(e.id);
     const flecha = ORDENES.includes(n) ? "" : `<span class="flecha" style="left:${px(P.flechaX)}">${G.FLECHA_CATEGORIA}</span>`;
     html += `<div class="${clases(inv, e.id, `fila${desplegada ? " desplegada" : ""}`)}" data-id="${esc(e.id)}" style="height:${px(desplegada ? P.altoCabecera : P.altoFila)}"><span class="fila-texto" style="left:${px(P.margenTexto)}">${esc(rotulo(e))}</span>${flecha}</div>`;
-    if (desplegada) html += rejilla(inv, e.id);
+    if (desplegada) html += rejilla(inv, e.id, estado.cascada?.[0]?.id);
   }
 
   const flechas = hijo("double-arrows");
@@ -226,7 +271,15 @@ export function paleta(inv, estado) {
   return `${html}</div>`;
 }
 
-function rejilla(inv, categoria) {
+/** Una carpeta de una rejilla; la abierta lleva el marco de LabVIEW. */
+function carpeta(inv, e, left, top, abierta) {
+  const glifo = G.SUBPALETAS[ultimo(e.id)] ?? "";
+  const P = MEDIDAS_PALETA;
+  const marco = abierta ? `<div class="marco"></div>` : "";
+  return `<div class="${clases(inv, e.id, `carpeta${abierta ? " abierta" : ""}`)}" data-id="${esc(e.id)}" style="left:${px(left)};top:${px(top)};width:${px(P.anchoCarpeta)};height:${px(P.altoCarpeta)}">${marco}<div class="pestana"></div><div class="lomo"></div><div class="caja-carpeta">${glifo}</div></div>`;
+}
+
+function rejilla(inv, categoria, abierta) {
   const P = MEDIDAS_PALETA;
   const hijos = inv.hijos(categoria).filter((e) => !e.oculto);
   const filas = Math.ceil(hijos.length / P.columnas);
@@ -234,11 +287,77 @@ function rejilla(inv, categoria) {
   const carpetas = hijos
     .map((e, i) => {
       const [f, c] = [Math.floor(i / P.columnas), i % P.columnas];
-      const glifo = G.SUBPALETAS[ultimo(e.id)] ?? "";
-      return `<div class="${clases(inv, e.id, "carpeta")}" data-id="${esc(e.id)}" style="left:${px(P.margenRejilla + c * P.pasoIcono)};top:${px(P.sobreRejilla + f * P.pasoIcono)};width:${px(P.anchoCarpeta)};height:${px(P.altoCarpeta)}"><div class="pestana"></div><div class="lomo"></div><div class="caja-carpeta">${glifo}</div></div>`;
+      return carpeta(inv, e, P.margenRejilla + c * P.pasoIcono, P.sobreRejilla + f * P.pasoIcono, e.id === abierta);
     })
     .join("");
   return `<div class="rejilla" style="height:${px(alto)}">${carpetas}</div>`;
+}
+
+/** Dónde abre su subpaleta una carpeta cuya esquina, sin abrir, está en `r`. */
+export const anclaSubpaleta = (r) => ({ x: r.left + MEDIDAS_SUBPALETA.anclaX, y: r.top + MEDIDAS_SUBPALETA.anclaY });
+
+/** Dónde cae cada elemento de una subpaleta: fila y columna de su celda. */
+export function celdasSubpaleta(inv, id) {
+  const { columnas, celdas } = REJILLAS[id] ?? REJILLA_POR_DEFECTO;
+  const elementos = inv.hijos(id).filter((e) => !EN_TITULO.includes(ultimo(e.id)) && !e.oculto);
+  const sitios = [];
+  let i = 0;
+  for (const e of elementos) {
+    const fija = celdas[ultimo(e.id)];
+    if (fija) i = fija[0] * columnas + fija[1];
+    sitios.push({ e, fila: Math.floor(i / columnas), columna: i % columnas });
+    i++;
+  }
+  return { columnas, sitios };
+}
+
+/** El tamaño exterior de una subpaleta, con sus bordes. */
+export function tamanoSubpaleta(inv, id) {
+  const S = MEDIDAS_SUBPALETA;
+  const { columnas, sitios } = celdasSubpaleta(inv, id);
+  const filas = Math.max(1, ...sitios.map((s) => s.fila + 1));
+  return {
+    ancho: S.borde + S.margenIzquierdo + (columnas - 1) * S.paso + S.lado + S.margenDerecho,
+    alto: S.borde + S.altoTitulo + S.altoSeparador + S.sobreRejilla + (filas - 1) * S.paso + S.lado + S.bajoRejilla,
+  };
+}
+
+/** Las subpaletas abiertas en cascada al lado de la paleta. */
+export function subpaletas(inv, estado) {
+  return (estado.cascada ?? [])
+    .map((c, i) => {
+      const e = inv.entrada(c.id);
+      if (!e) return "";
+      const S = MEDIDAS_SUBPALETA;
+      const { ancho, alto } = tamanoSubpaleta(inv, c.id);
+      const chincheta = inv.entrada(`${c.id}.thumbtack`);
+      let html = `<div class="paleta subpaleta" data-id="${esc(c.id)}" data-nivel="${i + 1}" style="left:${px(c.x)};top:${px(c.y)};width:${px(ancho)};height:${px(alto)}">`;
+      html += `<div class="paleta-titulo" style="height:${px(S.altoTitulo)}">`;
+      if (chincheta) html += `<div class="${clases(inv, chincheta.id, "chincheta")}" data-id="${esc(chincheta.id)}">${G.CHINCHETA}</div>`;
+      html += `<span class="paleta-nombre">${esc(e.etiqueta)}</span></div>`;
+      html += `<div class="paleta-separador" style="height:${px(S.altoSeparador)}"></div>`;
+      html += `<div class="rejilla-subpaleta">`;
+      const abierta = estado.cascada[i + 1]?.id;
+      // El nombre de lo que está bajo el ratón, centrado bajo el título: el
+      // hueco sobre la rejilla es para él (numeric-nombre-al-pasar.png).
+      const sobre = estado.sobre && inv.entrada(estado.sobre);
+      if (sobre && estado.sobre.startsWith(`${c.id}.`) && !estado.sobre.slice(c.id.length + 1).includes(".")) {
+        html += `<div class="nombre-sobre" style="top:${px(S.nombreArriba)}">${esc(sobre.etiqueta)}</div>`;
+      }
+      for (const { e: hijo, fila, columna } of celdasSubpaleta(inv, c.id).sitios) {
+        const n = ultimo(hijo.id);
+        const cx = S.margenIzquierdo + columna * S.paso + S.lado / 2;
+        const cy = S.sobreRejilla + fila * S.paso + S.lado / 2;
+        if (G.SUBPALETAS[n]) {
+          const P = MEDIDAS_PALETA;
+          html += carpeta(inv, hijo, cx - P.anchoCarpeta / 2, cy - P.altoCarpeta / 2 - S.subeCarpeta, hijo.id === abierta || hijo.id === estado.sobre);
+        } else {
+          html += `<div class="${clases(inv, hijo.id, "icono-funcion")}" data-id="${esc(hijo.id)}" style="left:${px(cx - S.lado / 2)};top:${px(cy - S.lado / 2)};width:${px(S.lado)};height:${px(S.lado)}">${hijo.id === estado.sobre ? `<div class="marco marco-funcion"></div>` : ""}${G.FUNCIONES[n] ?? ""}</div>`;
+        }
+      }
+      return `${html}</div></div>`;
+    })
+    .join("");
 }
 
 /** Lo que dice un hueco de sí mismo (regla 54). */

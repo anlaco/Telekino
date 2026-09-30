@@ -142,6 +142,45 @@ Los wires codifican el tipo de dato mediante **tres canales visuales**:
 
 *Arrays, clusters y tipos compuestos se definirán al implementarse en Fase 2.*
 
+> **Implementado en el editor web** (2026-09-29, `editor/src/tipos.mjs`,
+> [DT-038](../design/05-decisiones.md#dt-038)): naranja `#fb7c00` para DBL y
+> SGL, azul `#0000ff` para los enteros y los enums —medidos en el borde de las
+> constantes y en los cables de los vídeos de LabVIEW; los iconos de la paleta
+> usan otro naranja, `#ff6633`—; 1,33 px el escalar, 3 px el array 1D y
+> doble el 2D. El cable roto, a trazos negros con una X roja en medio y su motivo
+> en el tip strip. Los cables van en ángulo recto: salen en horizontal, giran en
+> sus codos y entran en horizontal; un cable nuevo gira a 4 px de la entrada
+> ([`05-editor.md`](05-editor.md) §5.4). **Comparado con el vídeo**
+> `capturas-labview/block-diagram/numeric-cablear.mp4` (2026-09-30), no píxel a
+> píxel: el vídeo está reducido y los colores son los de las capturas de la
+> paleta.
+>
+> **Lo que se ve al pasar el ratón**, del mismo vídeo: los terminales sin cablear
+> de un nodo, y el que está bajo el ratón, salen como un punto del color de su
+> tipo con un tramito de cable hacia fuera; el nombre del terminal («x», «y»,
+> «x+y») sale en un tip strip amarillo debajo del ratón, y la constante no tiene
+> ninguno. El cursor es el de la herramienta automática: una cruz fina en el
+> fondo, la flecha sobre un nodo o un cable y la bobina sobre un terminal y
+> mientras se cablea. Los cursores se han redibujado a partir del vídeo.
+>
+> **Vista de terminales** (Visible Items ▸ Terminals): el nodo enseña su
+> connector pane, recortado con su forma, cada terminal del color de su tipo
+> —el de lo que le llega, si está cableado— y con bordes negros. En Add, las
+> entradas ocupan algo más de la mitad izquierda del triángulo y la salida, la
+> punta.
+>
+> **Compound Arithmetic** (vídeo `compound-arithmetic.mp4`): en el diagrama no
+> lleva su icono de la paleta, sino una columna de celdas —una por entrada, de
+> 6,7 px— y a su derecha el símbolo del modo (+, ×, ∧, ∨, ⊕; los de OR y XOR no
+> se ven en la captura). Seleccionado, lleva dos asas azules, arriba y abajo:
+> estirarlas añade o quita entradas, nunca menos de dos. Una entrada o la salida
+> invertidas llevan un circulito. En AND, OR y XOR la operación es entera: las
+> DBL entran con coerción y la salida es I64 —el entero de sus mismos bits; la
+> ayuda de NI no dice cuál, queda por comprobar en LabVIEW—.
+>
+> **En la paleta**, lo que está bajo el ratón se enmarca en azul y su nombre sale
+> centrado bajo el título de la subpaleta (`numeric-nombre-al-pasar.png`).
+
 ### 4.3 Wires de array (futuro)
 
 Cuando se implementen arrays:
@@ -194,6 +233,11 @@ Cuando se conectan tipos compatibles pero no idénticos (ej: Integer a Double):
 - Indica posible pérdida de precisión o coste de rendimiento
 - Se implementará cuando existan subtipos numéricos (integer vs float vs double)
 
+> **Implementado en el editor web** (2026-09-29): en el terminal de entrada que
+> convierte, según las reglas 2 y 2f de
+> [`03-semantica-estatica.md`](03-semantica-estatica.md). Es una **cuña roja**
+> en el borde del nodo, no un círculo, como se ve en el vídeo de Numeric.
+
 ---
 
 ## 6. Paleta de funciones y controles
@@ -224,6 +268,14 @@ La paleta es un menú con carpetas organizadas por categoría:
 
 *Nota: este es un comportamiento complejo. Se implementará progresivamente,
 empezando por una paleta básica y añadiendo hover + pin más adelante.*
+
+> **Implementado el hover** (2026-09-29, `editor/src/app.mjs` y
+> `editor/src/estado.mjs`): al dejar el ratón un cuarto de segundo sobre una
+> carpeta con contenido declarado, su subpaleta se abre al lado, como ventana
+> aparte, y la carpeta queda enmarcada en azul; un clic hace lo mismo. Pasar por
+> otra carpeta de la misma paleta cierra lo que colgaba de ella; un clic fuera o
+> Esc lo cierran todo. Las subpaletas se encadenan en cascada. El pin sigue
+> pendiente.
 
 ---
 
@@ -394,7 +446,21 @@ px y una rejilla de carpetas —pestaña, lomo y caja de 40 × 36 px— a 48 px 
 paso, sobre fondo claro; y un realce de 2 px dentro del bisel a los lados y al pie
 de la lista. Vive en `editor/src/vista.mjs` y `editor/src/estilo.css`.
 
-*Verificación:* los tests «la barra cae donde en LabVIEW» (el centro de cada
+**Las subpaletas** calcan `capturas-labview/paletas/functions-numeric.png`: una
+ventana aparte cuya esquina cae 43,3 px a la derecha y 20 px por debajo de la de
+su carpeta, con un marco azul de 44 px alrededor de la carpeta; barra de título
+de 24 px —2 más que la paleta— con la chincheta y el nombre 4 px más a la
+derecha; y una rejilla de cajas de 32 px a 48 px de paso, sobre fondo claro. Las
+carpetas van 2,7 px por encima del centro de su celda. Cuántas columnas tiene
+cada subpaleta y qué celdas se salta —en Numeric, Expression Node va sola en la
+última columna— es disposición y vive en `REJILLAS`, en `vista.mjs`; el tamaño
+de la ventana sale de ahí. La paleta y las subpaletas llevan la sombra de
+ventana de LabVIEW, 7 px a la derecha y abajo. Los glifos de las funciones son
+propios (DT-035 §1), dibujados en una rejilla de 48 × 48 que es la de los
+píxeles de la captura.
+
+*Verificación:* los tests «la subpaleta Numeric mide lo que en LabVIEW» (sus
+celdas, su tamaño y dónde se abre) y «la barra cae donde en LabVIEW» (el centro de cada
 elemento de la barra, a 2 px como mucho del de LabVIEW) y «la cabecera mide lo
 que en LabVIEW», en `editor/test/vista.test.mjs`. La cabecera, la barra de estado
 y la paleta no tienen test de píxeles: se han comparado píxel a píxel y caen a 1
@@ -409,6 +475,10 @@ superponiéndolo a las capturas; eso no es un test.
 
 | Fecha      | Cambio |
 |------------|--------|
+| 2026-09-30 | §4: el naranja del diagrama, medido en los vídeos (`#fb7c00`). Compound Arithmetic: celdas de entrada, asas para estirarlo, circulito de Invert, modos. |
+| 2026-09-30 | §4 y §5.3: rutas, pistas de los terminales, cursores, vista de terminales y la cuña de coerción, del vídeo de Numeric. |
+| 2026-09-29 | §4 y §5.3: colores de los cables por tipo y punto de coerción, implementados en el editor (DT-038). |
+| 2026-09-29 | §6.3: el hover que abre las subpaletas, implementado. §10: las subpaletas, calcadas de la de Numeric, y la sombra de las paletas. |
 | 2026-09-29 | §9 y §10: el editor pasa a la web (DT-037); medidas en px CSS, la cabecera y la paleta recalibradas píxel a píxel. |
 | 2026-09-29 | §6.2 sustituida por DT-035. Añadida §9: huecos declarados (regla 57), con la marca ya implementada. §1.1 marcada: la referencia sí tiene zoom. Añadida §10: medidas y tipografía de las ventanas del VI. §1.1: el «sin zoom» se mantiene como diferencia con LabVIEW |
 | 2026-04-03 | Añadida sección 8: Waveform Chart y Graph |

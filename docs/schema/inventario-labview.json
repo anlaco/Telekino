@@ -27,6 +27,24 @@
     "and Motion, Control & Simulation, FPGA Interface y TestStand, y tres iconos de",
     "Programming que no son de LabVIEW (uno, el del Unit Test Framework).",
     "",
+    "SUBPALETA NUMERIC: captura paletas/functions-numeric.png (abierta desde la",
+    "paleta); nombres según la página «Numeric» de la ayuda de NI, sin el sufijo",
+    "Function o VI que lleva allí el título de cada tema. Sus 32 funciones están",
+    "hechas (DT-038 b): se ponen en el diagrama con los terminales del catálogo y",
+    "se cablean. Compilarlas es de ejecutar-vi.",
+    "",
+    "DIAGRAMA CON NUMERIC: vídeo block-diagram/numeric-cablear.mp4 y sus fotogramas",
+    "block-diagram/numeric-*.png (2026-09-30): el botón Enter Text de la barra y los",
+    "menús de clic derecho de una función (sobre Add) y de una constante numérica.",
+    "El de la constante sale cortado tras Replace: lo que sigue no está declarado.",
+    "El menú Edit sigue sin capturar, aunque Ctrl+Z ya deshace en el diagrama.",
+    "",
+    "COMPOUND ARITHMETIC: vídeo block-diagram/compound-arithmetic.mp4, sus fotogramas",
+    "block-diagram/compound-*.png y la captura compound-menu.png (2026-09-30): el",
+    "menú del nodo y el de una entrada. Los submenús salen cortados por la ventana:",
+    "de Change Mode se ven Add y Multiply; AND, OR y XOR son los modos que da la",
+    "ayuda de NI («Compound Arithmetic»), y AND se ve en el vídeo por su efecto.",
+    "",
     "FUERA, según DT-035 §3: la barra del toolkit Unit Test Framework (entre",
     "Project y Build en la captura del Project Explorer). SIN DECLARAR hasta",
     "confirmarlos: el cuadrado verde tras Build en el Project Explorer (¿Package",
@@ -99,8 +117,30 @@
       "desc": "El icono del VI: cómo se guarda en el .qvi y cómo se edita"
     },
     "bloques": {
-      "desc": "Poner en el diagrama los bloques del catálogo y compilarlos",
+      "desc": "Declarar en el catálogo los bloques de la categoría, con sus terminales y su icono, para ponerlos en el diagrama. Compilarlos es otra pieza: ejecutar-vi",
       "ref": "schema/blocks.json; design/00-plan-provisional.md §7, fases R2 a R5"
+    },
+    "tipos-numericos": {
+      "desc": "Añadir los tipos complejos (CSG, CDB, CXT) y los de punto fijo (FXP), con su conversión",
+      "ref": "design/05-decisiones.md, DT-038 §5: fuera de los tipos que añade"
+    },
+    "menus-contextuales": {
+      "desc": "Las órdenes y los submenús de los menús de clic derecho del diagrama"
+    },
+    "etiquetas": {
+      "desc": "Las etiquetas de los nodos del diagrama: mostrarlas, ocultarlas y editarlas (DT-022)"
+    },
+    "ejemplos": {
+      "desc": "Buscar ejemplos que usen una función"
+    },
+    "descripciones": {
+      "desc": "La descripción y el tip strip propios de cada objeto, guardados en el .qvi"
+    },
+    "propiedades": {
+      "desc": "El diálogo de propiedades de un nodo del diagrama"
+    },
+    "definiciones-de-tipo": {
+      "desc": "Definiciones de tipo guardadas en su propio fichero y enlazadas desde los VIs"
     },
     "drivers-de-adquisicion": {
       "desc": "Bloques de E/S de instrumentos y de adquisición (VISA, serie, DAQ), cada uno con su puerta",
@@ -658,9 +698,8 @@
     {
       "id": "window.block-diagram",
       "etiqueta": "Block Diagram",
-      "estado": "todo",
-      "labview": "El diagrama de un VI: el código, como nodos unidos por wires.",
-      "necesita": "diagrama",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
       "captura": "block-diagram/vi-nuevo.png"
     },
     {
@@ -726,6 +765,13 @@
       "labview": "Ayuda de LabVIEW. Contenido sin capturar.",
       "necesita": "editor-escritorio",
       "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.enter-text",
+      "etiqueta": "Enter Text",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::una_constante_se_edita_y_escribir_un_decimal_la_vuelve_dbl",
+      "captura": "block-diagram/numeric-editar-constante.png"
     },
     {
       "id": "window.block-diagram.toolbar.run",
@@ -897,18 +943,16 @@
     {
       "id": "window.block-diagram.workspace",
       "etiqueta": "Workspace",
-      "estado": "todo",
-      "labview": "Lienzo del diagrama. El clic derecho abre la paleta de funciones.",
-      "necesita": "diagrama",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
       "captura": "block-diagram/vi-nuevo.png"
     },
 
     {
       "id": "palette.functions",
       "etiqueta": "Functions",
-      "estado": "todo",
-      "labview": "La paleta de funciones: todo lo que se puede poner en el diagrama. El clic derecho sobre el diagrama la abre en una posición temporal y se cierra al colocar algo.",
-      "necesita": "bloques",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::el_clic_derecho_en_el_diagrama_abre_la_paleta_de_funciones",
       "captura": "paletas/functions-programming.png"
     },
     {
@@ -930,9 +974,8 @@
     {
       "id": "palette.functions.programming",
       "etiqueta": "Programming",
-      "estado": "todo",
-      "labview": "Los VIs y funciones básicos con que se construye un VI.",
-      "necesita": "bloques",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::una_categoría_con_contenido_se_abre_y_se_cierra",
       "captura": "paletas/functions-programming.png"
     },
     {
@@ -962,10 +1005,321 @@
     {
       "id": "palette.functions.programming.numeric",
       "etiqueta": "Numeric",
+      "estado": "built",
+      "prueba": "editor/test/estado.test.mjs::una_carpeta_con_contenido_abre_su_subpaleta_al_lado",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.thumbtack",
+      "etiqueta": "Thumbtack",
       "estado": "todo",
-      "labview": "Aritmética y conversión entre tipos numéricos.",
+      "labview": "Fija la subpaleta: deja de ser temporal y pasa a ser una ventana que recuerda su posición y su tamaño.",
+      "necesita": "paletas-fijas",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "add",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.subtract",
+      "etiqueta": "Subtract",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "sub",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.multiply",
+      "etiqueta": "Multiply",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "mul",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.divide",
+      "etiqueta": "Divide",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "div",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.quotient-and-remainder",
+      "etiqueta": "Quotient & Remainder",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "quotient-remainder",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.conversion",
+      "etiqueta": "Conversion",
+      "estado": "todo",
+      "labview": "Subpaleta: convertir entre tipos de datos.",
       "necesita": "bloques",
-      "captura": "paletas/functions-programming.png"
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.increment",
+      "etiqueta": "Increment",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "increment",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.decrement",
+      "etiqueta": "Decrement",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "decrement",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.add-array-elements",
+      "etiqueta": "Add Array Elements",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "add-array-elements",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.multiply-array-elements",
+      "etiqueta": "Multiply Array Elements",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "multiply-array-elements",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.compound-arithmetic",
+      "etiqueta": "Compound Arithmetic",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "compound-arithmetic",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.data-manipulation",
+      "etiqueta": "Data Manipulation",
+      "estado": "todo",
+      "labview": "Subpaleta: cambiar la representación de los datos (conversión de tipo, desplazamientos, partir y unir números).",
+      "necesita": "bloques",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.absolute-value",
+      "etiqueta": "Absolute Value",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "absolute-value",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.round-to-nearest",
+      "etiqueta": "Round To Nearest",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "round-to-nearest",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.round-toward-negative-infinity",
+      "etiqueta": "Round Toward -Infinity",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "round-toward-negative-infinity",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.round-toward-positive-infinity",
+      "etiqueta": "Round Toward +Infinity",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "round-toward-positive-infinity",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.scale-by-power-of-2",
+      "etiqueta": "Scale By Power Of 2",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "scale-by-power-of-2",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.complex",
+      "etiqueta": "Complex",
+      "estado": "todo",
+      "labview": "Subpaleta: construir números complejos en forma rectangular o polar y descomponerlos.",
+      "necesita": "tipos-numericos",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.square-root",
+      "etiqueta": "Square Root",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "square-root",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.square",
+      "etiqueta": "Square",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "square",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.negate",
+      "etiqueta": "Negate",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "negate",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.reciprocal",
+      "etiqueta": "Reciprocal",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "reciprocal",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.sign",
+      "etiqueta": "Sign",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "sign",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.scaling",
+      "etiqueta": "Scaling",
+      "estado": "todo",
+      "labview": "Subpaleta: convertir lecturas de tensión a temperatura o deformación.",
+      "necesita": "bloques",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.numeric-constant",
+      "etiqueta": "Numeric Constant",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "num-const",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.enum-constant",
+      "etiqueta": "Enum Constant",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "enum-const",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.ring-constant",
+      "etiqueta": "Ring Constant",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "ring-const",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.random-number-0-1",
+      "etiqueta": "Random Number (0-1)",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "random-number",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.random-number-range",
+      "etiqueta": "Random Number (Range)",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "random-number-range",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.fixed-point",
+      "etiqueta": "Fixed-Point",
+      "estado": "todo",
+      "labview": "Subpaleta: manejar el desbordamiento de los números de punto fijo.",
+      "necesita": "tipos-numericos",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.dbl-numeric-constant",
+      "etiqueta": "DBL Numeric Constant",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "const",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.positive-infinity",
+      "etiqueta": "Positive Infinity",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "positive-infinity",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.negative-infinity",
+      "etiqueta": "Negative Infinity",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "negative-infinity",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.machine-epsilon",
+      "etiqueta": "Machine Epsilon",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "machine-epsilon",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.not-a-number-constant",
+      "etiqueta": "Not A Number Constant",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "not-a-number",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.math-and-scientific-constants",
+      "etiqueta": "Math & Scientific Constants",
+      "estado": "todo",
+      "labview": "Subpaleta: constantes matemáticas y físicas, como π o e.",
+      "necesita": "bloques",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.range-limits-for-type",
+      "etiqueta": "Range Limits for Type",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "range-limits-for-type",
+      "captura": "paletas/functions-numeric.png"
+    },
+    {
+      "id": "palette.functions.programming.numeric.expression-node",
+      "etiqueta": "Expression Node",
+      "estado": "built",
+      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "bloque": "expression-node",
+      "captura": "paletas/functions-numeric.png"
     },
     {
       "id": "palette.functions.programming.boolean",
@@ -1168,6 +1522,529 @@
       "necesita": "personalizar-paletas",
       "captura": "paletas/functions-programming-desplegada.png",
       "oculto": true
+    },
+
+    {
+      "id": "context.function",
+      "etiqueta": "Function",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_enseña_sus_terminales",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_enseña_sus_terminales",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "captura": "block-diagram/numeric-vista-terminales.png"
+    },
+    {
+      "id": "context.function.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función.",
+      "necesita": "ejemplos",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Pone un punto de ruptura en el nodo.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.function.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.function.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.function.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra, conservando los cables que encajen.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.function.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une el cable que entraba con el que salía.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.function.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-constant",
+      "etiqueta": "Numeric Constant",
+      "estado": "todo",
+      "labview": "El menú de clic derecho de una constante numérica. La captura lo corta tras Replace: lo que sigue no está declarado.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes de la constante se ven.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Convierte la constante en un control del panel.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Convierte la constante en un indicador del panel.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Convierte la constante en una constante de array de su tipo.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Convierte la constante en una definición de tipo guardada aparte.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "block-diagram/numeric-menu-constante.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-constant.change-to-shared-variable-node",
+      "etiqueta": "Change to Shared Variable Node",
+      "estado": "todo",
+      "labview": "Convierte la constante en un nodo de variable compartida.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "block-diagram/numeric-menu-constante.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-constant.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la constante.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-constante.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea objetos relacionados con la constante.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la constante por otro objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/numeric-menu-constante.png"
+    },
+
+    {
+      "id": "context.compound-arithmetic",
+      "etiqueta": "Compound Arithmetic",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes del nodo se ven: aquí sólo la etiqueta.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En la captura sale desactivado.",
+      "necesita": "ejemplos",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Pone un punto de ruptura en el nodo.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/compound-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic.invert",
+      "etiqueta": "Invert",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "captura": "block-diagram/compound-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea constantes, controles o indicadores cableados al nodo.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/compound-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic.change-mode",
+      "etiqueta": "Change Mode",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic.change-mode.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic.change-mode.multiply",
+      "etiqueta": "Multiply",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic.change-mode.and",
+      "etiqueta": "AND",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic.change-mode.or",
+      "etiqueta": "OR",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic.change-mode.xor",
+      "etiqueta": "XOR",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic.probe-all-inputs",
+      "etiqueta": "Probe All Inputs",
+      "estado": "todo",
+      "labview": "Pone una sonda en cada entrada.",
+      "necesita": "sondas",
+      "captura": "block-diagram/compound-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une los cables que entraban y salían.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/compound-menu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "block-diagram/compound-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic-input",
+      "etiqueta": "Compound Arithmetic Input",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes del nodo se ven: aquí sólo la etiqueta.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En la captura sale desactivado.",
+      "necesita": "ejemplos",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Pone un punto de ruptura en el nodo.",
+      "necesita": "detener-entre-nodos",
+      "captura": "block-diagram/compound-menu-entrada.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic-input.add-input",
+      "etiqueta": "Add Input",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "captura": "block-diagram/compound-menu-entrada.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic-input.remove-input",
+      "etiqueta": "Remove Input",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.invert",
+      "etiqueta": "Invert",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/compound-menu-entrada.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
+      "captura": "block-diagram/compound-create.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
+      "captura": "block-diagram/compound-create.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Crea un control del panel cableado a la entrada.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/compound-create.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Crea un indicador del panel cableado al terminal.",
+      "necesita": "panel-frontal",
+      "captura": "block-diagram/compound-create.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "block-diagram/compound-menu-entrada.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic-input.change-mode",
+      "etiqueta": "Change Mode",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.change-mode.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.change-mode.multiply",
+      "etiqueta": "Multiply",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.change-mode.and",
+      "etiqueta": "AND",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.change-mode.or",
+      "etiqueta": "OR",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.change-mode.xor",
+      "etiqueta": "XOR",
+      "estado": "built",
+      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "captura": "block-diagram/compound-change-mode.png"
     }
   ]
 }

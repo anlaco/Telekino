@@ -56,6 +56,20 @@ test("cada built nombra una prueba que existe", () => {
   }
 });
 
+// Un contenedor —una paleta, una carpeta, un menú— que ya enseña algo hecho
+// no puede pintarse como hueco: quien lo ve en gris no lo abriría.
+test("un contenedor con algo hecho dentro está hecho", () => {
+  const porId = new Map(DATOS.entradas.map((e) => [e.id, e]));
+  for (const e of DATOS.entradas) {
+    if (e.estado !== "built") continue;
+    for (let id = e.id; id.includes("."); ) {
+      id = id.slice(0, id.lastIndexOf("."));
+      const padre = porId.get(id);
+      if (padre) assert.equal(padre.estado, "built", `${id} tiene dentro ${e.id}, que está hecho, y sale como hueco`);
+    }
+  }
+});
+
 test("cada bloque existe en el catálogo", () => {
   const catalogo = leer("docs/schema/blocks.json");
   for (const e of DATOS.entradas) {

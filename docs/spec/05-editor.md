@@ -149,6 +149,35 @@ importante es que sea **una sola** regla, no tres.)*
 > **Regla 33.** Un wire se selecciona pulsando sobre él y se borra como
 > cualquier otro elemento.
 
+*(Como en LabVIEW, el clic selecciona el **tramo** pulsado, no el cable entero;
+borrarlo borra el cable entero, que es una diferencia: LabVIEW deja los trozos
+sueltos. Ver §5.4.)*
+
+### 5.4 Tirar de un cable y reposicionarlo
+
+*(informativo)* Calcado del vídeo
+`capturas-labview/block-diagram/numeric-cablear.mp4` y hecho en el editor
+(`editor/src/edicion.mjs`):
+
+- Mientras se tira, el cable es una línea **punteada negra** que sale del
+  terminal en horizontal hasta la x del ratón y luego va en vertical hasta él.
+- Al soltarlo en un terminal, el tramo vertical queda casi pegado a él: a 4 px.
+- Un **tramo** se selecciona con un clic, con hormigas sólo en él, y se
+  arrastra de lado: los verticales en horizontal y los horizontales en
+  vertical. Arrastrar el primero o el último, que están pegados a un terminal,
+  añade un codo. Los codos son capa de presentación (regla 25) y se conservan al
+  mover los nodos.
+
+### 5.5 Escribir en una constante
+
+Doble clic en una constante numérica: el texto sale seleccionado y lo escrito lo
+sustituye; la caja crece con el texto. Intro, un clic fuera o el botón
+*Enter Text* —que sólo aparece en la barra mientras se escribe, a la izquierda
+de Run— lo confirman; `Esc` lo deja como estaba. Un número con decimales en una
+constante entera la vuelve DBL, como hace LabVIEW. Lo que no es un número no
+cambia nada. Se acepta la coma y el punto, y se enseña con el separador del
+sistema.
+
 ## 6. Navegación
 
 > **Regla 34.** La rueda del ratón desplaza en vertical; con `Shift`, en
@@ -166,10 +195,9 @@ menú View, sus entradas de zoom irán como `never` citando esta regla.)*
 > **Regla 36.** Las flechas del teclado mueven la selección un píxel; con
 > `Shift`, un salto mayor.
 
-> ⚠️ **La regla 36 está especificada desde hace meses en `06-visual.md` §1.3 y
-> nunca se implementó.** El único manejador de teclado del editor actual reconoce
-> `Supr` y `Retroceso`. Se conserva como requisito porque es correcta, y queda
-> marcada como no implementada para que no se dé por hecha.
+> **La regla 36 está implementada en el editor web** (2026-09-29,
+> `editor/src/edicion.mjs`): un píxel, y 8 con `Shift`, provisional hasta
+> comprobar el salto en LabVIEW (§11, cuestión 3).
 
 > **Regla 37.** `Tab` **DEBE** recorrer los elementos del lienzo. Ver §2.
 
@@ -199,10 +227,12 @@ notificación.)*
 > **Regla 42.** El editor **DEBE** ofrecer deshacer y rehacer sobre toda
 > operación que modifique el VI.
 
-> ⚠️ **La regla 42 no tiene hoy ninguna implementación ni ningún plan.** Iba a
-> heredarse de `red-sg`, un proyecto hermano que la migración deja huérfano
-> (DT-031, ver [`../whitelist.md`](../whitelist.md) §3). Es la deuda más grande
-> de este documento y **necesita una decisión de diseño propia**.
+> **La regla 42 está implementada para el diagrama** (2026-09-30,
+> `editor/src/historial.mjs`): como el grafo nunca se muta, cada estado estable
+> es una foto, y un gesto —arrastrar un nodo o un tramo, escribir en una
+> constante— es un solo paso. `Ctrl+Z` deshace y `Ctrl+Shift+Z` rehace. Falta el
+> menú Edit, que no está capturado, y el panel. Antes iba a heredarse de
+> `red-sg` (DT-031, ver [`../whitelist.md`](../whitelist.md) §3).
 
 ## 9. Lo que el editor no hace
 
@@ -256,14 +286,15 @@ habría exigido nombrar un test que no existía.)*
 
 | Regla | Mecanismo | Estado |
 |-------|-----------|--------|
-| 24 orden de zonas estable | Test de hit-test con elementos superpuestos | Pendiente |
+| 22, 23 selección | Tests de `editor/test/edicion.test.mjs`: el clic selecciona, `Shift` suma, el rectángulo selecciona lo que toca, se mueve todo lo seleccionado | **Verificado** en el diagrama, sin estructuras |
+| 24 orden de zonas estable | Test de hit-test con elementos superpuestos. El editor resuelve terminal, nodo, cable y fondo, en ese orden (`app.mjs`); falta el test | Pendiente |
 | 25, 26 arrastrar no cambia el programa | Compilar antes y después de mover: mismos bytes | Pendiente |
-| 28, 29 borrar arrastra los wires | Test: tras borrar no queda ningún wire huérfano | Pendiente |
-| 31 el rechazo explica el motivo | Test: cada causa de `can_connect` produce su mensaje | Pendiente |
-| 32 sustituir en fan-in | Test | Pendiente |
-| 36, 37 teclado | Test de interacción | Pendiente |
+| 28, 29 borrar arrastra los wires | Test: tras borrar no queda ningún wire huérfano | **Verificada la 28** («borrar un nodo borra sus cables»); la 29 espera a las estructuras |
+| 31 el rechazo explica el motivo | Test: cada causa de `can_connect` produce su mensaje | **Verificado** para dos salidas, dos entradas, tipos incompatibles y ciclo (`grafo.test.mjs`); faltan las de ámbito, que esperan a las estructuras |
+| 32 sustituir en fan-in | Test «un cable a una entrada ocupada sustituye al anterior» | **Verificado** |
+| 36, 37 teclado | Test de interacción | **Verificada la 36** («la selección se mueve con las flechas…»); la 37, pendiente |
 | 38–40 sincronización | Test: crear, borrar y retipar desde cada lienzo | Pendiente |
-| 42 deshacer | — | **Sin diseño** |
+| 42 deshacer | Test «deshacer vuelve atrás un gesto entero» (`editor/test/edicion.test.mjs`) | **Verificada** en el diagrama |
 | 52, 55 lo declarado se pinta, y lo pintado está declarado | Test de pintado sin pantalla contra el inventario: cada elemento pintado tiene su entrada, y cada entrada se pinta en su orden (`editor/test/vista.test.mjs`) | **Verificado** para el *Front Panel* y el *Block Diagram* |
 | 52 donde LabVIEW lo pone | Test de posiciones: cada elemento de la barra, a 2 px como mucho de su sitio en las capturas («la barra cae donde en LabVIEW») | **Verificado** para el *Front Panel* y el *Block Diagram* |
 | 53 un hueco no actúa | Test de interacción: el clic, el clic derecho en el lienzo y un atajo sólo abren la explicación, y Esc la cierra (`editor/test/estado.test.mjs`) | **Verificado**. Que no cambie el VI es trivial mientras no haya modelo |
@@ -277,6 +308,6 @@ habría exigido nombrar un test que no existía.)*
 |---|----------|---------|
 | 1 | **Deshacer y rehacer** (§8) | Nada de la spec, pero es la mayor deuda funcional |
 | 2 | Comando explícito de "mover al ámbito" (§3.3) | Nada; es refinamiento de la regla 26 |
-| 3 | Salto exacto de `Shift`+flecha: ¿8 px o 12 px? | Nada. Abierto en `06-visual.md` §1.3 desde el principio |
-| 4 | Selección por rectángulo de arrastre | Sin especificar; hoy no existe |
+| 3 | Salto exacto de `Shift`+flecha: ¿8 px o 12 px? | Nada. Abierto en `06-visual.md` §1.3 desde el principio. El editor usa 8, provisional: falta comprobarlo en LabVIEW |
+| 4 | Selección por rectángulo de arrastre | Sin especificar. El editor web la tiene como LabVIEW: selecciona lo que toca el rectángulo, y `Shift` suma |
 | 5 | Desglosar el inventario área a área, con capturas de la referencia delante (DT-035 §5 y §8). **Empezado**: el *Project Explorer*, el *Front Panel*, el *Block Diagram* y la paleta de funciones, 127 entradas; el contenido de los menús, no | Que las reglas 52–56 tengan algo que comprobar |

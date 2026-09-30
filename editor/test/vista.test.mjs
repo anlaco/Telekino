@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { inicial, paletaNueva } from "../src/estado.mjs";
 import { ultimo } from "../src/inventario.mjs";
-import { MEDIDAS, anchoZonaIconos, disposicionBarra, idsPintados, paleta, ventana } from "../src/vista.mjs";
+import { MEDIDAS, anchoZonaIconos, anclaSubpaleta, celdasSubpaleta, disposicionBarra, idsPintados, paleta, subpaletas, tamanoSubpaleta, ventana } from "../src/vista.mjs";
 import { INV } from "./comun.mjs";
 
 const VENTANAS = ["front-panel", "block-diagram"];
@@ -98,4 +98,50 @@ test("la paleta no enseña lo oculto hasta que se pide", () => {
     assert.ok(!cerrada.includes(id), `${ultimo(id)} se ve sin pedirlo`);
     assert.ok(abierta.includes(id), `${ultimo(id)} no aparece al pedirlo`);
   }
+});
+
+const NUMERIC = "palette.functions.programming.numeric";
+const conNumeric = () => ({ ...paletaNueva("palette.functions", 0, 0), cascada: [{ id: NUMERIC, x: 0, y: 0 }] });
+
+test("la subpaleta pinta lo declarado y en su orden", () => {
+  const pintados = idsPintados(subpaletas(INV, conNumeric()));
+  for (const id of pintados) assert.ok(INV.entrada(id), `${id} se pinta y no está en el inventario`);
+  const hijos = INV.hijos(NUMERIC).map((e) => e.id);
+  assert.deepEqual(pintados.slice(1), hijos, "la chincheta en el título y luego la rejilla, en el orden de LabVIEW");
+  assert.equal(pintados[0], NUMERIC);
+});
+
+// paletas/functions-numeric.png: seis columnas, siete filas, Expression Node
+// solo en la última columna de la última fila; 453 × 579 px a 150 %.
+test("la subpaleta Numeric mide lo que en LabVIEW", () => {
+  const { columnas, sitios } = celdasSubpaleta(INV, NUMERIC);
+  assert.equal(columnas, 6);
+  const donde = Object.fromEntries(sitios.map((s) => [ultimo(s.e.id), [s.fila, s.columna]]));
+  assert.deepEqual(donde.add, [0, 0]);
+  assert.deepEqual(donde.conversion, [0, 5]);
+  assert.deepEqual(donde["math-and-scientific-constants"], [5, 5]);
+  assert.deepEqual(donde["range-limits-for-type"], [6, 0]);
+  assert.deepEqual(donde["expression-node"], [6, 5]);
+  const { ancho, alto } = tamanoSubpaleta(INV, NUMERIC);
+  assert.ok(Math.abs(ancho - 453 / 1.5) < 0.05, `ancho ${ancho}`);
+  assert.ok(Math.abs(alto - 579 / 1.5) < 0.05, `alto ${alto}`);
+  // La carpeta Numeric de la paleta empieza en la columna 231 y la fila 87; su
+  // subpaleta, en la 296 y la 117.
+  const a = anclaSubpaleta({ left: 231 / 1.5, top: 87 / 1.5 });
+  assert.ok(Math.abs(a.x - 296 / 1.5) < 0.05 && Math.abs(a.y - 117 / 1.5) < 0.05);
+});
+
+test("la carpeta de la subpaleta abierta lleva su marco", () => {
+  const html = paleta(INV, conNumeric());
+  assert.match(html, new RegExp(`class="carpeta abierta" data-id="${NUMERIC.replace(/\./g, "\\.")}"[^>]*><div class="marco">`), "y sin gris: dentro hay funciones hechas");
+  assert.equal((html.match(/class="marco"/g) ?? []).length, 1);
+});
+
+// numeric-nombre-al-pasar.png: el nombre de lo que está bajo el ratón sale
+// bajo el título de la subpaleta, y el icono se enmarca.
+test("al pasar por un icono de la subpaleta sale su nombre", () => {
+  const html = subpaletas(INV, { ...conNumeric(), sobre: `${NUMERIC}.compound-arithmetic` });
+  assert.match(html, /class="nombre-sobre"[^>]*>Compound Arithmetic</);
+  assert.match(html, /data-id="palette\.functions\.programming\.numeric\.compound-arithmetic"[^>]*><div class="marco marco-funcion">/);
+  assert.doesNotMatch(subpaletas(INV, conNumeric()), /nombre-sobre/);
 });

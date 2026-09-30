@@ -4,9 +4,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { clic, clicDerecho, clicFuera, escape, inicial, paletaNueva, tecla } from "../src/estado.mjs";
+import { abrirSubpaleta, cerrarSubpaletas, clic, clicDerecho, clicFuera, escape, inicial, paletaNueva, tecla } from "../src/estado.mjs";
 import { cargarInventario } from "../src/inventario.mjs";
-import { idsPintados, paleta } from "../src/vista.mjs";
+import { idsPintados, paleta, subpaletas } from "../src/vista.mjs";
 import { INV } from "./comun.mjs";
 
 const AQUI = { x: 10, y: 20 };
@@ -58,7 +58,30 @@ test("una categoría con contenido se abre y se cierra", () => {
 
 test("una categoría sin contenido explica lo que falta", () => {
   assert.equal(clic(conPaleta(), INV, "palette.functions.measurement-io", AQUI).abierta.id, "palette.functions.measurement-io");
-  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.numeric", AQUI).abierta.id, "palette.functions.programming.numeric");
+  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.boolean", AQUI).abierta.id, "palette.functions.programming.boolean");
+});
+
+// Regla 53b en una rejilla: la carpeta con contenido abre su subpaleta al lado,
+// como en paletas/functions-numeric.png, y no una explicación.
+test("una carpeta con contenido abre su subpaleta al lado", () => {
+  const id = "palette.functions.programming.numeric";
+  const abierta = clic(conPaleta(), INV, id, AQUI);
+  assert.deepEqual(abierta.paleta.cascada, [{ id, x: 10, y: 20 }]);
+  assert.equal(abierta.abierta, null);
+  assert.equal(abrirSubpaleta(abierta, INV, id, 0, { x: 99, y: 99 }), abierta, "pasar otra vez por ella no la mueve");
+  assert.ok(idsPintados(subpaletas(INV, abierta.paleta)).includes(`${id}.add`));
+  assert.deepEqual(cerrarSubpaletas(abierta, 0).paleta.cascada, [], "otra carpeta de la paleta la cierra");
+  assert.deepEqual(clic(abierta, INV, "palette.functions.programming", AQUI).paleta.cascada, [], "plegar su categoría la cierra");
+  assert.deepEqual(escape(abierta), inicial());
+});
+
+test("una carpeta de una subpaleta sin contenido explica lo que falta", () => {
+  const abierta = clic(conPaleta(), INV, "palette.functions.programming.numeric", AQUI);
+  const id = "palette.functions.programming.numeric.conversion";
+  const e = clic(abierta, INV, id, AQUI, 1);
+  assert.equal(e.abierta.id, id);
+  assert.equal(e.paleta.cascada.length, 1, "la subpaleta sigue abierta");
+  assert.equal(clic(abierta, INV, "palette.functions.programming.numeric.add", AQUI, 1).abierta, null, "una función hecha no se explica: se coge");
 });
 
 test("un clic fuera cierra la paleta y la explicación", () => {
