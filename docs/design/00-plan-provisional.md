@@ -235,7 +235,7 @@ para que la interfaz no crezca sin programa detrás.
    nativo sólo para el host de hardware. Se escribe como DT nueva que corrige
    DT-037 (g) y DT-038 (c). *(2026-09-30: [DT-039](05-decisiones.md#dt-039),
    con la propuesta tal cual.)*
-3. [ ] **Rebanada vertical**: constante → Add → indicador numérico.
+3. [x] **Rebanada vertical**: constante → Add → indicador numérico. *(2026-09-30)*
    - [x] Un indicador numérico en el *Front Panel*, con su terminal en el
      diagrama (spec/05 regla 38), desde **Controls ▸ Numeric**. *(2026-09-30:
      también el control, con sus etiquetas, calcados del vídeo
@@ -243,8 +243,12 @@ para que la interfaz no crezca sin programa detrás.
    - [x] **Guardar y abrir** el VI como `.qvi`, con codos, configuración y tipos
      (round-trip exacto: criterio de R2). *(2026-09-30: `nucleo/qvi.mjs`, con
      File ▸ Open, Save y Save As y el asterisco de cambios sin guardar.)*
-   - [ ] **Run** de verdad: compilar a WebAssembly y ver el resultado en el
-     indicador. Run y Save dejan de ser huecos.
+   - [x] **Run** de verdad: compilar a WebAssembly y ver el resultado en el
+     indicador. Run y Save dejan de ser huecos. *(2026-09-30:
+     `nucleo/compilador.mjs`, `nucleo/wasm.mjs` y `nucleo/ejecutar.mjs`; en el
+     editor, en un worker, con Ctrl+R. También cumple R0:
+     `node nucleo/cli.mjs run docs/schema/ejemplos/suma-basica.qvi.json`
+     imprime 8.)*
 4. [ ] **Calcar por prioridad de adquisición**, no por orden de la paleta:
    - [ ] Controls ▸ Numeric (controles e indicadores). *(Hechos el control y
      el indicador numéricos; faltan los otros 19 de la subpaleta.)*

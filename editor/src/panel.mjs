@@ -80,15 +80,18 @@ const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
  */
 const INCREMENTADOR = `<div class="incrementador"><svg viewBox="0 0 16 25" aria-hidden="true"><rect x="1" y="2" width="11" height="21" rx="5.5" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,5 3.8,10 9.2,10" fill="#7a7a7a"/><polygon points="6.5,20 3.8,15 9.2,15" fill="#7a7a7a"/></svg><div class="flecha-inc" data-paso="1"></div><div class="flecha-inc" data-paso="-1"></div></div>`;
 
-/** El valor de un control, como lo enseña su casilla. */
-const textoValor = (n, ctx) => formatear(n.config?.value ?? 0, "number", ctx.separador);
+/**
+ * El valor de un control o indicador, como lo enseña su casilla: el que le dejó
+ * el último Run, si lo hay, o el suyo por defecto.
+ */
+const textoValor = (n, ctx, valores) => formatear(valores?.[n.id] ?? n.config?.value ?? 0, "number", ctx.separador);
 
-function objeto(n, ctx, elegido, edicion) {
+function objeto(n, ctx, elegido, edicion, valores) {
   const k = caja(n);
   const c = CONTROLES[n.tipo];
   const e = edicion?.valor && edicion.nodo === n.id ? edicion : null;
   // Mientras se escribe en ella, la casilla enseña lo escrito, con el cursor al final o todo seleccionado.
-  const valor = e ? (e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`) : `<span>${esc(textoValor(n, ctx))}</span>`;
+  const valor = e ? (e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`) : `<span>${esc(textoValor(n, ctx, valores))}</span>`;
   const casilla = `<div class="casilla${c?.incrementador ? "" : " indicador"}" data-casilla="${esc(n.id)}" style="left:${px(k.casilla)};width:${px(MEDIDAS_PANEL.casilla)}"><span class="valor">${valor}</span></div>`;
   return `<div class="objeto-panel${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${c?.incrementador ? INCREMENTADOR : ""}${casilla}</div>`;
 }
@@ -98,7 +101,7 @@ export function contenido(p, ctx) {
   const elegidos = new Set(p.seleccion);
   let html = "";
   for (const n of objetos(p.g)) {
-    html += objeto(n, ctx, elegidos.has(n.id), p.edicion);
+    html += objeto(n, ctx, elegidos.has(n.id), p.edicion, p.valores);
     html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)) });
   }
   const { accion } = p;
@@ -253,7 +256,7 @@ export const teclear = (p, tecla) => {
  */
 export function editarValor(p, ctx, id, todo) {
   const n = p.g.nodos.find((m) => m.id === id);
-  return n ? { ...p, edicion: { nodo: id, valor: true, texto: textoValor(n, ctx), todo }, seleccion: [], accion: null } : p;
+  return n ? { ...p, edicion: { nodo: id, valor: true, texto: textoValor(n, ctx, p.valores), todo }, seleccion: [], accion: null } : p;
 }
 
 /** Una flecha del incrementador: el valor sube o baja 1. */
@@ -272,7 +275,9 @@ export function confirmar(p) {
   if (!e) return p;
   if (!e.valor) return { ...p, g: Gr.fijarEtiqueta(p.g, e.nodo, e.texto), edicion: null };
   const leido = leerNumero(e.texto, "number");
-  return { ...p, g: leido ? Gr.fijarValor(p.g, e.nodo, leido.valor) : p.g, edicion: null };
+  if (!leido) return { ...p, edicion: null };
+  const { [e.nodo]: _, ...valores } = p.valores ?? {};
+  return { ...p, g: Gr.fijarValor(p.g, e.nodo, leido.valor), valores, edicion: null };
 }
 
 // ——— Teclado ———

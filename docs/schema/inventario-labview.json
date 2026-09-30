@@ -785,9 +785,8 @@
     {
       "id": "window.front-panel.toolbar.run",
       "etiqueta": "Run",
-      "estado": "todo",
-      "labview": "Ejecuta el VI, compilándolo si hace falta. La flecha se rompe cuando el VI tiene errores, y al pulsarla se abre la lista de errores.",
-      "necesita": "ejecutar-vi",
+      "estado": "built",
+      "prueba": "editor/test/compilador.test.mjs::un_control_y_un_indicador_del_panel_se_cablean_y_run_pasa_el_valor",
       "captura": "front-panel/vi-nuevo.png"
     },
     {
@@ -1181,9 +1180,8 @@
     {
       "id": "window.block-diagram.toolbar.run",
       "etiqueta": "Run",
-      "estado": "todo",
-      "labview": "Ejecuta el VI, compilándolo si hace falta. La flecha se rompe cuando el VI tiene errores, y al pulsarla se abre la lista de errores.",
-      "necesita": "ejecutar-vi",
+      "estado": "built",
+      "prueba": "editor/test/compilador.test.mjs::un_control_y_un_indicador_del_panel_se_cablean_y_run_pasa_el_valor",
       "captura": "block-diagram/vi-nuevo.png"
     },
     {

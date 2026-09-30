@@ -13,7 +13,7 @@ const AQUI = { x: 10, y: 20 };
 const conPaleta = () => ({ ...inicial(), paleta: paletaNueva("palette.functions", 40, 30) });
 
 test("activar un hueco solo muestra su explicación", () => {
-  const id = "window.block-diagram.toolbar.run";
+  const id = "window.block-diagram.toolbar.run-continuously";
   const abierto = clic(inicial(), INV, id, AQUI);
   assert.deepEqual(abierto, { abierta: { id, x: 10, y: 20 }, paleta: null, menuBarra: null });
   assert.equal(escape(abierto).abierta, null, "Esc la cierra");

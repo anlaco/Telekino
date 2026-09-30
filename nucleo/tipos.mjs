@@ -28,7 +28,7 @@ export const esEnum = (t) => !!t && typeof t === "object" && Array.isArray(t.enu
 export const esArray = (t) => !!t && typeof t === "object" && "array" in t;
 
 /** Un enum es, para convertir, un entero sin signo de 16 bits, como en LabVIEW. */
-const representacion = (t) => (esEnum(t) ? "u16" : t);
+export const representacion = (t) => (esEnum(t) ? "u16" : t);
 
 /** ¿Es un escalar numérico, contando los enums? */
 export const esNumerico = (t) => (typeof t === "string" && t in NUMERICOS) || esEnum(t);

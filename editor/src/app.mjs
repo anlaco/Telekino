@@ -20,6 +20,7 @@ import * as H from "./historial.mjs";
 import { cargarInventario, esHueco } from "./inventario.mjs";
 import * as P from "./panel.mjs";
 import * as Q from "../../nucleo/qvi.mjs";
+import { compilar } from "../../nucleo/compilador.mjs";
 import * as V from "./vista.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
@@ -136,6 +137,38 @@ async function abrirVI() {
   canal.postMessage({ g, nuevo: true });
 }
 
+// ——— Run ———
+//
+// Run compila el VI a WebAssembly (nucleo/compilador.mjs) y lo ejecuta en un
+// worker (ejecutor.mjs) con el valor de los controles; lo que escribe en los
+// indicadores se enseña en el panel. Con la flecha rota, dice por qué, como la
+// lista de errores de LabVIEW.
+
+let trabajador = null;
+
+/** Lo que llega a los indicadores tras un Run: se enseña en el panel, no cambia el VI. */
+function mostrarValores(valores) {
+  pan = { ...pan, valores: { ...(pan.valores ?? {}), ...valores } };
+  pintar();
+}
+
+async function ejecutarVI() {
+  confirmarEscritura();
+  const g = grafo();
+  const c = compilar(g, cat);
+  if (c.errores) return window.telekino?.avisar("El VI no se puede ejecutar.", c.errores.map((e) => e.motivo).join("\n"));
+  const porId = new Map(g.nodos.map((n) => [n.id, n]));
+  const valores = Object.fromEntries(c.controles.map((k) => [k.nodo, porId.get(k.nodo).config?.value ?? 0]));
+  trabajador ??= new Worker(new URL("./ejecutor.mjs", import.meta.url), { type: "module" });
+  const r = await new Promise((listo) => {
+    trabajador.onmessage = ({ data }) => listo(data);
+    trabajador.postMessage({ compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores }, valores });
+  });
+  if (r.error) return window.telekino?.avisar("El VI se detuvo con un error.", r.error);
+  mostrarValores(r.escritos);
+  canal.postMessage({ valores: r.escritos });
+}
+
 /** Las órdenes hechas del menú File, por el último segmento de su id. */
 const ORDENES_MENU = { save: () => guardarVI(false), "save-as": () => guardarVI(true), open: abrirVI, exit: () => window.telekino?.salir() };
 
@@ -143,6 +176,7 @@ canal.onmessage = ({ data }) => {
   // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
   if (data.pide) return canal.postMessage({ g: grafo() });
   // Lo que ya se tiene no es un paso nuevo: la respuesta a una ventana recién abierta, por ejemplo.
+  if (data.valores) return mostrarValores(data.valores);
   if (data.nuevo) return cargar(data.g);
   if (!data.g || JSON.stringify(data.g) === JSON.stringify(grafo())) return;
   publicado = data.g;
@@ -400,6 +434,8 @@ addEventListener("click", (ev) => {
   }
   const el = ev.target.closest("[data-id]");
   if (!el || inerte(el)) return;
+  // La flecha de Run, hecha: ejecuta el VI; rota, dice por qué no se puede.
+  if (el.dataset.id === `${prefijo}.toolbar.run` && !esHueco(inv.resolver(el.dataset.id))) return ejecutarVI();
   const donde = abreSubpaleta(el) ? V.anclaSubpaleta(el.getBoundingClientRect()) : el.classList.contains("menu") ? anclaMenu(el) : ancla(el);
   cambiar(E.clic(estado, inv, el.dataset.id, donde, nivelDe(el)));
 });
@@ -436,6 +472,11 @@ addEventListener("keydown", (ev) => {
     if (orden) {
       ev.preventDefault();
       return ORDENES_MENU[orden]();
+    }
+    // Ctrl+R: Run, el atajo de LabVIEW.
+    if (ev.key.toLowerCase() === "r") {
+      ev.preventDefault();
+      return ejecutarVI();
     }
   }
   if (conDiagrama && dia.edicion && !ctrl) {

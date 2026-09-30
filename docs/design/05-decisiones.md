@@ -528,9 +528,11 @@ e. **Pendiente, sin capturas todavía:** cómo pinta LabVIEW un nodo, una consta
 el VI compilado corre en el motor WebAssembly de la propia página. Rust queda
 sólo para el host de hardware.**
 
-- **Estado:** Aceptada el 2026-09-30. **En implementación**: `nucleo/` ya tiene
-  el grafo, los tipos y la lectura y escritura del `.qvi`; falta el compilador
-  (paso 3 de [`00-plan-provisional.md`](00-plan-provisional.md) §7.1).
+- **Estado:** Aceptada el 2026-09-30. **En implementación**: `nucleo/` tiene el
+  grafo, los tipos, la lectura y escritura del `.qvi`, el compilador a
+  WebAssembly con su codificador y el ejecutor, que usan el worker del editor y
+  la línea de órdenes (`nucleo/cli.mjs run|wat|check`). Faltan las estructuras,
+  los agregados y el host de hardware.
 - **Cómo se decidió:** en una conversación con quien desarrolla el proyecto, al
   llegar al paso 2 de la hoja de ruta del 2026-09-30: decidir dónde vive el
   núcleo antes de escribir el compilador. Se compararon tres opciones —núcleo en
@@ -628,7 +630,7 @@ g. **Riesgo aceptado: rendimiento del compilador.** Compilar en JavaScript es
 | Qué | Mecanismo | Estado |
 |-----|-----------|--------|
 | Una sola implementación del grafo | `grafo.mjs` y `tipos.mjs` en `nucleo/`, importados por el editor y por `check` | **Hecho en el editor** (2026-09-30), junto a `nucleo/qvi.mjs`; `check` aún no existe |
-| El binario generado es válido | `WebAssembly.validate` sobre la salida de cada test del compilador | **Pendiente** |
+| El binario generado es válido | `WebAssembly.validate` sobre la salida de cada test del compilador | **Verificado** (`editor/test/compilador.test.mjs`) |
 | El texto WAT es el mismo programa | Tests de salida dorada del `.wat` | **Pendiente** |
-| R0 | `telekino run examples/suma-basica.qvi` imprime `8.0` | **Pendiente** |
+| R0 | `telekino run examples/suma-basica.qvi` imprime `8.0` | **Verificado**: `node nucleo/cli.mjs run docs/schema/ejemplos/suma-basica.qvi.json` imprime `Resultado = 8` (test «suma basica se compila a webassembly y da 8»). El corpus de `examples/` sigue en el formato de Red |
 | Un bucle infinito no congela la interfaz | Test del *worker*: Abort lo termina | **Pendiente** |

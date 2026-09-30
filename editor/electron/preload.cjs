@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld("telekino", {
   cambio: (texto) => ipcRenderer.send("vi:cambio", texto),
   /** Un fichero que no se pudo abrir, con el motivo. */
   error: (mensaje) => ipcRenderer.send("vi:error", mensaje),
+  /** Un aviso con su detalle: por qué no se puede ejecutar el VI, por ejemplo. */
+  avisar: (mensaje, detalle) => ipcRenderer.send("vi:avisar", mensaje, detalle),
   /** File ▸ Exit. */
   salir: () => ipcRenderer.send("vi:salir"),
 });

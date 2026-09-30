@@ -194,6 +194,9 @@ function atenderVI(ventanas) {
   ipcMain.on("vi:error", (ev, mensaje) => {
     dialog.showMessageBox(dueñoDe(ev), { type: "error", message: "No se puede abrir el VI.", detail: mensaje });
   });
+  ipcMain.on("vi:avisar", (ev, mensaje, detalle) => {
+    dialog.showMessageBox(dueñoDe(ev), { type: "warning", message: mensaje, detail: detalle });
+  });
   ipcMain.on("vi:salir", () => ventanas["front-panel"].close());
 }
 
